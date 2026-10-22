@@ -1,0 +1,13 @@
+{
+  "revisado_por": "equipe ObraNexo (revisão manual das descrições dos itens e do edital PP 005/2026, 22/10/2026)",
+  "itens": {
+    "1": {"esperado": "INCOMPATIVEL", "motivo": "50 W com >=170 lm/W, >=8.500 lm e >=102.000 h: nenhum produto de 50 W do catálogo atende (130-144 lm/W)"},
+    "2": {"esperado": "PARCIAL", "produto": "LPL-100-50K-PRO", "motivo": "175 lm/W, 17.500 lm, 120.000 h, IP66, IK10, DPS 10 kA, dimerizável, INMETRO; só o prazo de entrega (desejável) de 30 dias excede os 15 do edital"},
+    "3": {"esperado": "COMPATIVEL", "produto": "LPL-150-50K-PRO", "motivo": "173 lm/W, 26.000 lm, 120.000 h, IP66, IK10, DPS 10 kA, lente policarbonato/vidro plano, prazo 15 dias"}
+  },
+  "pares": [
+    {"item": 2, "produto": "LPL-100-50K", "esperado": "INCOMPATIVEL", "motivo": "145 lm/W < 170; 14.500 lm < 17.000; 60.000 h < 102.000"},
+    {"item": 3, "produto": "LPL-100-50K-PRO", "esperado": "INCOMPATIVEL", "motivo": "17.500 lm < 25.500 (potência 100 W <= 150 W passa, mas o fluxo não)"},
+    {"item": 1, "produto": "LPL-50-60K", "esperado": "INCOMPATIVEL", "motivo": "6000 K ≠ 5000 K; 144 lm/W < 170; 7.200 lm < 8.500; 50.000 h < 102.000"}
+  ]
+}

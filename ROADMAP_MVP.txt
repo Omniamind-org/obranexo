@@ -1,0 +1,819 @@
+===============================================================================
+                     OBRANEXO — ROADMAP DO MVP
+         Plataforma de Inteligência Comercial Agêntica (AKCIT Camp 2026)
+===============================================================================
+
+Versão do roadmap : 0.1
+Data              : 22/10/2026
+Base              : ObraNexo_PreProjeto_Documento_Norteador_v0.1.pdf
+Equipe            : Kauan Divino · Fabrycio Nakano · Victor Emanuel · Maykon Adriell
+
+Marcos:
+  - 24/10/2026  Hackathon regional Centro-Oeste  -> MVP v0.1 (prova de conceito demonstrável)
+  - 28/11/2026  Etapa nacional                   -> MVP v0.2 (MVP robusto + piloto supervisionado)
+
+Legenda de prioridade:
+  [P0] obrigatório para o hackathon regional (24/10)
+  [P1] obrigatório para a etapa nacional (28/11)
+  [P2] desejável; entra se sobrar tempo
+  [--] fora do escopo do MVP
+
+Itens marcados com (VALIDAR) são suposições técnicas que precisam ser
+conferidas antes de virarem compromisso.
+
+
+-------------------------------------------------------------------------------
+0. ÍNDICE
+-------------------------------------------------------------------------------
+  1. Objetivo do MVP
+  2. Escopo (dentro / fora)
+  3. Funcionalidades (requisitos funcionais)
+  4. Requisitos não funcionais
+  5. Stack tecnológica (decisões)
+  6. Arquitetura
+  7. Fluxo agêntico (grafo de agentes)
+  8. Modelo de dados
+  9. Fontes de dados e integração com o PNCP
+ 10. Motor de regras de compatibilidade técnica
+ 11. Dossiê comercial (formato de saída)
+ 12. Estrutura do repositório
+ 13. Avaliação, benchmark e métricas
+ 14. Segurança, ética e LGPD
+ 15. Observabilidade e custos
+ 16. Cronograma detalhado
+ 17. Divisão por frentes
+ 18. Roteiro da demonstração (pitch)
+ 19. Riscos e planos de contingência
+ 20. Definição de pronto (DoD)
+ 21. Backlog pós-MVP
+ 22. Decisões pendentes
+
+
+-------------------------------------------------------------------------------
+1. OBJETIVO DO MVP
+-------------------------------------------------------------------------------
+Demonstrar, de forma reproduzível e com dados públicos reais, o fluxo completo:
+
+  catálogo do fornecedor -> busca de demandas no PNCP -> leitura dos documentos
+  -> compatibilidade técnica verificável -> verificação de evidências
+  -> priorização -> dossiê comercial com próximos passos
+
+Critério central: toda conclusão do sistema tem que apontar para a evidência
+(documento, página e trecho) que a fundamenta. Se não houver evidência, o
+sistema diz "indeterminado" em vez de inventar.
+
+Critérios de sucesso da demonstração (seção 12.3 do documento norteador):
+  1. Apresentar o catálogo de um fornecedor demonstrativo de material elétrico.
+  2. Consultar ou carregar dados oficiais identificados (PNCP).
+  3. Selecionar uma demanda real.
+  4. Executar a investigação assistida por IA, com o passo a passo visível.
+  5. Mostrar uma correspondência técnica fundamentada.
+  6. Mostrar um caso de incompatibilidade OU de incerteza.
+  7. Gerar um dossiê com evidências e próximos passos.
+
+
+-------------------------------------------------------------------------------
+2. ESCOPO
+-------------------------------------------------------------------------------
+
+2.1 Dentro do escopo
+  - Segmento único: materiais e equipamentos elétricos (com foco inicial em
+    iluminação: luminárias, lâmpadas, refletores, reatores/drivers; depois
+    cabos, disjuntores, quadros e eletrodutos).
+  - Fonte principal: PNCP (contratações publicadas, itens, arquivos anexos e
+    PCA - Plano de Contratações Anual).
+  - Documentos: PDF com texto, PDF com tabelas e planilhas XLSX/CSV.
+  - Catálogo do fornecedor: upload em CSV/XLSX/JSON ou catálogo demonstrativo
+    pré-carregado.
+  - Região: Goiás como recorte inicial (casos IF Goiano e SEINFRA-GO).
+  - Dossiê em tela e exportável (Markdown e PDF).
+  - Revisão humana: o usuário aprova, rejeita ou marca para revisão cada
+    oportunidade.
+
+2.2 Fora do escopo do MVP
+  [--] Monitoramento integral de todas as contratações do Brasil.
+  [--] Integração com todos os portais (estaduais e municipais ficam para depois).
+  [--] Previsão estatística de demanda futura.
+  [--] Identificação garantida de compradores privados (construtoras).
+  [--] Participação automática em licitações ou envio de propostas.
+  [--] Precificação automática de obras.
+  [--] CRM completo e integrações com ERP.
+  [--] Treinar um modelo de linguagem próprio.
+  [--] OCR pesado de PDFs digitalizados (só como P2, ver seção 9).
+
+
+-------------------------------------------------------------------------------
+3. FUNCIONALIDADES (REQUISITOS FUNCIONAIS)
+-------------------------------------------------------------------------------
+Os IDs MVP-0X seguem o documento norteador. Os subitens detalham a entrega.
+
+MVP-01 — Perfil comercial e catálogo
+  [P0] 01.1 Catálogo demonstrativo pré-carregado (~40 a 80 SKUs elétricos com
+            atributos técnicos estruturados).
+  [P0] 01.2 Esquema de produto padronizado (ver seção 8): categoria, tensão,
+            potência, fluxo luminoso, temperatura de cor, IP, IK, normas
+            (NBR/INMETRO), dimensões, garantia e prazo de entrega.
+  [P1] 01.3 Upload de catálogo em CSV/XLSX com mapeamento de colunas.
+  [P1] 01.4 Normalização de unidades (W, kW, V, lm, K, mm) e de sinônimos.
+  [P1] 01.5 Perfil da empresa: UFs atendidas, raio logístico, capacidade de
+            fornecimento (quantidade máxima por item), restrições.
+  [P2] 01.6 Extração de atributos a partir de fichas técnicas em PDF (LLM).
+
+MVP-02 — Coleta de demandas
+  [P0] 02.1 Conector do PNCP: buscar contratações por período, UF e modalidade.
+  [P0] 02.2 Buscar os itens de uma contratação e a lista de arquivos anexos.
+  [P0] 02.3 Download e cache local dos arquivos (com hash SHA-256).
+  [P0] 02.4 Modo offline: um "pacote de caso" congelado (JSON + PDFs) para a
+            demo funcionar mesmo se a API cair.
+  [P1] 02.5 Conector do PCA (planos anuais) para gerar "demandas planejadas".
+  [P1] 02.6 Pré-filtro barato: palavras-chave + busca semântica (embeddings)
+            contra as categorias do catálogo, para reduzir o volume antes de
+            chamar o LLM.
+  [P1] 02.7 Agendamento de coleta incremental (job diário).
+  [P2] 02.8 Conector Obrasgov.
+
+MVP-03 — Processamento de documentos
+  [P0] 03.1 Extração de texto de PDF com número de página (PyMuPDF).
+  [P0] 03.2 Divisão em trechos (chunks) que guardam a origem
+            (documento, página e posição).
+  [P0] 03.3 Extração estruturada de itens com LLM e saída validada por Pydantic:
+            descrição, quantidade, unidade e requisitos técnicos.
+  [P1] 03.4 Extração de tabelas (pdfplumber/camelot) e planilhas orçamentárias
+            (pandas/openpyxl).
+  [P1] 03.5 Classificação do tipo de documento (edital, termo de referência,
+            memorial descritivo, planilha orçamentária, projeto, ata).
+  [P2] 03.6 OCR para PDF digitalizado (Tesseract ou OCR do modelo multimodal).
+
+MVP-04 — Correspondência técnica
+  [P0] 04.1 Motor de regras determinístico que compara cada requisito com cada
+            atributo do produto (ver seção 10).
+  [P0] 04.2 Três resultados por requisito: ATENDE / NÃO ATENDE / INDETERMINADO,
+            cada um com justificativa.
+  [P0] 04.3 Resultado agregado por item: COMPATÍVEL / PARCIAL / INCOMPATÍVEL /
+            INDETERMINADO.
+  [P1] 04.4 Candidatos por similaridade (pgvector) seguidos de checagem por regra
+            (o LLM sugere, a regra decide).
+  [P1] 04.5 Requisitos obrigatórios e desejáveis com pesos diferentes.
+  [P2] 04.6 Equivalência entre normas (ex.: NBR IEC 60598 x INMETRO Portaria 62).
+
+MVP-05 — Agente investigador
+  [P0] 05.1 Quando falta um atributo obrigatório, o agente procura em outros
+            documentos da mesma contratação (TR, memorial, planilha).
+  [P0] 05.2 Ferramentas do agente: buscar_trechos, ler_pagina, listar_arquivos,
+            baixar_arquivo, consultar_item_pncp.
+  [P0] 05.3 Limites: no máximo N passos (padrão 8) e um orçamento de tokens por
+            análise.
+  [P1] 05.4 Registro do raciocínio de alto nível (plano + ações), exibido na UI.
+  [P2] 05.5 Busca em contratações anteriores do mesmo órgão (histórico).
+
+MVP-06 — Verificação
+  [P0] 06.1 Toda afirmação do dossiê aponta para uma evidência (doc_id, página
+            e trecho literal).
+  [P0] 06.2 Checagem automática de citação: o trecho citado precisa existir no
+            texto extraído (busca textual aproximada, nota >= 90).
+  [P0] 06.3 O Agente Verificador revisa conflitos (ex.: 220V num documento e
+            127V em outro) e lacunas.
+  [P1] 06.4 Nota de confiança por conclusão (alta / média / baixa), com regras
+            explícitas para cada nível.
+  [P1] 06.5 Encaminhar para revisão humana quando a confiança for baixa.
+
+MVP-07 — Qualificação comercial e dossiê
+  [P0] 07.1 Classificação da oportunidade: PUBLICADA / PLANEJADA /
+            INDIRETA POTENCIAL / INFERIDA.
+  [P0] 07.2 Identificação do comprador provável (órgão x contratada da obra).
+  [P0] 07.3 Dossiê com as seções da seção 11.
+  [P1] 07.4 Nota de prioridade (compatibilidade, valor estimado, prazo,
+            distância e estágio).
+  [P1] 07.5 Exportar o dossiê em PDF e Markdown.
+  [P1] 07.6 Próximos passos sugeridos (ex.: "pedir esclarecimento sobre o IP
+            até a data X", "preparar documentação de habilitação").
+
+MVP-08 — Interface
+  [P0] 08.1 Tela do catálogo.
+  [P0] 08.2 Lista de demandas encontradas, com filtros.
+  [P0] 08.3 Execução da análise com o progresso dos agentes em tempo real
+            (etapas visíveis).
+  [P0] 08.4 Visualização do dossiê com links para as evidências (abre o PDF na
+            página citada).
+  [P1] 08.5 Aprovar / rejeitar / comentar oportunidade (feedback salvo).
+  [P1] 08.6 Painel de métricas: custo, tempo e número de chamadas por análise.
+  [P2] 08.7 Login e várias empresas (multi-tenant).
+
+MVP-09 — Acompanhamento (pipeline)
+  [P2] 09.1 Kanban simples: Nova -> Em análise -> Qualificada -> Descartada.
+
+
+-------------------------------------------------------------------------------
+4. REQUISITOS NÃO FUNCIONAIS
+-------------------------------------------------------------------------------
+  RNF-01 Reprodutibilidade: a mesma entrada com o cache ativo gera o mesmo
+         dossiê (temperature 0, prompts versionados, respostas cacheadas).
+  RNF-02 Rastreabilidade: 100% das conclusões críticas com evidência válida.
+  RNF-03 Tempo: análise de uma contratação típica em menos de 3 minutos
+         (meta P1: menos de 90 s).
+  RNF-04 Custo: meta inicial de até US$ 0,50 por contratação analisada (VALIDAR
+         na prova de viabilidade).
+  RNF-05 Resiliência: falha da API do PNCP não derruba a demo (modo offline e
+         retentativas com espera crescente).
+  RNF-06 Segurança: chaves só em variáveis de ambiente; nenhuma chave no git.
+  RNF-07 Modularidade: trocar o provedor de LLM ou o banco sem reescrever os
+         agentes (interfaces/adapters).
+  RNF-08 Idioma: interface e dossiê em português do Brasil.
+
+
+-------------------------------------------------------------------------------
+5. STACK TECNOLÓGICA (DECISÕES)
+-------------------------------------------------------------------------------
+Critério: o mais simples que entrega o MVP no prazo, sem fechar portas para
+a v1.0.
+
+  Camada                 Hackathon (24/10)              Nacional (28/11)
+  ---------------------  -----------------------------  -----------------------------
+  Linguagem              Python 3.12                    Python 3.12
+  Dependências           uv + pyproject.toml            idem
+  Backend/API            FastAPI (opcional na v0.1)     FastAPI (obrigatório)
+  Interface              Streamlit                      Streamlit refinado ou
+                                                        React (Next.js) + FastAPI
+  Orquestração           LangGraph                      LangGraph (com checkpointer)
+  LLM                    API Claude (ver 5.1)           Claude via Amazon Bedrock
+                                                        ou API direta
+  Saída estruturada      Pydantic v2 + tool use         idem
+  Banco de dados         SQLite (arquivo local)         PostgreSQL 16
+  Busca semântica        não usar (keyword + regras)    pgvector
+  Embeddings             --                             modelo multilíngue (ex.:
+                                                        bge-m3 local ou embedding
+                                                        via API) (VALIDAR)
+  ORM / migrações        SQLModel                       SQLModel + Alembic
+  PDF                    PyMuPDF (fitz)                 PyMuPDF + pdfplumber
+  Planilhas              pandas + openpyxl              idem
+  HTTP                   httpx + tenacity (retry)       idem
+  Busca textual aprox.   rapidfuzz                      idem
+  Exportar dossiê        Markdown                       Markdown + PDF (WeasyPrint)
+  Testes                 pytest                         pytest + benchmark próprio
+  Qualidade de código    ruff (lint + format)           ruff + mypy + pre-commit
+  Observabilidade        logs JSON (structlog)          structlog + Langfuse (self-
+                                                        hosted) ou LangSmith
+  Contêiner              --                             Docker + docker-compose
+  Infraestrutura         máquina local                  AWS: ECS Fargate ou EC2,
+                                                        RDS Postgres, S3 (arquivos)
+  CI                     --                             GitHub Actions (lint+testes)
+
+5.1 Modelos de IA (proposta, depende de custo e créditos do programa)
+  - Agentes de raciocínio (Investigador, Analista, Verificador, Planejador):
+    Claude Sonnet 5.5  (claude-sonnet-5-5)
+  - Extração em volume e classificação de documentos (tarefas baratas):
+    Claude Haiku 5.5   (claude-haiku-5-5)
+  - Casos difíceis e geração final do dossiê (opcional):
+    Claude Opus 5.5    (claude-opus-5-5)
+  - Usar prompt caching para o contexto fixo (catálogo e instruções).
+  - Isolar o provedor numa interface LLMClient para poder trocar de modelo.
+  - Se houver créditos AWS no programa, preferir o Amazon Bedrock.
+
+5.2 Por que LangGraph e não uma máquina de estados própria?
+  - Grafo explícito com estados, checkpoints e retomada sem trabalho extra.
+  - Fácil de mostrar ao vivo na banca ("é isto que o agente está fazendo").
+  - Plano B: se o LangGraph atrapalhar no hackathon, um loop simples de tool use
+    com o SDK oficial resolve, e os nós viram funções Python comuns.
+
+
+-------------------------------------------------------------------------------
+6. ARQUITETURA
+-------------------------------------------------------------------------------
+
+  +---------------------------------------------------------------------+
+  |                     CAMADA DE APLICAÇÃO (UI)                        |
+  |   Streamlit: Catálogo | Demandas | Análise ao vivo | Dossiê | Métricas|
+  +-------------------------------+-------------------------------------+
+                                  | (chamada direta na v0.1 / HTTP na v0.2)
+  +-------------------------------v-------------------------------------+
+  |                        API (FastAPI)                                |
+  |   /catalogo  /demandas  /analises  /dossies  /feedback  /metricas   |
+  +---+---------------+-------------------+------------------+----------+
+      |               |                   |                  |
+  +---v-----+  +------v--------+  +-------v--------+  +------v---------+
+  | DADOS   |  | DOCUMENTOS    |  | AGENTES        |  | REGRAS         |
+  | Conector|  | Download,     |  | (LangGraph)    |  | Compatibilidade|
+  | PNCP,   |  | extração,     |  | Investigador   |  | determinística,|
+  | PCA,    |  | chunks,       |  | Analista       |  | normalização   |
+  | cache   |  | tabelas       |  | Verificador    |  | de unidades,   |
+  |         |  |               |  | Planejador     |  | classificação  |
+  +---+-----+  +------+--------+  +-------+--------+  +------+---------+
+      |               |                   |                  |
+  +---v---------------v-------------------v------------------v---------+
+  |              EVIDÊNCIAS + PERSISTÊNCIA (SQLite -> PostgreSQL)       |
+  |  empresas, produtos, contratações, itens, documentos, trechos,      |
+  |  requisitos, correspondências, evidências, análises, dossiês, logs  |
+  +---------------------------------------------------------------------+
+  |      OBSERVABILIDADE: logs estruturados, traces, tokens, custo      |
+  +---------------------------------------------------------------------+
+
+Princípio: o LLM interpreta, extrai e planeja; as REGRAS decidem a
+compatibilidade objetiva; a camada de EVIDÊNCIAS sustenta tudo.
+
+
+-------------------------------------------------------------------------------
+7. FLUXO AGÊNTICO (GRAFO DE AGENTES)
+-------------------------------------------------------------------------------
+
+  [início]
+     |
+     v
+  (1) carregar_contexto      -> perfil e catálogo da empresa + contratação escolhida
+     |
+     v
+  (2) coletar_documentos     -> lista e baixa os anexos do PNCP (cache)
+     |
+     v
+  (3) extrair_itens          -> LLM (Haiku) extrai itens e requisitos -> Pydantic
+     |
+     v
+  (4) filtrar_relevantes     -> descarta itens fora das categorias do catálogo
+     |
+     v
+  (5) casar_com_catalogo     -> candidatos (keyword/semântica) + MOTOR DE REGRAS
+     |
+     +--> existe requisito obrigatório INDETERMINADO?
+     |        |
+     |       sim --> (6) AGENTE INVESTIGADOR (loop com ferramentas, máx. N passos)
+     |        |           busca nos outros documentos -> novos requisitos/evidências
+     |        |           -> volta para (5) só para os itens afetados
+     |       não
+     v
+  (7) AGENTE VERIFICADOR     -> confere citações, conflitos e confiança
+     |
+     +--> confiança baixa? -> marca "REVISÃO HUMANA" (não bloqueia o fluxo)
+     v
+  (8) qualificar             -> tipo da oportunidade, comprador provável, prioridade
+     |
+     v
+  (9) AGENTE PLANEJADOR      -> próximos passos + texto do dossiê
+     |
+     v
+  (10) gerar_dossie          -> salva o dossiê e as evidências
+     |
+  [fim]
+
+Estado compartilhado do grafo (AnaliseState):
+  empresa_id, contratacao_id, documentos[], itens[], requisitos[],
+  correspondencias[], evidencias[], pendencias[], passos_investigacao,
+  custo_tokens, log_eventos[], dossie
+
+Ferramentas expostas ao Agente Investigador:
+  - listar_documentos(contratacao_id)
+  - buscar_trechos(consulta, contratacao_id, top_k)
+  - ler_pagina(documento_id, pagina)
+  - consultar_itens_pncp(contratacao_id)
+  - registrar_requisito(item_id, atributo, valor, unidade, evidencia)
+  - concluir_investigacao(resumo)
+
+Guardrails dos agentes:
+  - Conteúdo dos documentos vai sempre delimitado como DADO
+    (<documento>...</documento>), nunca como instrução.
+  - O agente não tem ferramenta de ação externa (não envia e-mail, não
+    participa de licitação).
+  - Limite de passos, de tokens e de tempo por análise.
+  - Toda saída do LLM passa por validação de esquema; se falhar, tenta de novo
+    no máximo 2 vezes e depois marca como erro.
+
+
+-------------------------------------------------------------------------------
+8. MODELO DE DADOS (RESUMO)
+-------------------------------------------------------------------------------
+  Empresa(id, nome, cnpj?, ufs_atendidas[], raio_km, observacoes)
+
+  Produto(id, empresa_id, sku, nome, categoria, subcategoria, descricao,
+          atributos: dict[str, Atributo], normas[], certificacoes[],
+          preco_ref?, prazo_entrega_dias?, estoque?)
+
+  Atributo(nome, valor, unidade, tipo: numero|faixa|texto|booleano|enum)
+    ex.: potencia_w=150, tensao_v=[100,277], ip="IP66", cct_k=5000,
+         fluxo_lm=21000, eficiencia_lm_w=140
+
+  Contratacao(id, fonte="PNCP", numero_controle_pncp, orgao_cnpj, orgao_nome,
+              uf, municipio, modalidade, objeto, valor_estimado,
+              data_publicacao, data_abertura, situacao, link_oficial,
+              tipo_oportunidade: PUBLICADA|PLANEJADA|INDIRETA|INFERIDA)
+
+  Documento(id, contratacao_id, nome, tipo_doc, url_origem, sha256,
+            caminho_local, paginas, extraido_em)
+
+  Trecho(id, documento_id, pagina, ordem, texto, embedding?)
+
+  ItemDemanda(id, contratacao_id, numero_item?, descricao, quantidade,
+              unidade, categoria_inferida, valor_unit_estimado?)
+
+  Requisito(id, item_id, atributo, operador(=,>=,<=,entre,contem,em),
+            valor, unidade, obrigatorio: bool, evidencia_id)
+
+  Correspondencia(id, item_id, produto_id, resultado_item,
+                  detalhes: [ {requisito_id, resultado, justificativa} ],
+                  score, confianca)
+
+  Evidencia(id, documento_id, pagina, trecho_literal, verificada: bool,
+            score_match)
+
+  Analise(id, empresa_id, contratacao_id, status, iniciada_em, finalizada_em,
+          tokens_in, tokens_out, custo_usd, versao_prompts, erro?)
+
+  Dossie(id, analise_id, conteudo_md, prioridade, recomendacao,
+         status_revisao: PENDENTE|APROVADO|REJEITADO, comentario_usuario)
+
+
+-------------------------------------------------------------------------------
+9. FONTES DE DADOS E INTEGRAÇÃO COM O PNCP
+-------------------------------------------------------------------------------
+9.1 API de consulta do PNCP (VALIDAR endpoints e parâmetros na Fase 1)
+  Base consulta : https://pncp.gov.br/api/consulta/v1
+    - /contratacoes/publicacao?dataInicial=AAAAMMDD&dataFinal=AAAAMMDD
+          &codigoModalidadeContratacao=..&uf=GO&pagina=1
+    - /contratacoes/proposta   (contratações com proposta em aberto)
+    - /pca/...                 (planos de contratações anuais)
+  Base PNCP     : https://pncp.gov.br/api/pncp/v1
+    - /orgaos/{cnpj}/compras/{ano}/{sequencial}            (detalhe)
+    - /orgaos/{cnpj}/compras/{ano}/{sequencial}/itens      (itens)
+    - /orgaos/{cnpj}/compras/{ano}/{sequencial}/arquivos   (anexos)
+
+  Boas práticas:
+    - Paginação, limite de requisições, retry com espera crescente (tenacity).
+    - Cache em disco das respostas JSON e dos arquivos (chave = URL + data).
+    - Guardar sempre o link oficial para citar no dossiê.
+
+9.2 Casos-alvo da demonstração
+  Caso A (principal, contratação publicada):
+    SEINFRA-GO — Concorrência nº 02/2026 — Reforma e ampliação da Escola do
+    Futuro Basileu França. Documentos de instalações elétricas e orçamento.
+    Mostra o caso "INDIRETA POTENCIAL": a licitação é da obra inteira, então
+    o comprador do material provavelmente será a construtora vencedora.
+  Caso B (demanda planejada):
+    PCA 2026 do Instituto Federal Goiano — itens de material elétrico e
+    iluminação. Mostra o filtro em volume e a classificação "PLANEJADA".
+  Caso C (contratação direta de material, para mostrar COMPATÍVEL):
+    Buscar no PNCP um pregão em GO de aquisição de luminárias/refletores LED
+    com termo de referência detalhado. (A SELECIONAR até 23/10)
+
+  Para cada caso, montar um "pacote congelado" em data/casos/<caso>/ com:
+    contratacao.json, itens.json, arquivos/*.pdf, gabarito.json (referência
+    manual para a avaliação).
+
+9.3 Catálogo demonstrativo
+  - Fornecedor fictício "Distribuidora Demo Elétrica Ltda." (nunca usar o nome
+    de uma empresa real).
+  - 40 a 80 produtos baseados em fichas técnicas públicas típicas do mercado,
+    com atributos completos.
+  - De propósito: incluir produtos que ATENDEM, que NÃO ATENDEM (ex.: IP65
+    quando pedem IP66, 4000K quando pedem 5000K) e itens sem ficha completa
+    (para gerar INDETERMINADO).
+
+
+-------------------------------------------------------------------------------
+10. MOTOR DE REGRAS DE COMPATIBILIDADE TÉCNICA
+-------------------------------------------------------------------------------
+Implementação em Python puro (sem LLM), testada com pytest.
+
+  Etapas:
+    1. Normalização: unidades (kW->W, mm->m), sinônimos ("bivolt" -> faixa
+       127-220V; "IP-66" -> IP66), números em formato brasileiro ("1.500,00").
+    2. Comparação por tipo:
+         numero  : =, >=, <=, com tolerância configurável (ex.: potência ±10%)
+         faixa   : a faixa do produto precisa cobrir o valor/faixa pedida
+         enum    : IP/IK com ordem (IP66 >= IP65), classe de isolamento
+         texto   : norma/certificação exigida contida na lista do produto
+         booleano: ex.: "possui dimerização"
+    3. Resultado por requisito: ATENDE | NAO_ATENDE | INDETERMINADO
+       (INDETERMINADO quando falta o atributo no produto OU no requisito)
+    4. Agregação por item:
+         qualquer obrigatório NAO_ATENDE        -> INCOMPATIVEL
+         todos obrigatórios ATENDE              -> COMPATIVEL
+         só desejáveis com NAO_ATENDE           -> PARCIAL
+         algum obrigatório INDETERMINADO        -> INDETERMINADO (vai para o
+                                                   Investigador)
+    5. Score (para ordenar candidatos): proporção ponderada de ATENDE.
+
+  Atributos do segmento de iluminação (primeira versão):
+    potencia_w, tensao_v, fluxo_lm, eficiencia_lm_w, cct_k, irc, ip, ik,
+    fator_potencia, vida_util_h, garantia_anos, tipo_instalacao,
+    certificacao_inmetro, normas, dimensoes_mm, temperatura_operacao
+
+
+-------------------------------------------------------------------------------
+11. DOSSIÊ COMERCIAL (FORMATO DE SAÍDA)
+-------------------------------------------------------------------------------
+  1. Cabeçalho: órgão, número de controle PNCP, objeto, modalidade, UF/município,
+     valor estimado, datas, link oficial.
+  2. Classificação: PUBLICADA / PLANEJADA / INDIRETA POTENCIAL / INFERIDA +
+     comprador provável e por quê.
+  3. Resumo executivo (até 5 linhas): vale a pena? por quê?
+  4. Itens relevantes: tabela item x produto sugerido x resultado.
+  5. Requisitos atendidos e não atendidos (com evidência: doc, pág., trecho).
+  6. Lacunas e incertezas (o que não foi encontrado e onde se procurou).
+  7. Conflitos entre documentos.
+  8. Riscos (prazo, habilitação, logística, valor).
+  9. Prioridade (nota + justificativa).
+ 10. Próximos passos recomendados (com datas, quando houver).
+ 11. Rodapé: versão do sistema, modelo usado, data da análise, custo e aviso
+     de que a decisão final é humana.
+
+
+-------------------------------------------------------------------------------
+12. ESTRUTURA DO REPOSITÓRIO
+-------------------------------------------------------------------------------
+  obranexo/
+  ├── README.md
+  ├── ROADMAP_MVP.txt
+  ├── pyproject.toml
+  ├── .env.example                 (ANTHROPIC_API_KEY=, DATABASE_URL=, ...)
+  ├── .gitignore                   (.venv, .env, data/cache, *.db)
+  ├── docker-compose.yml           [P1]
+  ├── docs/
+  │   ├── arquitetura.md
+  │   ├── fluxo_agentes.md         (entregável do hackathon)
+  │   ├── bmc.md                   (Business Model Canvas)
+  │   └── avaliacao.md
+  ├── data/
+  │   ├── catalogo_demo/produtos.json
+  │   ├── casos/<caso>/...         (pacotes congelados + gabarito)
+  │   └── cache/                   (ignorado no git)
+  ├── src/obranexo/
+  │   ├── config.py
+  │   ├── models/                  (Pydantic/SQLModel)
+  │   ├── connectors/pncp.py
+  │   ├── documents/               (extract.py, chunk.py, tables.py)
+  │   ├── catalog/                 (loader.py, normalize.py)
+  │   ├── rules/                   (units.py, compare.py, aggregate.py)
+  │   ├── agents/
+  │   │   ├── graph.py             (LangGraph)
+  │   │   ├── state.py
+  │   │   ├── tools.py
+  │   │   ├── investigador.py
+  │   │   ├── analista.py
+  │   │   ├── verificador.py
+  │   │   ├── planejador.py
+  │   │   └── prompts/             (versionados, .md)
+  │   ├── llm/client.py            (interface + adapter Claude/Bedrock)
+  │   ├── evidence/verify.py
+  │   ├── dossier/render.py
+  │   ├── storage/db.py
+  │   ├── api/main.py              (FastAPI)
+  │   └── observability/logging.py
+  ├── app/streamlit_app.py
+  ├── eval/
+  │   ├── run_benchmark.py
+  │   └── metrics.py
+  └── tests/
+      ├── test_rules.py
+      ├── test_units.py
+      ├── test_pncp_connector.py   (com respostas gravadas)
+      └── test_evidence.py
+
+
+-------------------------------------------------------------------------------
+13. AVALIAÇÃO, BENCHMARK E MÉTRICAS
+-------------------------------------------------------------------------------
+13.1 Benchmark (conjunto de referência)
+  - v0.1 (hackathon): 3 casos, cerca de 30 itens rotulados manualmente.
+  - v0.2 (nacional) : 10 a 15 contratações, 150 a 300 pares item x produto
+    rotulados por duas pessoas da equipe (resolver as divergências).
+  - Gabarito por par: COMPATIVEL / INCOMPATIVEL / INDETERMINADO + requisito
+    determinante.
+
+13.2 Métricas técnicas (com metas iniciais, revisar após a Fase 2)
+  - Precisão de COMPATÍVEL ..................... >= 85%
+  - Cobertura (recall) de itens relevantes ...... >= 80%
+  - Detecção de incompatibilidade obrigatória .. >= 90%
+  - Rastreabilidade (citação verificada) ....... >= 95%
+  - Consistência (3 execuções iguais) .......... >= 90% de concordância
+  - Tempo por contratação ...................... <= 3 min
+  - Custo por contratação ...................... medir e reportar
+
+13.3 Métricas de produto/comerciais (etapa nacional)
+  - Tempo de análise manual x assistida (cronometrar 2 a 3 analistas).
+  - % de dossiês considerados úteis por fornecedores entrevistados.
+  - Motivos de rejeição.
+  - Disposição para pagar (faixa de preço) e para fazer um piloto.
+  - Meta: pelo menos 5 entrevistas com fornecedores e 1 a 2 pilotos
+    supervisionados até 28/11.
+
+13.4 Comparação de base (baseline)
+  - Busca por palavra-chave pura x ObraNexo, no mesmo conjunto.
+  - Mostrar na banca: "o filtro traz X itens, o ObraNexo qualifica Y, dos quais
+    Z são realmente compatíveis".
+
+
+-------------------------------------------------------------------------------
+14. SEGURANÇA, ÉTICA E LGPD
+-------------------------------------------------------------------------------
+  - Só dados públicos e dados que a empresa fornece voluntariamente.
+  - Minimização: não armazenar dados pessoais desnecessários (CPF, contatos de
+    servidores); mascarar quando aparecerem nos documentos.
+  - Proteção contra prompt injection: documentos tratados como dados; o agente
+    não tem ferramentas de ação externa; validação de esquema em toda saída.
+  - Segredos: .env fora do git; .env.example sem valores; checagem de segredos
+    no pre-commit (P1: detect-secrets ou gitleaks).
+  - Isolamento por empresa: catálogo de um cliente nunca vai para o contexto de
+    outro.
+  - Registro (log) de todas as ações dos agentes.
+  - Aviso claro no dossiê: apoio à decisão, não garantia de venda ou contrato.
+  - Respeitar os termos de uso e os limites de requisição das fontes públicas.
+
+
+-------------------------------------------------------------------------------
+15. OBSERVABILIDADE E CUSTOS
+-------------------------------------------------------------------------------
+  - Log JSON por evento: analise_id, nó do grafo, ferramenta, duração,
+    tokens_in/out, modelo, custo estimado, erro.
+  - Painel na UI: custo e tempo por análise, chamadas por agente.
+  - Tracing de LLM: Langfuse (self-hosted) ou LangSmith [P1].
+  - Controle de custo:
+      - Haiku para extração em volume; Sonnet só para raciocínio.
+      - Prompt caching do catálogo e das instruções.
+      - Pré-filtro determinístico antes de qualquer LLM.
+      - Cache das respostas por (prompt_version, hash da entrada).
+      - Orçamento máximo por análise; se estourar, encerra com resultado parcial.
+
+
+-------------------------------------------------------------------------------
+16. CRONOGRAMA DETALHADO
+-------------------------------------------------------------------------------
+
+=== SPRINT 0 — Quarta, 22/10 (hoje) — Fundação ===============================
+  [ ] Criar o esqueleto do repositório (seção 12), pyproject, ruff, .gitignore,
+      .env.example.
+  [ ] Definir os responsáveis por frente (seção 17).
+  [ ] Validar a API do PNCP: rodar as consultas reais e salvar exemplos de JSON.
+  [ ] Selecionar o Caso C (pregão de luminárias em GO) e baixar os documentos
+      dos casos A, B e C.
+  [ ] Esquemas Pydantic (Produto, Requisito, Item, Evidencia).
+  [ ] Primeira versão do catálogo demonstrativo (30 ou mais produtos).
+  [ ] Chave de API do LLM funcionando e testada.
+
+=== SPRINT 1 — Quinta, 23/10 — Fluxo de ponta a ponta =========================
+  Manhã
+  [ ] Extração de PDF com página + chunks (MVP-03.1/03.2).
+  [ ] Extração de itens/requisitos com LLM + validação (MVP-03.3).
+  [ ] Motor de regras + testes (MVP-04.1 a 04.3).
+  Tarde
+  [ ] Grafo LangGraph: nós 1 a 5, 7, 8 e 10 funcionando com o Caso C.
+  [ ] Agente Investigador com 3 ferramentas (MVP-05.1 a 05.3).
+  [ ] Verificação de citações com rapidfuzz (MVP-06.2).
+  Noite
+  [ ] Streamlit: catálogo, demandas, análise ao vivo e dossiê.
+  [ ] Pacotes congelados + modo offline (MVP-02.4).
+  [ ] Rodar o benchmark mínimo (3 casos) e anotar os números para o pitch.
+  [ ] docs/fluxo_agentes.md + Business Model Canvas + roteiro do pitch.
+  [ ] Gravar um vídeo de backup da demo.
+
+=== HACKATHON — Sexta, 24/10 — Entrega v0.1 ===================================
+  [ ] Ensaio geral da demo (no máximo 2 vezes antes de apresentar).
+  [ ] Congelar o código (tag v0.1-regional) e enviar ao GitHub conforme o edital.
+  [ ] Pitch + demo + perguntas.
+  [ ] Anotar todo o feedback da banca e das mentorias.
+
+=== SEMANA 1 — 25/10 a 31/10 — Retrospectiva e robustez ======================
+  [ ] Retrospectiva e repriorização com base no feedback.
+  [ ] Migrar para PostgreSQL + Alembic; docker-compose.
+  [ ] API FastAPI completa; a UI passa a consumir a API.
+  [ ] Extração de tabelas e planilhas (MVP-03.4).
+  [ ] Classificação do tipo de documento (MVP-03.5).
+  [ ] CI no GitHub Actions (ruff + pytest).
+  [ ] Negócio: lista de 15 a 20 fornecedores de GO para entrevistar; roteiro
+      de entrevista.
+
+=== SEMANA 2 — 01/11 a 07/11 — Escala e semântica ============================
+  [ ] pgvector + embeddings; pré-filtro semântico (MVP-02.6, 04.4).
+  [ ] Conector do PCA (MVP-02.5).
+  [ ] Upload de catálogo CSV/XLSX + normalização (MVP-01.3, 01.4).
+  [ ] Expandir o benchmark para 10 ou mais contratações (rotulagem dupla).
+  [ ] Negócio: primeiras 3 entrevistas.
+
+=== SEMANA 3 — 08/11 a 14/11 — Qualidade e confiança =========================
+  [ ] Nota de confiança + fila de revisão humana (MVP-06.4, 06.5).
+  [ ] Nota de prioridade + próximos passos (MVP-07.4, 07.6).
+  [ ] Exportar o dossiê em PDF (MVP-07.5).
+  [ ] Feedback de aprovar/rejeitar na UI (MVP-08.5).
+  [ ] Tracing (Langfuse/LangSmith) + painel de custos (MVP-08.6).
+  [ ] Rodar o benchmark completo e otimizar prompts e regras.
+  [ ] Negócio: mais entrevistas; convidar 1 a 2 fornecedores para piloto.
+
+=== SEMANA 4 — 15/11 a 21/11 — Piloto supervisionado =========================
+  [ ] Deploy na AWS (ECS/EC2 + RDS + S3) ou outra hospedagem definida.
+  [ ] Rodar o piloto com o catálogo real de 1 a 2 fornecedores (com
+      autorização formal).
+  [ ] Coleta incremental agendada (MVP-02.7).
+  [ ] Medir o tempo manual x assistido.
+  [ ] Atualizar o BMC com os dados reais; hipótese de preço.
+
+=== SEMANA 5 — 22/11 a 28/11 — Preparação da final ===========================
+  [ ] Congelar funcionalidades em 24/11; daí em diante, só correções.
+  [ ] Relatório de avaliação técnica (docs/avaliacao.md).
+  [ ] Pitch voltado a mercado e investimento + demo + vídeo de backup.
+  [ ] Tag v0.2-nacional.
+  [ ] 28/11: etapa nacional.
+
+
+-------------------------------------------------------------------------------
+17. DIVISÃO POR FRENTES (preencher os nomes)
+-------------------------------------------------------------------------------
+  Frente 1 — Agentes e arquitetura ........ responsável: __________
+    LangGraph, ferramentas, prompts, LLMClient, verificador, integração.
+  Frente 2 — Dados e processamento ........ responsável: __________
+    Conector PNCP/PCA, cache, extração de PDF/tabelas, banco, evidências.
+  Frente 3 — Produto e experiência ........ responsável: __________
+    Streamlit/React, dossiê, exportação, roteiro e ensaio da demo.
+  Frente 4 — Negócio e validação .......... responsável: __________
+    Catálogo demo, gabarito do benchmark, entrevistas, BMC, pitch, métricas.
+
+  Ritual: check-in de 15 min por dia; integração na main pelo menos 2 vezes
+  por dia; PRs pequenos.
+
+
+-------------------------------------------------------------------------------
+18. ROTEIRO DA DEMONSTRAÇÃO (aprox. 4 min)
+-------------------------------------------------------------------------------
+  0:00  O problema: "milhares de itens no PCA do IF Goiano; quem lê tudo?"
+  0:30  Catálogo da Distribuidora Demo (tela do catálogo).
+  0:50  Busca no PNCP: as demandas aparecem, cada uma com sua classificação.
+  1:20  Escolher o Caso C: a análise roda ao vivo, com os agentes visíveis.
+  2:00  Resultado COMPATÍVEL: clicar na evidência e abrir o PDF na página.
+  2:30  Resultado INCOMPATÍVEL: "pedem IP66, seu produto é IP65".
+  2:50  INDETERMINADO -> o Investigador encontrou o requisito no memorial.
+  3:10  Caso A: "obra inteira -> comprador provável é a construtora".
+  3:30  Dossiê final com próximos passos + custo e tempo da análise.
+  3:50  Métricas do benchmark e modelo de negócio.
+
+
+-------------------------------------------------------------------------------
+19. RISCOS E PLANOS DE CONTINGÊNCIA
+-------------------------------------------------------------------------------
+  Risco                               Contingência
+  ----------------------------------  -----------------------------------------
+  API do PNCP fora do ar na demo      Pacote congelado + modo offline
+  PDF sem texto (digitalizado)        Escolher casos com PDF de texto; OCR = P2
+  LLM lento ou sem cota               Cache das respostas + vídeo de backup
+  Extração errada de requisitos       Validação Pydantic + verificador + gabarito
+  LangGraph atrasando o time          Plano B: loop simples de tool use
+  Escopo crescendo                    Respeitar P0/P1/P2; congelar funcionalidades
+  Custo por análise alto              Haiku + cache + pré-filtro + orçamento
+  Ninguém para entrevistar            Frente 4 começa na semana 1; usar a rede
+                                      do AKCIT e associações do setor
+  Catálogo real com dados sensíveis   Termo de autorização; dados isolados
+
+
+-------------------------------------------------------------------------------
+20. DEFINIÇÃO DE PRONTO (DoD)
+-------------------------------------------------------------------------------
+Uma funcionalidade está pronta quando:
+  - Tem teste automatizado (regras, conectores e evidência) ou um roteiro de
+    teste manual documentado (UI).
+  - Passa no ruff e no pytest.
+  - Não quebra o fluxo de ponta a ponta do Caso C.
+  - Registra logs estruturados.
+  - Está documentada no README ou em docs/ quando muda o uso.
+
+O MVP v0.1 está pronto quando os 7 critérios da seção 1 rodam em sequência,
+offline, sem intervenção manual no código.
+
+O MVP v0.2 está pronto quando:
+  - Roda na nuvem com PostgreSQL.
+  - Tem o benchmark de 10 ou mais contratações com as métricas reportadas.
+  - Foi usado em pelo menos 1 piloto supervisionado com fornecedor real.
+
+
+-------------------------------------------------------------------------------
+21. BACKLOG PÓS-MVP (v0.3 -> v1.0)
+-------------------------------------------------------------------------------
+  - Monitoramento contínuo com alertas (e-mail/WhatsApp) de novas oportunidades.
+  - Conector Obrasgov + portais estaduais (GO, DF, MT, MS).
+  - Oportunidades indiretas: rastrear a construtora vencedora no contrato
+    e sugerir contato.
+  - Grafo de conhecimento comercial (órgão-objeto-item-fornecedor).
+  - Histórico de preços praticados (contratos e atas) para apoiar a proposta.
+  - Novos segmentos: hidráulica, climatização, incêndio, segurança eletrônica.
+  - Multi-tenant, login, planos e cobrança (Stripe/Pagar.me/Asaas).
+  - Integração com CRM (RD Station, HubSpot, Pipedrive).
+  - Pipeline Kanban de oportunidades.
+  - Aprendizado com o feedback (ajustar pesos e regras pelas aprovações e
+    rejeições).
+
+
+-------------------------------------------------------------------------------
+22. DECISÕES PENDENTES (com prazo sugerido)
+-------------------------------------------------------------------------------
+  Decisão                                   Prazo     Proposta deste roadmap
+  ----------------------------------------  --------  ---------------------------
+  Responsáveis por frente                   22/10     Definir hoje
+  Caso C (pregão de luminárias GO)          22/10     Buscar no PNCP
+  Provedor de LLM / créditos                22/10     Claude (API) -> Bedrock
+  Framework de agentes                      22/10     LangGraph (plano B: loop)
+  Interface da final                        31/10     Decidir após o feedback
+  Hospedagem                                07/11     AWS, se houver créditos
+  Modelo de embeddings                      07/11     Testar 2 opções no benchmark
+  Limiares de aceitação das métricas        07/11     Após o benchmark v0.2
+  Precificação                              21/11     Após as entrevistas
+  Licença do código                         21/11     Conforme o edital do programa
+  Nome / identidade visual definitivos      pós-final Manter "ObraNexo"
+
+===============================================================================
+ Princípio que guia todas as decisões:
+ "A visão é ampla. A execução começa pequena, verificável e orientada por
+  resultados."
+===============================================================================

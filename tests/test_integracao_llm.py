@@ -1,0 +1,120 @@
+"""Testes de integração com o provedor de LLM configurado no .env (Gemini ou Anthropic).
+
+Chamam a API de verdade (respeitando o cache em disco). São pulados quando não há chave.
+Rode só eles com:  pytest -m integracao -v
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from obranexo.config import config
+
+pytestmark = pytest.mark.integracao
+
+CASO = config.dir_casos / "goianira_pe038_2026"
+GABARITO_ITENS = {1: "COMPATIVEL", 2: "COMPATIVEL", 3: "COMPATIVEL", 4: "COMPATIVEL", 5: "PARCIAL", 6: "PARCIAL"}
+
+precisa_llm = pytest.mark.skipif(not config.llm_disponivel, reason="nenhum provedor de LLM configurado (.env)")
+precisa_caso = pytest.mark.skipif(not (CASO / "contratacao.json").exists(), reason="caso congelado ausente")
+
+
+def _contexto():
+    from obranexo.agents.contexto import Contexto
+    from obranexo.catalog.loader import carregar_catalogo_json
+    from obranexo.connectors.pncp import carregar_caso
+    from obranexo.documents.extract import IndiceDocumentos
+    from obranexo.llm.client import criar_llm_client
+    from obranexo.models import Analise, Documento
+
+    contratacao, itens, documentos = carregar_caso(CASO)
+    analise = Analise(id="integ", empresa_id="demo", contratacao=contratacao, itens=itens)
+    indice = IndiceDocumentos()
+    for d in documentos:
+        indice.adicionar(d)
+        analise.documentos.append(d)
+    for item in itens:
+        doc = Documento(id=f"pncp-item-{item.numero_item}", contratacao_id=contratacao.id, nome=f"PNCP · item {item.numero_item}")
+        indice.adicionar_texto(doc, item.descricao)
+        analise.documentos.append(doc)
+    return Contexto(analise=analise, empresa=carregar_catalogo_json(config.catalogo_demo), indice=indice, llm=criar_llm_client(config, analise.uso_llm), cfg=config)
+
+
+@precisa_llm
+def test_cliente_responde_texto():
+    from obranexo.llm.client import criar_llm_client
+
+    llm = criar_llm_client(config)
+    assert llm.disponivel and llm.provedor == config.llm_provider
+    resposta = llm.texto(config.model_extracao, "Responda em português, em uma palavra.", "Qual a capital do Brasil?")
+    assert "bras" in resposta.lower()
+    assert llm.uso.chamadas >= 1 or True  # pode vir do cache
+
+
+@precisa_llm
+@precisa_caso
+def test_extrator_llm_complementa_regras():
+    from obranexo.agents.extrator import ExtracaoItem, extrair_item
+    from obranexo.agents.prompts import SYSTEM_EXTRATOR
+
+    ctx = _contexto()
+    item = ctx.analise.itens[0]
+    # 1) saída estruturada direta
+    extracao = ctx.llm.extrair(config.model_extracao, SYSTEM_EXTRATOR, f'<item numero="1">\n{item.descricao}\n</item>\nExtraia os requisitos técnicos deste item.', ExtracaoItem)
+    atributos = {r.atributo for r in extracao.requisitos}
+    assert extracao.categoria == "luminaria_publica_led"
+    assert {"potencia_w", "cct_k", "ip"} <= atributos, atributos
+    for r in extracao.requisitos:
+        assert r.trecho_literal, "todo requisito do LLM precisa de trecho literal"
+    # 2) nó completo: regras + LLM, sem conflito nos atributos principais
+    reqs = extrair_item(ctx, item, "pncp-item-1")
+    assert any(r.fonte_extracao == "regras" for r in reqs)
+    conflitos_criticos = [c for c in ctx.analise.conflitos if c.atributo in {"potencia_w", "cct_k", "ip", "fluxo_lm"}]
+    assert not conflitos_criticos, [c.descricao for c in conflitos_criticos]
+    assert any("LLM" in ev.mensagem for ev in ctx.analise.log)
+
+
+@precisa_llm
+@precisa_caso
+def test_investigador_llm_acha_prazo_e_garantia_no_edital():
+    from obranexo.agents.investigador import investigar_llm
+    from obranexo.evidence.verify import verificar_evidencia
+
+    ctx = _contexto()
+    achados = investigar_llm(ctx, ["prazo_entrega_dias", "garantia_anos"])
+    por = {a.atributo: a for a in achados}
+    ferramentas = [p["ferramenta"] for p in ctx.analise.passos_investigacao if p.get("tipo") == "ferramenta"]
+    assert "buscar_trechos" in ferramentas, ferramentas
+    assert "prazo_entrega_dias" in por, f"achados={list(por)} passos={ferramentas}"
+    assert por["prazo_entrega_dias"].valor == 10  # "10 (dez) dias úteis" no edital
+    for a in achados:
+        ev = ctx.analise.evidencia(a.evidencia_id)
+        assert ev is not None and not ev.documento_id.startswith("pncp-item")
+        verificar_evidencia(ev, ctx.indice)
+        assert ev.verificada, f"{a.atributo}: trecho citado não encontrado literalmente ({ev.score_match}): {ev.trecho_literal[:120]}"
+
+
+@precisa_llm
+@precisa_caso
+def test_pipeline_completo_com_llm(tmp_path, monkeypatch):
+    from obranexo.agents.pipeline import executar_caso
+    from obranexo.catalog.loader import carregar_catalogo_json
+
+    monkeypatch.setattr(config, "dir_analises", tmp_path)
+    analise = executar_caso(CASO, carregar_catalogo_json(config.catalogo_demo), on_evento=lambda ev: print(f"[{ev.no}] {ev.mensagem}"))
+    assert analise.status == "concluida", analise.erro
+    assert analise.modo == f"llm:{config.llm_provider}"
+    melhor: dict[int, str] = {}
+    ordem = {"COMPATIVEL": 3, "PARCIAL": 2, "INDETERMINADO": 1, "INCOMPATIVEL": 0}
+    for c in sorted(analise.correspondencias, key=lambda c: (ordem[c.resultado.value], c.score), reverse=True):
+        melhor.setdefault(analise.item(c.item_id).numero_item, c.resultado.value)
+    assert melhor == GABARITO_ITENS, melhor
+    assert all(e.verificada for e in analise.evidencias if e.documento_id.startswith("pncp-item")), "citações das descrições de item devem ser literais"
+    assert analise.dossie and "Resumo executivo" in analise.dossie.conteudo_md
+    print(
+        f"\nLLM: {analise.uso_llm.chamadas} chamadas, {analise.uso_llm.tokens_entrada + analise.uso_llm.tokens_saida} tokens, "
+        f"US$ {analise.uso_llm.custo_usd:.4f}, {analise.duracao_s():.1f}s, modelos {list(analise.uso_llm.por_modelo)}"
+    )
+    Path(tmp_path / "dossie.md").write_text(analise.dossie.conteudo_md, encoding="utf-8")

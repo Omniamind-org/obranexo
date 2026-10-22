@@ -1,0 +1,19 @@
+# Ambiente
+.venv/
+.env
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+
+# Dados gerados em execução (os pacotes congelados em data/casos SÃO versionados)
+data/cache/
+data/analises/
+data/llm_cache/
+*.db
+
+# Ferramentas
+.pytest_cache/
+.ruff_cache/
+.streamlit/secrets.toml

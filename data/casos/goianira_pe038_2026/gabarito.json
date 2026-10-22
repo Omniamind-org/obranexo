@@ -1,0 +1,18 @@
+{
+  "revisado_por": "equipe ObraNexo (revisão manual das descrições dos itens e do edital PE 038/2026, 22/10/2026)",
+  "itens": {
+    "1": {"esperado": "COMPATIVEL", "produto": "LPL-100-50K", "motivo": "100 W, 5000 K, 100-277 V, >=14000 lm, >=140 lm/W, IP66, IK08, 50.000 h, 5 anos, INMETRO, dimerizável, tomada relé: tudo atendido"},
+    "2": {"esperado": "COMPATIVEL", "produto": "LPL-100-50K", "motivo": "idêntico ao item 1"},
+    "3": {"esperado": "COMPATIVEL", "produto": "LPL-50-60K", "motivo": "50 W, 6000 K, 7000 lm, IP66, IK08, 5 anos"},
+    "4": {"esperado": "COMPATIVEL", "produto": "LPL-50-60K", "motivo": "idêntico ao item 3"},
+    "5": {"esperado": "PARCIAL", "produto": "RF-MULTI", "motivo": "220 V dentro de 105-305 V; exigências documentais gerais do edital (ensaios/amostra) não declaradas para o relé"},
+    "6": {"esperado": "PARCIAL", "produto": "RF-MULTI", "motivo": "idêntico ao item 5"}
+  },
+  "pares": [
+    {"item": 1, "produto": "LPL-50-50K-ECO", "esperado": "INCOMPATIVEL", "motivo": "potência 50 W ≠ 100 W; IP65 < IP66; 3 anos < 5; não dimerizável"},
+    {"item": 3, "produto": "LPL-50-50K-ECO", "esperado": "INCOMPATIVEL", "motivo": "5000 K ≠ 6000 K; IP65 < IP66; 6500 lm < 7000; 3 anos < 5; não dimerizável"},
+    {"item": 1, "produto": "LPL-100-50K-PRO", "esperado": "INDETERMINADO", "motivo": "catálogo não informa a garantia (exigidos 5 anos)"},
+    {"item": 1, "produto": "LPL-200-40K", "esperado": "INCOMPATIVEL", "motivo": "200 W e 4000 K"},
+    {"item": 5, "produto": "RF-127", "esperado": "INCOMPATIVEL", "motivo": "127 V não atende 220 V"}
+  ]
+}

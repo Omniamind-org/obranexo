@@ -1,0 +1,219 @@
+{
+ "resumo": {
+  "acuracia_itens": "100%",
+  "precisao_compativel": "100%",
+  "deteccao_incompatibilidade": "100%",
+  "acuracia_pares": "100%",
+  "rastreabilidade": "100%",
+  "tempo_total_s": 55.4,
+  "custo_total_usd": 0.0,
+  "chamadas_llm": 2,
+  "modo": "llm"
+ },
+ "casos": [
+  {
+   "caso": "aruana_pp005_2026",
+   "contratacao": "01067081000100-1-000091/2026",
+   "modo": "llm:gemini",
+   "tempo_s": 54.9,
+   "custo_usd": 0.0,
+   "evidencias": "62/62",
+   "itens": [
+    {
+     "item": 1,
+     "esperado": {
+      "esperado": "INCOMPATIVEL",
+      "motivo": "50 W com >=170 lm/W, >=8.500 lm e >=102.000 h: nenhum produto de 50 W do catálogo atende (130-144 lm/W)"
+     },
+     "obtido": {
+      "resultado": "INCOMPATIVEL",
+      "produto": "LPL-150-50K-PRO"
+     },
+     "ok": true
+    },
+    {
+     "item": 2,
+     "esperado": {
+      "esperado": "PARCIAL",
+      "produto": "LPL-100-50K-PRO",
+      "motivo": "175 lm/W, 17.500 lm, 120.000 h, IP66, IK10, DPS 10 kA, dimerizável, INMETRO; só o prazo de entrega (desejável) de 30 dias excede os 15 do edital"
+     },
+     "obtido": {
+      "resultado": "PARCIAL",
+      "produto": "LPL-100-50K-PRO"
+     },
+     "ok": true
+    },
+    {
+     "item": 3,
+     "esperado": {
+      "esperado": "COMPATIVEL",
+      "produto": "LPL-150-50K-PRO",
+      "motivo": "173 lm/W, 26.000 lm, 120.000 h, IP66, IK10, DPS 10 kA, lente policarbonato/vidro plano, prazo 15 dias"
+     },
+     "obtido": {
+      "resultado": "COMPATIVEL",
+      "produto": "LPL-150-50K-PRO"
+     },
+     "ok": true
+    }
+   ],
+   "pares": [
+    {
+     "item": 2,
+     "produto": "LPL-100-50K",
+     "esperado": "INCOMPATIVEL",
+     "motivo": "145 lm/W < 170; 14.500 lm < 17.000; 60.000 h < 102.000",
+     "obtido": "INCOMPATIVEL",
+     "ok": true
+    },
+    {
+     "item": 3,
+     "produto": "LPL-100-50K-PRO",
+     "esperado": "INCOMPATIVEL",
+     "motivo": "17.500 lm < 25.500 (potência 100 W <= 150 W passa, mas o fluxo não)",
+     "obtido": "INCOMPATIVEL",
+     "ok": true
+    },
+    {
+     "item": 1,
+     "produto": "LPL-50-60K",
+     "esperado": "INCOMPATIVEL",
+     "motivo": "6000 K ≠ 5000 K; 144 lm/W < 170; 7.200 lm < 8.500; 50.000 h < 102.000",
+     "obtido": "INCOMPATIVEL",
+     "ok": true
+    }
+   ]
+  },
+  {
+   "caso": "goianira_pe038_2026",
+   "contratacao": "01291707000167-1-000075/2026",
+   "modo": "llm:gemini",
+   "tempo_s": 0.4,
+   "custo_usd": 0.0,
+   "evidencias": "109/109",
+   "itens": [
+    {
+     "item": 1,
+     "esperado": {
+      "esperado": "COMPATIVEL",
+      "produto": "LPL-100-50K",
+      "motivo": "100 W, 5000 K, 100-277 V, >=14000 lm, >=140 lm/W, IP66, IK08, 50.000 h, 5 anos, INMETRO, dimerizável, tomada relé: tudo atendido"
+     },
+     "obtido": {
+      "resultado": "COMPATIVEL",
+      "produto": "LPL-100-50K"
+     },
+     "ok": true
+    },
+    {
+     "item": 2,
+     "esperado": {
+      "esperado": "COMPATIVEL",
+      "produto": "LPL-100-50K",
+      "motivo": "idêntico ao item 1"
+     },
+     "obtido": {
+      "resultado": "COMPATIVEL",
+      "produto": "LPL-100-50K"
+     },
+     "ok": true
+    },
+    {
+     "item": 3,
+     "esperado": {
+      "esperado": "COMPATIVEL",
+      "produto": "LPL-50-60K",
+      "motivo": "50 W, 6000 K, 7000 lm, IP66, IK08, 5 anos"
+     },
+     "obtido": {
+      "resultado": "COMPATIVEL",
+      "produto": "LPL-50-60K"
+     },
+     "ok": true
+    },
+    {
+     "item": 4,
+     "esperado": {
+      "esperado": "COMPATIVEL",
+      "produto": "LPL-50-60K",
+      "motivo": "idêntico ao item 3"
+     },
+     "obtido": {
+      "resultado": "COMPATIVEL",
+      "produto": "LPL-50-60K"
+     },
+     "ok": true
+    },
+    {
+     "item": 5,
+     "esperado": {
+      "esperado": "PARCIAL",
+      "produto": "RF-MULTI",
+      "motivo": "220 V dentro de 105-305 V; exigências documentais gerais do edital (ensaios/amostra) não declaradas para o relé"
+     },
+     "obtido": {
+      "resultado": "PARCIAL",
+      "produto": "RF-MULTI"
+     },
+     "ok": true
+    },
+    {
+     "item": 6,
+     "esperado": {
+      "esperado": "PARCIAL",
+      "produto": "RF-MULTI",
+      "motivo": "idêntico ao item 5"
+     },
+     "obtido": {
+      "resultado": "PARCIAL",
+      "produto": "RF-MULTI"
+     },
+     "ok": true
+    }
+   ],
+   "pares": [
+    {
+     "item": 1,
+     "produto": "LPL-50-50K-ECO",
+     "esperado": "INCOMPATIVEL",
+     "motivo": "potência 50 W ≠ 100 W; IP65 < IP66; 3 anos < 5; não dimerizável",
+     "obtido": "INCOMPATIVEL",
+     "ok": true
+    },
+    {
+     "item": 3,
+     "produto": "LPL-50-50K-ECO",
+     "esperado": "INCOMPATIVEL",
+     "motivo": "5000 K ≠ 6000 K; IP65 < IP66; 6500 lm < 7000; 3 anos < 5; não dimerizável",
+     "obtido": "INCOMPATIVEL",
+     "ok": true
+    },
+    {
+     "item": 1,
+     "produto": "LPL-100-50K-PRO",
+     "esperado": "INDETERMINADO",
+     "motivo": "catálogo não informa a garantia (exigidos 5 anos)",
+     "obtido": "INDETERMINADO",
+     "ok": true
+    },
+    {
+     "item": 1,
+     "produto": "LPL-200-40K",
+     "esperado": "INCOMPATIVEL",
+     "motivo": "200 W e 4000 K",
+     "obtido": "INCOMPATIVEL",
+     "ok": true
+    },
+    {
+     "item": 5,
+     "produto": "RF-127",
+     "esperado": "INCOMPATIVEL",
+     "motivo": "127 V não atende 220 V",
+     "obtido": "INCOMPATIVEL",
+     "ok": true
+    }
+   ]
+  }
+ ]
+}

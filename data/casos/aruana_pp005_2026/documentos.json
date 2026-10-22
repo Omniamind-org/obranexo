@@ -1,0 +1,90 @@
+[
+ {
+  "id": "doc-1",
+  "contratacao_id": "01067081000100-1-000091/2026",
+  "nome": "1_EDITAL_RETIFICADO_Nº_005-2026.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/01067081000100/compras/2026/91/arquivos/1",
+  "sha256": "edd1b70d48faf241218c51bc50462fd8d0246a85b04ed3c9415e589e6b47ac77",
+  "caminho_local": "arquivos\\1_EDITAL_RETIFICADO_Nº_005-2026.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-2",
+  "contratacao_id": "01067081000100-1-000091/2026",
+  "nome": "2_Planilha_de_Credenciamento_28.zip",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/01067081000100/compras/2026/91/arquivos/2",
+  "sha256": "508e42b24ea2b4fa1ae0b767ff8563cc67c98bcd8c93bccd9e904b5e33f1f2ff",
+  "caminho_local": "arquivos\\2_Planilha_de_Credenciamento_28.zip",
+  "paginas": 0,
+  "extraivel": false
+ },
+ {
+  "id": "doc-3",
+  "contratacao_id": "01067081000100-1-000091/2026",
+  "nome": "3_Relatorio_de_proposta_28.zip",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/01067081000100/compras/2026/91/arquivos/3",
+  "sha256": "02ef13a4e7c0f496db311888d3cadbf6238dddee4d1e6ed2f8746171ec371577",
+  "caminho_local": "arquivos\\3_Relatorio_de_proposta_28.zip",
+  "paginas": 0,
+  "extraivel": false
+ },
+ {
+  "id": "doc-4",
+  "contratacao_id": "01067081000100-1-000091/2026",
+  "nome": "4_Aviso_de_Edital_Pregão_Presencial_005-2026.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/01067081000100/compras/2026/91/arquivos/4",
+  "sha256": "4dfacbc7d7e3e55ea8db626b95ba3167efc76c542dd303aec59011d9647adc30",
+  "caminho_local": "arquivos\\4_Aviso_de_Edital_Pregão_Presencial_005-2026.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-5",
+  "contratacao_id": "01067081000100-1-000091/2026",
+  "nome": "5_Certidão_de_Publicação_8491.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/01067081000100/compras/2026/91/arquivos/5",
+  "sha256": "3f267cb08800aeeb424ae8a89f0202cb1c2c84caead756a40e2e5c1db24342d4",
+  "caminho_local": "arquivos\\5_Certidão_de_Publicação_8491.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-6",
+  "contratacao_id": "01067081000100-1-000091/2026",
+  "nome": "6_Despacho.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/01067081000100/compras/2026/91/arquivos/6",
+  "sha256": "0eb35827a5b9b7cf7f513574589356093addc478211ab9a505091fca06047a3b",
+  "caminho_local": "arquivos\\6_Despacho.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-7",
+  "contratacao_id": "01067081000100-1-000091/2026",
+  "nome": "7_Certidão_de_amostra_de_produto.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/01067081000100/compras/2026/91/arquivos/7",
+  "sha256": "481a09a63c91cc62447ae88cb01c4744b8961bb6d7134f3334eeb93fdeca78ec",
+  "caminho_local": "arquivos\\7_Certidão_de_amostra_de_produto.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-8",
+  "contratacao_id": "01067081000100-1-000091/2026",
+  "nome": "8_AtaSessaoFinal_b0220260722154134887.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/01067081000100/compras/2026/91/arquivos/8",
+  "sha256": "be964a00d64ef86c53b05a09665460a1a5c3c28e1dcb2d6de687f6cf9858ef85",
+  "caminho_local": "arquivos\\8_AtaSessaoFinal_b0220260722154134887.pdf",
+  "paginas": 0,
+  "extraivel": true
+ }
+]

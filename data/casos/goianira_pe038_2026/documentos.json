@@ -1,0 +1,35 @@
+[
+ {
+  "id": "doc-1",
+  "contratacao_id": "01291707000167-1-000075/2026",
+  "nome": "1_EDITAL_PE_038-2026_-_RP_LUMINARIAS.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/01291707000167/compras/2026/75/arquivos/1",
+  "sha256": "d9c92ef313eaf68e0011a8373357f0e5f4d355832b90c79be785f9f84d066580",
+  "caminho_local": "arquivos\\1_EDITAL_PE_038-2026_-_RP_LUMINARIAS.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-4",
+  "contratacao_id": "01291707000167-1-000075/2026",
+  "nome": "4_Ata_Final_021517_250926.zip",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/01291707000167/compras/2026/75/arquivos/4",
+  "sha256": "a97b32e829e137870cd840231f2bf1ecd80f3069844cc86ebc0ed83338167d3a",
+  "caminho_local": "arquivos\\4_Ata_Final_021517_250926.zip",
+  "paginas": 0,
+  "extraivel": false
+ },
+ {
+  "id": "doc-5",
+  "contratacao_id": "01291707000167-1-000075/2026",
+  "nome": "5_Ata_Parcial_021941_250926.zip",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/01291707000167/compras/2026/75/arquivos/5",
+  "sha256": "b5c9af913461babf86269ae50cd6debf3442d143b893a4c9006106b4e910a31d",
+  "caminho_local": "arquivos\\5_Ata_Parcial_021941_250926.zip",
+  "paginas": 0,
+  "extraivel": false
+ }
+]
