@@ -11,9 +11,16 @@ dist/
 data/cache/
 data/analises/
 data/llm_cache/
+# Conteúdo extraído de anexos .zip (regenerado a cada análise)
+data/casos/**/*_conteudo/
+# Catálogo ativo e prospecções (estado local do servidor)
+data/catalogo_ativo.json
+data/prospeccoes/
 *.db
 
 # Ferramentas
 .pytest_cache/
 .ruff_cache/
 node_modules/
+# Licitações baixadas pelo Agente de Prospecção (nome = CNPJ_ANO_SEQ); casos de demonstração têm nome legível
+data/casos/[0-9]*_[0-9]*_[0-9]*/

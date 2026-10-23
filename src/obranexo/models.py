@@ -305,3 +305,46 @@ class Analise(BaseModel):
         if not self.finalizada_em:
             return None
         return (self.finalizada_em - self.iniciada_em).total_seconds()
+
+
+# ---------------------------------------------------------------------------
+# Prospecção (agente autônomo que escolhe as oportunidades)
+# ---------------------------------------------------------------------------
+
+
+class CandidatoProspeccao(BaseModel):
+    contratacao: dict[str, Any]
+    itens_vistos: bool = False
+    analise_id: str | None = None
+    resumo_analise: dict[str, Any] | None = None
+
+
+class ItemRanking(BaseModel):
+    contratacao_id: str
+    nota: float
+    justificativa: str
+    analise_id: str | None = None
+    contratacao: dict[str, Any] | None = None
+
+
+class Prospeccao(BaseModel):
+    id: str
+    empresa_id: str
+    empresa_nome: str
+    status: str = "executando"  # executando | concluida | erro
+    erro: str | None = None
+    iniciada_em: datetime = Field(default_factory=datetime.now)
+    finalizada_em: datetime | None = None
+    parametros: dict[str, Any] = Field(default_factory=dict)
+    buscas: list[dict[str, Any]] = Field(default_factory=list)
+    candidatos: dict[str, CandidatoProspeccao] = Field(default_factory=dict)
+    passos: list[dict[str, Any]] = Field(default_factory=list)
+    ranking: list[ItemRanking] = Field(default_factory=list)
+    resumo: str = ""
+    uso_llm: UsoLLM = Field(default_factory=UsoLLM)
+    log: list[EventoLog] = Field(default_factory=list)
+
+    def duracao_s(self) -> float | None:
+        if not self.finalizada_em:
+            return None
+        return (self.finalizada_em - self.iniciada_em).total_seconds()

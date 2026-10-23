@@ -13,8 +13,9 @@ from typing import Any
 
 from obranexo.agents.contexto import Contexto
 from obranexo.agents.prompts import SYSTEM_INVESTIGADOR
-from obranexo.catalog.atributos import ATRIBUTOS, ATRIBUTOS_INVESTIGAVEIS, rotulo
-from obranexo.models import Evidencia, Operador, Requisito
+from obranexo.catalog.atributos import ATRIBUTOS, ATRIBUTOS_INVESTIGAVEIS, natureza, rotulo
+from obranexo.evidence.verify import verificar_evidencia
+from obranexo.models import Evidencia, ItemDemanda, Operador, Requisito
 from obranexo.rules.extrair import extrair_requisitos, numero_br
 from obranexo.rules.validar import normalizar_valor
 
@@ -57,16 +58,17 @@ FERRAMENTAS: list[dict[str, Any]] = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "atributo": {"type": "string", "description": "Chave canônica, ex.: garantia_anos, prazo_entrega_dias, doc_amostra"},
+                "numero_item": {"type": "integer", "description": "Número do item a que o requisito se refere; 0 = exigência geral do edital, vale para todos os itens"},
+                "atributo": {"type": "string", "description": "Chave canônica, ex.: potencia_w, ip, garantia_anos, prazo_entrega_dias, doc_amostra"},
                 "operador": {"type": "string", "enum": ["=", ">=", "<=", "entre", "contem", "verdadeiro"]},
                 "valor_numero": {"type": ["number", "null"]},
                 "valor_texto": {"type": ["string", "null"]},
                 "valor_booleano": {"type": ["boolean", "null"]},
                 "documento_id": {"type": "string"},
                 "pagina": {"type": "integer"},
-                "trecho_literal": {"type": "string", "description": "Cópia exata do trecho do documento"},
+                "trecho_literal": {"type": "string", "description": "Cópia EXATA do trecho do documento (é conferida automaticamente)"},
             },
-            "required": ["atributo", "operador", "valor_numero", "valor_texto", "valor_booleano", "documento_id", "pagina", "trecho_literal"],
+            "required": ["numero_item", "atributo", "operador", "valor_numero", "valor_texto", "valor_booleano", "documento_id", "pagina", "trecho_literal"],
             "additionalProperties": False,
         },
     },
@@ -114,38 +116,70 @@ def _executar_ferramenta(ctx: Contexto, nome: str, entrada: dict[str, Any], acha
         if valor is None:
             # Volta para o agente corrigir (ex.: garantia em anos, prazo em dias), em vez de entrar errado
             return f"ERRO: valor inválido para {atributo} ({motivo}). Registre o valor normalizado na unidade {ATRIBUTOS[atributo].get('unidade') or 'canônica'}."
-        ev = ctx.nova_evidencia(str(entrada.get("documento_id")), int(entrada.get("pagina") or 0) or None, str(entrada.get("trecho_literal", "")))
+        numero_item = int(entrada.get("numero_item") or 0)
+        item = next((i for i in ctx.analise.itens if i.numero_item == numero_item), None) if numero_item else None
+        if numero_item and item is None:
+            return f"ERRO: não existe item {numero_item} nesta contratação. Itens: {', '.join(str(i.numero_item) for i in ctx.analise.itens)}."
+        documento_id = str(entrada.get("documento_id"))
+        if documento_id not in ctx.indice.paginas:
+            return f"ERRO: documento '{documento_id}' não existe ou não tem texto. Use listar_documentos."
+        trecho = str(entrada.get("trecho_literal", "")).strip()
+        ev = ctx.nova_evidencia(documento_id, int(entrada.get("pagina") or 0) or None, trecho)
+        # A citação é conferida NA HORA: o que não estiver literalmente no documento não vira requisito
+        verificar_evidencia(ev, ctx.indice)
+        if not ev.verificada:
+            ctx.analise.evidencias.remove(ev)
+            return (f"ERRO: o trecho_literal não foi encontrado no documento {documento_id} (similaridade {ev.score_match}). "
+                    "Copie o trecho exatamente como aparece em buscar_trechos ou ler_pagina, sem reescrever.")
+        tecnico = natureza(atributo) == "produto" and atributo not in _NAO_BLOQUEANTES and atributo not in ATRIBUTOS_INVESTIGAVEIS
         achados.append(
             Requisito(
                 id=ctx.novo_id("req"),
-                item_id="*",
+                item_id=item.id if item else "*",
                 atributo=atributo,
                 operador=Operador(entrada.get("operador", ATRIBUTOS[atributo]["operador_padrao"])),
                 valor=valor,
                 unidade=ATRIBUTOS[atributo].get("unidade"),
-                obrigatorio=atributo not in _NAO_BLOQUEANTES,
-                texto_origem=str(entrada.get("trecho_literal", "")),
+                # Especificação técnica de um item, com citação conferida no TR, é exigência de verdade
+                obrigatorio=(tecnico and item is not None) or (atributo not in _NAO_BLOQUEANTES and not tecnico),
+                texto_origem=trecho,
                 evidencia_id=ev.id,
                 fonte_extracao="investigador",
             )
         )
-        return f"OK: {atributo} registrado com evidência {ev.id}."
+        alvo = f"item {numero_item}" if item else "todos os itens"
+        return f"OK: {atributo} registrado para {alvo}, evidência {ev.id} conferida (p.{ev.pagina})."
     if nome == "concluir_investigacao":
         return "OK"
     return f"ERRO: ferramenta desconhecida '{nome}'"
 
 
-def investigar_llm(ctx: Contexto, faltantes: list[str]) -> list[Requisito]:
+def _tarefa(ctx: Contexto, faltantes: list[str], itens_sem_spec: list[ItemDemanda]) -> str:
+    partes = [f"Contratação: {ctx.analise.contratacao.id} — objeto: {ctx.analise.contratacao.objeto}"]
+    if itens_sem_spec:
+        linhas = "\n".join(f'- item {i.numero_item} ({i.categoria_inferida}): "{i.descricao[:220]}"' for i in itens_sem_spec)
+        partes.append(
+            "TAREFA 1 — Estes itens têm descrição curta ou sem especificação técnica no PNCP. Encontre no Termo de "
+            "Referência / edital a especificação de cada um (potência, tensão, fluxo, temperatura de cor, IP, seção, "
+            "corrente, etc.) e registre cada atributo com numero_item do item correspondente:\n" + linhas
+        )
+    if faltantes:
+        linhas = "\n".join(f"- {a} ({rotulo(a)}): termos sugeridos: {', '.join(ATRIBUTOS_INVESTIGAVEIS.get(a, [rotulo(a)]))}" for a in faltantes)
+        partes.append("TAREFA 2 — Exigências gerais do edital (registre com numero_item = 0):\n" + linhas)
+    partes.append("Comece listando os documentos. Registre só o que encontrar, com o trecho copiado exatamente.")
+    return "\n\n".join(partes)
+
+
+def investigar_llm(ctx: Contexto, faltantes: list[str], itens_sem_spec: list[ItemDemanda] | None = None) -> list[Requisito]:
     """Loop de uso de ferramentas, independente do provedor (ver llm.client.Conversa)."""
+    itens_sem_spec = itens_sem_spec or []
     achados: list[Requisito] = []
-    alvo = "\n".join(f"- {a} ({rotulo(a)}): termos sugeridos: {', '.join(ATRIBUTOS_INVESTIGAVEIS.get(a, [rotulo(a)]))}" for a in faltantes)
-    objeto = ctx.analise.contratacao.objeto
+    # Cada item a especificar costuma exigir uma busca e um ou dois registros
+    limite = min(ctx.cfg.max_passos_investigador + 2 * len(itens_sem_spec), 24)
+    # Orçamento próprio do Investigador: não disputa com a extração dos itens
+    inicio_tokens = ctx.llm.tokens_usados()
     conversa = ctx.llm.conversa(ctx.cfg.model_agente, SYSTEM_INVESTIGADOR, FERRAMENTAS)
-    resposta = conversa.enviar(
-        f"Contratação: {ctx.analise.contratacao.id} — objeto: {objeto}\n\n"
-        f"Informações a localizar nos documentos:\n{alvo}\n\n"
-        "Comece listando os documentos e buscando cada informação. Registre só o que encontrar com evidência."
-    )
+    resposta = conversa.enviar(_tarefa(ctx, faltantes, itens_sem_spec))
     passos = 1
     while True:
         if resposta.texto:
@@ -167,13 +201,13 @@ def investigar_llm(ctx: Contexto, faltantes: list[str]) -> list[Requisito]:
             concluiu |= chamada.nome == "concluir_investigacao"
         if concluiu:
             break
-        if passos >= ctx.cfg.max_passos_investigador:
-            ctx.evento("investigador", f"Limite de {ctx.cfg.max_passos_investigador} passos atingido; encerrando com o que foi registrado.")
+        if passos >= limite:
+            ctx.evento("investigador", f"Limite de {limite} passos atingido; encerrando com o que foi registrado.")
             break
-        if ctx.llm.excedeu_orcamento():
-            ctx.evento("investigador", "Orçamento de tokens excedido; encerrando investigação.")
+        if ctx.llm.excedeu_orcamento(desde=inicio_tokens, limite=ctx.cfg.orcamento_tokens):
+            ctx.evento("investigador", "Orçamento de tokens do Investigador excedido; encerrando investigação.")
             break
-        restantes = ctx.cfg.max_passos_investigador - passos
+        restantes = limite - passos
         if restantes <= 2:
             # Aviso dentro do resultado da última ferramenta: o modelo precisa registrar o que já achou
             cid, saida, erro = resultados[-1]
@@ -275,18 +309,23 @@ def investigar_regras(ctx: Contexto, faltantes: list[str]) -> list[Requisito]:
     return achados
 
 
-def investigar(ctx: Contexto, faltantes: list[str]) -> list[Requisito]:
-    if not faltantes:
+def investigar(ctx: Contexto, faltantes: list[str], itens_sem_spec: list[ItemDemanda] | None = None) -> list[Requisito]:
+    itens_sem_spec = itens_sem_spec if ctx.usar_llm else []  # especificar itens no TR exige leitura (LLM)
+    if not faltantes and not itens_sem_spec:
         return []
-    ctx.evento("investigador", f"Investigando {len(faltantes)} informação(ões) ausente(s): {', '.join(rotulo(a) for a in faltantes)}")
+    alvo = [rotulo(a) for a in faltantes] + [f"especificação do item {i.numero_item}" for i in itens_sem_spec]
+    ctx.evento("investigador", f"Investigando {len(alvo)} pendência(s): {', '.join(alvo)}")
     achados: list[Requisito] = []
     if ctx.usar_llm:
         try:
-            achados = investigar_llm(ctx, faltantes)
+            achados = investigar_llm(ctx, faltantes, itens_sem_spec)
         except Exception as exc:
             ctx.evento("investigador", f"Investigador LLM falhou ({exc}); usando contingência por regras.")
+    for item in itens_sem_spec:
+        if not any(r.item_id == item.id for r in achados):
+            ctx.analise.lacunas.append(f"Item {item.numero_item}: a especificação técnica não foi localizada nos documentos (descrição do PNCP sem detalhes).")
     # O que o agente não registrou passa pela varredura por regras (cobre limite de passos e omissões)
-    restantes = [a for a in faltantes if a not in {r.atributo for r in achados}]
+    restantes = [a for a in faltantes if a not in {r.atributo for r in achados if r.item_id == "*"}]
     if restantes:
         if achados or ctx.usar_llm:
             ctx.evento("investigador", f"Contingência por regras para {len(restantes)} informação(ões): {', '.join(rotulo(a) for a in restantes)}")

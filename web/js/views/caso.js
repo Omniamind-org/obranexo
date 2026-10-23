@@ -9,6 +9,7 @@ export const ETAPAS = [
   ['coletar_documentos', 'Documentos', 'leitura dos anexos'],
   ['extrair_itens', 'Analista Técnico', 'requisitos dos itens'],
   ['filtrar_relevantes', 'Portfólio', 'itens do catálogo'],
+  ['especificador', 'Especificador', 'especificação no TR'],
   ['casar_com_catalogo', 'Motor de regras', 'compatibilidade'],
   ['investigador', 'Investigador', 'busca no edital'],
   ['varrer_insumos', 'Insumos', 'obras/serviços'],

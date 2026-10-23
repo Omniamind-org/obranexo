@@ -16,7 +16,8 @@ export async function render_(el) {
       <p>O ObraNexo lê contratações do PNCP, compara cada requisito técnico com o catálogo do fornecedor e entrega um dossiê
          em que toda conclusão aponta para o trecho do documento que a sustenta.</p>
       <div class="actions">
-        <a class="btn btn-primary btn-lg" href="#/demandas">${icon('play')} Analisar uma demanda</a>
+        <a class="btn btn-primary btn-lg" href="#/agente">${icon('bolt')} Prospectar com o agente</a>
+        <a class="btn btn-lg" href="#/demandas">${icon('play')} Analisar uma demanda</a>
         <a class="btn btn-lg" href="#/catalogo">${icon('box')} Ver catálogo (${status.empresa})</a>
         <a class="btn btn-lg" href="#/sobre">${icon('info')} Como funciona</a>
       </div>
@@ -67,8 +68,8 @@ export async function render_(el) {
     <div class="card card-pad" style="margin-top:16px">
       <div class="eyebrow">Fluxo agêntico</div>
       <div class="fluxo">
-        <span>Catálogo</span><b>→</b><span>Coleta PNCP</span><b>→</b><span>Leitura dos PDFs</span><b>→</b>
-        <span class="agente">Analista Técnico</span><b>→</b><span>Motor de regras</span><b>→</b>
+        <span class="agente">Prospecção</span><b>→</b><span>Coleta PNCP</span><b>→</b><span>Leitura dos anexos</span><b>→</b>
+        <span class="agente">Analista Técnico</span><b>→</b><span class="agente">Especificador</span><b>→</b><span>Motor de regras</span><b>→</b>
         <span class="agente">Investigador</span><b>→</b><span class="agente">Verificador</span><b>→</b>
         <span>Qualificação</span><b>→</b><span class="agente">Planejador</span><b>→</b><span>Dossiê</span>
       </div>

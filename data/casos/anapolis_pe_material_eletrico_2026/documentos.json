@@ -1,0 +1,13 @@
+[
+ {
+  "id": "doc-2",
+  "contratacao_id": "01067479000146-1-000064/2026",
+  "nome": "2_98922105900212026001.zip",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/01067479000146/compras/2026/64/arquivos/2",
+  "sha256": "e77bed4116005fefcc55cdda153d54b5842a7a60647116ff7a8623e9972b3c99",
+  "caminho_local": "arquivos\\2_98922105900212026001.zip",
+  "paginas": 0,
+  "extraivel": true
+ }
+]

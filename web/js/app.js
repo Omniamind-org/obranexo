@@ -10,9 +10,12 @@ import * as analises from './views/analises.js';
 import * as resultado from './views/resultado.js';
 import * as metricas from './views/metricas.js';
 import * as sobre from './views/sobre.js';
+import * as prospeccao from './views/prospeccao.js';
 
 const ROTAS = [
   { re: /^\/?(?:inicio)?$/, nav: 'inicio', view: inicio },
+  { re: /^\/agente$/, nav: 'agente', view: prospeccao },
+  { re: /^\/agente\/([^/]+)$/, nav: 'agente', view: prospeccao },
   { re: /^\/catalogo$/, nav: 'catalogo', view: catalogo },
   { re: /^\/demandas$/, nav: 'demandas', view: demandas },
   { re: /^\/casos\/([^/]+)$/, nav: 'demandas', view: caso },

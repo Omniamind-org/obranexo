@@ -1,64 +1,78 @@
-# Fluxo dos agentes — ObraNexo v0.1
+# Fluxo dos agentes — ObraNexo
 
-O ObraNexo transforma uma contratação pública (PNCP) + o catálogo de um fornecedor em um
-**dossiê comercial verificável**. O princípio: *o LLM interpreta e investiga; as regras decidem a
-compatibilidade objetiva; toda conclusão aponta para uma evidência.*
+O ObraNexo transforma licitações públicas reais (PNCP) + o catálogo de um fornecedor em
+**oportunidades verificáveis**. O princípio: *o LLM decide, interpreta e investiga; as regras decidem a
+compatibilidade objetiva; toda conclusão aponta para um trecho literal de um documento.*
+
+São dois níveis de agente:
 
 ```
-carregar_contexto ─► coletar_documentos ─► extrair_itens ─► filtrar_relevantes ─► casar_com_catalogo
-                                                                                        │
-                                   ┌─ falta informação contratual (garantia, prazo…)? ─┘
-                                   ▼
-                          AGENTE INVESTIGADOR  (ferramentas: listar_documentos, buscar_trechos,
-                                   │             ler_pagina, registrar_requisito, concluir_investigacao)
-                                   ▼
-                          re-casar itens afetados ─► AGENTE VERIFICADOR ─► qualificar ─► AGENTE PLANEJADOR ─► gerar_dossie
+AGENTE DE PROSPECÇÃO  (decide o que buscar, o que abrir, o que analisar a fundo e como ranquear)
+   ferramentas: buscar_licitacoes_abertas · ver_itens · analisar_a_fundo · concluir
+        │
+        └── analisar_a_fundo ──► ANÁLISE DE UMA LICITAÇÃO
+             coletar_documentos (PDF, DOCX, XLSX, ZIP) ─► ANALISTA TÉCNICO (itens em lote)
+             ─► filtrar_relevantes ─► ESPECIFICADOR (lê o TR dos itens "conforme TR")
+             ─► motor de regras ─► INVESTIGADOR (ferramentas sobre os documentos) ─► re-casar
+             ─► VERIFICADOR ─► qualificar ─► PLANEJADOR ─► dossiê
 ```
 
-## Nós
+## Agente de Prospecção (`agents/prospector.py`)
 
-| Nó | O que faz | Determinístico | Com LLM |
-|---|---|---|---|
-| coletar_documentos | Extrai texto dos PDFs com página (PyMuPDF), indexa trechos; cada item do PNCP vira um documento citável | ✔ | — |
-| extrair_itens (**Analista Técnico**) | Lê a descrição do item e produz requisitos canônicos (potência, tensão, CCT, fluxo, lm/W, IP, IK, garantia, INMETRO…) com o trecho literal de origem | regex + normalização pt-BR | modelo de extração (Gemini 3.5 Flash-Lite por padrão) com saída estruturada; complementa o que as regras não acharam; divergência vira **conflito**; atributos textuais entram como desejáveis |
-| filtrar_relevantes | Mantém só itens de categorias existentes no catálogo | ✔ | — |
-| casar_com_catalogo (**motor de regras**) | Compara cada requisito com cada produto candidato: ATENDE / NAO_ATENDE / INDETERMINADO → agrega em COMPATÍVEL / PARCIAL / INCOMPATÍVEL / INDETERMINADO | ✔ (nunca usa LLM) | — |
-| **Investigador** | Procura no edital o que não estava no item (garantia, prazo de entrega, amostra, ensaios) e registra com evidência | busca textual + regex nos trechos | modelo de agente (Gemini 3.8 Flash, reserva 3.5 Flash-Lite) em loop de ferramentas (máx. 12 passos, aviso nos 2 últimos, orçamento de tokens); o que ele não registrar passa pela contingência por regras |
-| varrer_insumos (só quando nenhum item cabe no portfólio — obras/serviços) | Procura nos projetos, memoriais e orçamentos menções a categorias do catálogo (luminária, cabo, disjuntor, eletroduto…) e registra cada uma com evidência: é a base da oportunidade INDIRETA | ✔ | — |
-| **Verificador** | Confere que cada trecho citado existe literalmente na página (rapidfuzz ≥ 90), corrige a página quando necessário, detecta conflitos entre fontes, atribui confiança e lista pendências de revisão humana | ✔ | parecer crítico em até 8 linhas |
-| qualificar | Classifica PUBLICADA / PLANEJADA / INDIRETA / INFERIDA, identifica o comprador provável, status do prazo, prioridade 0-100, riscos | ✔ | — |
-| **Planejador Comercial** | Resumo executivo e próximos passos datados | template | modelo de agente com saída estruturada, a partir só dos fatos verificados |
+Recebe o catálogo, as UFs e o horizonte de prazo. O LLM conduz tudo:
 
-Provedores: Google Gemini (padrão, nível gratuito) ou Anthropic — mesma interface em `llm/client.py`
-(`extrair`, `texto`, `conversa`), com cache em disco por requisição, contagem de tokens por modelo e
-fallback automático para o modelo reserva em 429/503.
-| gerar_dossie | Markdown com 12 seções e rodapé de custo/tempo | ✔ | — |
+| Ferramenta | O que faz de verdade |
+|---|---|
+| `buscar_licitacoes_abertas(uf, termos)` | consulta o PNCP (pregões com propostas abertas) e filtra pelo objeto com os termos que **o agente escolheu** a partir do catálogo |
+| `ver_itens(contratacao_id)` | lista os itens da licitação direto do PNCP |
+| `analisar_a_fundo(contratacao_id, motivo)` | baixa edital e anexos e roda a análise completa abaixo (limitada por prospecção) |
+| `concluir(ranking, resumo)` | ranking justificado; só aceita licitações que vieram das ferramentas |
+
+Controles do sistema sobre as decisões do agente:
+- ids inventados são descartados do ranking;
+- **o ranking não pode contradizer a análise**: nota alta para uma licitação em que a análise completa não
+  confirmou nenhum item compatível/parcial volta para o agente como erro, com os fatos; se ele insistir, a
+  nota é limitada e a justificativa recebe a marcação;
+- limite de passos e de análises completas; sem concluir, ranking de contingência pela prioridade calculada.
+
+## Análise de uma licitação
+
+| Nó | O que faz | Com LLM |
+|---|---|---|
+| coletar_documentos | Texto por página de PDF, DOCX, XLSX e TXT; **ZIPs são expandidos** (projetos, atas, planilhas) e cada arquivo vira documento citável; o tipo é detectado pelo conteúdo, não pela extensão | — |
+| **Analista Técnico** (`extrator.py`) | Requisitos canônicos de cada item (potência, tensão, CCT, fluxo, lm/W, IP, IK, seção, tipo de cabo…). Regras pt-BR sempre rodam; o LLM complementa **em lotes de até 10 itens por chamada** | modelo de extração |
+| filtrar_relevantes | Categoria pelo núcleo da descrição; acessórios saem do portfólio | — |
+| **Especificador** (`especificador.py`) | Itens publicados só com o nome ("Cabo elétrico flexível"): localiza as páginas do TR que tratam deles e lê todas de uma vez; cada atributo só entra com trecho conferido no documento | modelo de extração |
+| motor de regras (`rules/compare.py`) | ATENDE / NÃO ATENDE / INDETERMINADO por requisito → COMPATÍVEL / PARCIAL / INCOMPATÍVEL / INDETERMINADO por item | nunca |
+| **Investigador** (`investigador.py`) | Loop de ferramentas (listar_documentos, buscar_trechos, ler_pagina, registrar_requisito) para (1) especificar itens que ainda faltam e (2) exigências gerais (garantia, prazo, amostra, INMETRO, ensaios). **A citação é conferida no registro**: trecho que não existe no documento volta como erro para o agente corrigir | modelo de agente, orçamento próprio |
+| **Verificador** | Reconfere todas as citações, detecta conflitos entre fontes, atribui confiança e escreve o parecer de revisão humana | parecer |
+| qualificar | Tipo (publicada / planejada / indireta), comprador provável, prazo, prioridade 0–100, riscos | — |
+| **Planejador** | Resumo executivo e próximos passos, só a partir dos fatos verificados | saída estruturada |
 
 ## O LLM interpreta, as regras decidem
 
-Regras que vieram do teste cego de 23/10/2026 (5 pregões abertos nunca vistos — ver `docs/teste_cego_2026-10-23.md`):
+- **Todo valor proposto por um modelo é validado** (`rules/validar.py`) pelo tipo e pela faixa plausível do
+  atributo. Exemplos rejeitados em dados reais: `cct_k = "branca fria"`, `tensao_v = 600–1000` (isolação de
+  cabo), `material_corpo = "PRETA"`, `irc = 0,7`.
+- **Toda citação é conferida literalmente** no documento (similaridade ≥ 90) — no registro (Investigador,
+  Especificador) e de novo no Verificador.
+- Requisito tirado **só pelo LLM da descrição do item** entra como desejável; especificação do TR com citação
+  conferida é exigência.
+- A comparação nunca derruba a análise; sem especificação técnica do item, o resultado é INDETERMINADO.
+- Orçamento de tokens proporcional ao número de itens; o Investigador tem orçamento próprio.
 
-- **Todo valor proposto pelo LLM é validado** (`rules/validar.py`) pelo tipo e pela faixa plausível do atributo
-  antes de virar requisito. Exemplos rejeitados: `cct_k = "branca fria"`, `tensao_v = 600–1000` (tensão de
-  isolação de cabo), `material_corpo = "PRETA"`, `tipo_cabo` em texto livre. No Investigador, o valor inválido
-  volta como erro da ferramenta para o agente corrigir.
-- **Requisito encontrado só pelo LLM é desejável**: aparece no dossiê e pode deixar o item PARCIAL, mas sozinho
-  nunca o torna INCOMPATÍVEL.
-- **A comparação nunca derruba a análise**: valor não interpretável vira INDETERMINADO com justificativa.
-- **Categoria pelo núcleo da descrição**: "SUPORTE PARA … LUMINÁRIA" é acessório, não luminária; o LLM não
-  reclassifica acessórios.
-- **Sem especificação técnica do item, não há compatibilidade**: se só há cláusulas gerais do edital
-  (garantia, prazo, amostra), o resultado é INDETERMINADO.
-- As extrações por item rodam **em paralelo** (`OBRANEXO_LLM_PARALELO`, padrão 4) e o processamento segue
-  sequencial, lendo do cache — o resultado não depende da ordem das respostas.
+## Catálogo a partir de fichas técnicas reais (`catalog/importar.py`)
+
+O fornecedor envia o link da página/PDF do fabricante, o arquivo da ficha (PDF, DOCX, XLSX, ZIP) ou cola o
+texto. O LLM propõe os produtos (um por modelo/variação), cada atributo passa pela validação acima e o
+usuário revisa antes de adicionar. Páginas montadas por JavaScript são recusadas com aviso.
 
 ## Guardrails
 
-- Documentos e descrições são injetados como **dados** (`<documento>`, `<item>`), nunca como instruções.
-- O Investigador **não tem ferramentas de ação externa** (não envia e-mail, não participa de licitação).
-- Toda saída do LLM é validada por esquema (Pydantic / `strict: true`); valores só entram com trecho literal.
-- Limites por análise: passos do Investigador e orçamento de tokens; estourou, encerra com resultado parcial.
-- Sem chave de API, **todo o fluxo roda em modo determinístico** — a demo nunca depende da rede.
+- Documentos e descrições entram como **dados** (`<documento>`, `<item>`), nunca como instruções.
+- Nenhum agente tem ferramenta de ação externa (não envia proposta, não participa de licitação).
+- Saídas do LLM validadas por esquema (Pydantic / `strict: true`).
+- Sem chave de API, a análise roda em modo determinístico; prospecção e importação por IA exigem o LLM.
 
 ## Resultados possíveis por requisito
 
@@ -75,4 +89,3 @@ Regras que vieram do teste cego de 23/10/2026 (5 pregões abertos nunca vistos �
 | PUBLICADA | aquisição/fornecimento de bens publicada no PNCP | o órgão |
 | PLANEJADA | item de Plano de Contratações Anual (PCA) | o órgão (futuro) |
 | INDIRETA_POTENCIAL | objeto é obra/serviço de engenharia/locação | a empresa contratada (construtora/prestadora) |
-| INFERIDA | hipótese por histórico (fora do MVP) | — |

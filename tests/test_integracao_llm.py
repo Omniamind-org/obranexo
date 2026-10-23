@@ -118,3 +118,41 @@ def test_pipeline_completo_com_llm(tmp_path, monkeypatch):
         f"US$ {analise.uso_llm.custo_usd:.4f}, {analise.duracao_s():.1f}s, modelos {list(analise.uso_llm.por_modelo)}"
     )
     Path(tmp_path / "dossie.md").write_text(analise.dossie.conteudo_md, encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------- funções novas: catálogo real e prospecção
+
+FICHA_REAL = Path(__file__).parent / "dados" / "ficha_sanlume_luminaria_publica.txt"
+
+
+@precisa_llm
+@pytest.mark.skipif(not FICHA_REAL.exists(), reason="ficha de teste ausente")
+def test_importa_produtos_de_ficha_real_do_fabricante():
+    from obranexo.catalog.importar import importar_ficha
+    from obranexo.llm.client import criar_llm_client
+
+    produtos, avisos = importar_ficha(FICHA_REAL.read_text(encoding="utf-8"), criar_llm_client(config), config.model_agente)
+    por_potencia = {p.atributos["potencia_w"].valor: p for p in produtos if "potencia_w" in p.atributos}
+    # A página tem uma tabela de 9 modelos (50 a 240 W) com o fluxo de cada um
+    assert {50.0, 100.0, 150.0, 240.0} <= set(por_potencia), sorted(por_potencia)
+    assert por_potencia[100.0].atributos["fluxo_lm"].valor == 16000
+    assert por_potencia[150.0].atributos["fluxo_lm"].valor == 24000
+    assert all(p.categoria == "luminaria_publica_led" for p in por_potencia.values())
+    assert por_potencia[100.0].atributos["ip"].valor == "IP66"
+    assert len({p.sku for p in produtos}) == len(produtos)  # SKUs únicos
+
+
+@precisa_llm
+@pytest.mark.skipif(config.offline, reason="modo offline")
+def test_prospeccao_autonoma_no_pncp_real(tmp_path, monkeypatch):
+    """O agente escolhe os termos, busca no PNCP de verdade e ranqueia (sem análise completa, para não gastar cota)."""
+    from obranexo.agents.prospector import executar_prospeccao
+    from obranexo.catalog.loader import carregar_catalogo_json
+
+    monkeypatch.setattr("obranexo.storage.store.config", config.__class__(dir_dados=tmp_path))
+    p = executar_prospeccao(carregar_catalogo_json(config.catalogo_demo), ["GO"], horizonte_dias=30, max_analises=0)
+    assert p.status == "concluida", p.erro
+    assert p.buscas and all(b["uf"] == "GO" for b in p.buscas)
+    assert p.candidatos, "nenhuma licitação candidata encontrada"
+    assert p.ranking and all(r.contratacao_id in p.candidatos for r in p.ranking)  # nada inventado
+    assert p.resumo

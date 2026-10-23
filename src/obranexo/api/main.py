@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -23,7 +23,7 @@ from obranexo.catalog.atributos import ATRIBUTOS
 from obranexo.catalog.loader import carregar_catalogo_json, carregar_catalogo_tabela
 from obranexo.config import config
 from obranexo.connectors.pncp import PNCPClient, PNCPError, carregar_caso, listar_casos
-from obranexo.models import Analise, Contratacao, Empresa, ResultadoItem, StatusRevisao
+from obranexo.models import Analise, Contratacao, Empresa, Produto, ResultadoItem, StatusRevisao
 from obranexo.storage import store
 
 app = FastAPI(
@@ -39,9 +39,21 @@ _estado: dict[str, Any] = {"empresa": None}
 
 
 def empresa_atual() -> Empresa:
+    """Catálogo ativo: o último salvo pelo usuário (sobrevive a reinícios) ou o demonstrativo."""
     if _estado["empresa"] is None:
-        _estado["empresa"] = carregar_catalogo_json(config.catalogo_demo)
+        ativo = store.caminho_catalogo_ativo()
+        _estado["empresa"] = carregar_catalogo_json(ativo if ativo.exists() else config.catalogo_demo)
     return _estado["empresa"]
+
+
+def _definir_empresa(empresa: Empresa) -> None:
+    _estado["empresa"] = empresa
+    store.salvar_catalogo(empresa)
+
+
+def _exige_llm(funcionalidade: str) -> None:
+    if not config.llm_disponivel:
+        raise HTTPException(409, f"{funcionalidade} exige um provedor de LLM configurado (GEMINI_API_KEY ou ANTHROPIC_API_KEY no .env)")
 
 
 # ---------------------------------------------------------------------------
@@ -198,15 +210,89 @@ async def enviar_catalogo(arquivo: Annotated[UploadFile, File()]) -> dict[str, A
         raise HTTPException(400, f"não foi possível ler o catálogo: {exc}") from exc
     if not empresa.produtos:
         raise HTTPException(400, "o arquivo não contém produtos")
-    _estado["empresa"] = empresa
+    _definir_empresa(empresa)
     return {"empresa": empresa.nome, "produtos": len(empresa.produtos)}
 
 
 @app.delete("/api/catalogo", tags=["catálogo"])
 def restaurar_catalogo() -> dict[str, Any]:
-    """Volta para o catálogo demonstrativo."""
+    """Volta para o catálogo demonstrativo (descarta o catálogo salvo)."""
+    store.remover_catalogo_ativo()
     _estado["empresa"] = carregar_catalogo_json(config.catalogo_demo)
     return {"empresa": _estado["empresa"].nome, "produtos": len(_estado["empresa"].produtos)}
+
+
+@app.post("/api/catalogo/importar", tags=["catálogo"])
+async def importar_ficha_tecnica(
+    arquivo: Annotated[UploadFile | None, File()] = None,
+    texto: Annotated[str | None, Form()] = None,
+    url: Annotated[str | None, Form()] = None,
+) -> dict[str, Any]:
+    """Lê uma ficha técnica real (PDF, DOCX, XLSX, texto colado ou página/PDF do fabricante por URL) com o LLM
+    e devolve os produtos propostos para revisão. Nada entra no catálogo até POST /api/catalogo/produtos."""
+    _exige_llm("A importação de fichas técnicas")
+    from obranexo.catalog.importar import importar_ficha
+    from obranexo.documents.formatos import baixar_pagina, expandir_zip, extrair_paginas_arquivo, tipo_arquivo
+    from obranexo.llm.client import criar_llm_client
+
+    conteudo = (texto or "").strip()
+    origem = "texto colado"
+    if url and url.strip():
+        try:
+            pagina = baixar_pagina(url.strip())
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(502, f"não foi possível abrir a página: {exc}") from exc
+        if len(pagina) < 300:
+            raise HTTPException(422, "a página quase não tem texto (provavelmente é montada por JavaScript). "
+                                     "Baixe o PDF da ficha técnica ou cole o texto da página.")
+        conteudo = f"{conteudo}\n\nFonte: {url.strip()}\n{pagina}".strip()
+        origem = url.strip()
+    if arquivo is not None and arquivo.filename:
+        nome = Path(arquivo.filename).name
+        config.dir_cache.mkdir(parents=True, exist_ok=True)
+        destino = config.dir_cache / f"ficha_{datetime.now():%Y%m%d%H%M%S}_{nome}"
+        destino.write_bytes(await arquivo.read())
+        arquivos = expandir_zip(destino) if tipo_arquivo(destino) == "zip" else [destino]
+        partes = ["\n".join(extrair_paginas_arquivo(a)) for a in arquivos]
+        conteudo = "\n\n".join(p for p in [conteudo, *partes] if p.strip())
+        origem = nome
+    if not conteudo:
+        raise HTTPException(400, "envie um arquivo com texto legível ou cole o texto da ficha")
+    llm = criar_llm_client(config)
+    try:
+        produtos, avisos = importar_ficha(conteudo, llm, config.model_agente)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(502, f"o modelo não conseguiu ler a ficha: {exc}") from exc
+    return {"origem": origem, "caracteres": len(conteudo), "produtos": [p.model_dump(mode="json") for p in produtos], "avisos": avisos,
+            "llm": {"chamadas": llm.uso.chamadas, "tokens": llm.uso.tokens_entrada + llm.uso.tokens_saida}}
+
+
+class PedidoProdutos(BaseModel):
+    produtos: list[Produto]
+
+
+@app.post("/api/catalogo/produtos", tags=["catálogo"])
+def adicionar_produtos(pedido: PedidoProdutos) -> dict[str, Any]:
+    """Adiciona produtos ao catálogo ativo (o mesmo SKU é substituído). O catálogo fica salvo em disco."""
+    e = empresa_atual()
+    novos = {p.sku: p for p in pedido.produtos}
+    mantidos = [p for p in e.produtos if p.sku not in novos]
+    _definir_empresa(e.model_copy(update={"produtos": mantidos + list(novos.values())}))
+    return {"adicionados": len(novos), "produtos": len(empresa_atual().produtos)}
+
+
+@app.delete("/api/catalogo/produtos/{sku}", tags=["catálogo"])
+def remover_produto(sku: str) -> dict[str, Any]:
+    e = empresa_atual()
+    restantes = [p for p in e.produtos if p.sku != sku]
+    if len(restantes) == len(e.produtos):
+        raise HTTPException(404, f"produto '{sku}' não encontrado")
+    _definir_empresa(e.model_copy(update={"produtos": restantes}))
+    return {"removido": sku, "produtos": len(restantes)}
 
 
 # ---------------------------------------------------------------------------
@@ -328,6 +414,54 @@ def iniciar_analise(pedido: PedidoAnalise) -> dict[str, Any]:
     return job.resumo()
 
 
+class PedidoProspeccao(BaseModel):
+    ufs: list[str] = Field(default_factory=list, description="UFs a prospectar; vazio = UFs atendidas pelo fornecedor")
+    horizonte_dias: int = Field(30, ge=3, le=120, description="propostas encerrando nos próximos N dias")
+    max_analises: int = Field(2, ge=0, le=5, description="quantas licitações o agente pode analisar a fundo")
+
+
+@app.post("/api/prospeccoes", status_code=202, tags=["prospecção"])
+def iniciar_prospeccao(pedido: PedidoProspeccao) -> dict[str, Any]:
+    """Dispara o Agente de Prospecção: ele busca licitações abertas no PNCP, examina itens, escolhe o que
+    analisar a fundo e devolve um ranking justificado. Acompanhe em /api/jobs/{id}/eventos."""
+    _exige_llm("A prospecção autônoma")
+    if config.offline:
+        raise HTTPException(503, "modo offline ativo (OBRANEXO_OFFLINE=1): a prospecção consulta o PNCP ao vivo")
+    empresa = empresa_atual()
+    ufs = [u.upper()[:2] for u in (pedido.ufs or empresa.ufs_atendidas[:1] or ["GO"])]
+
+    def tarefa(job):
+        from obranexo.agents.prospector import executar_prospeccao
+
+        p = executar_prospeccao(empresa, ufs, pedido.horizonte_dias, pedido.max_analises, on_evento=job.registrar)
+        return p.id, p.status, p.erro
+
+    return jobs.iniciar_tarefa("prospeccao", ",".join(ufs), tarefa).resumo()
+
+
+def _resumo_prospeccao(p) -> dict[str, Any]:
+    return {
+        "id": p.id, "status": p.status, "erro": p.erro, "empresa": p.empresa_nome, "parametros": p.parametros,
+        "iniciada_em": p.iniciada_em.isoformat(), "duracao_s": round(p.duracao_s() or 0, 1),
+        "buscas": len(p.buscas), "candidatos": len(p.candidatos), "analises": sum(1 for c in p.candidatos.values() if c.analise_id),
+        "ranking": len(p.ranking), "melhor": p.ranking[0].model_dump(mode="json") if p.ranking else None,
+        "llm": {"chamadas": p.uso_llm.chamadas, "tokens": p.uso_llm.tokens_entrada + p.uso_llm.tokens_saida},
+    }
+
+
+@app.get("/api/prospeccoes", tags=["prospecção"])
+def prospeccoes() -> list[dict[str, Any]]:
+    return [_resumo_prospeccao(p) for p in store.listar_prospeccoes()]
+
+
+@app.get("/api/prospeccoes/{prospeccao_id}", tags=["prospecção"])
+def prospeccao(prospeccao_id: str) -> dict[str, Any]:
+    p = store.carregar_prospeccao(prospeccao_id)
+    if p is None:
+        raise HTTPException(404, "prospecção não encontrada")
+    return {"resumo": _resumo_prospeccao(p), "prospeccao": p.model_dump(mode="json")}
+
+
 @app.get("/api/jobs/{job_id}", tags=["análises"])
 def job(job_id: str) -> dict[str, Any]:
     j = jobs.obter(job_id)
@@ -437,7 +571,8 @@ def evidencia(analise_id: str, evidencia_id: str) -> dict[str, Any]:
             texto = paginas[ev.pagina - 1]
     return {
         "evidencia": ev.model_dump(mode="json"),
-        "documento": {"id": doc.id, "nome": doc.nome, "tipo": doc.tipo_doc, "url_origem": doc.url_origem, "tem_arquivo": caminho is not None},
+        "documento": {"id": doc.id, "nome": doc.nome, "tipo": doc.tipo_doc, "url_origem": doc.url_origem, "tem_arquivo": caminho is not None,
+                      "eh_pdf": bool(caminho and caminho.suffix.lower() == ".pdf")},
         "texto_pagina": texto,
     }
 

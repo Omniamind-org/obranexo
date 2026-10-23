@@ -85,15 +85,17 @@ class IndiceDocumentos:
 
     def adicionar(self, documento: Documento) -> None:
         self.documentos[documento.id] = documento
-        if not documento.extraivel or not documento.caminho_local:
+        if not documento.caminho_local:
             return
         caminho = Path(documento.caminho_local)
         if not caminho.exists():
             documento.extraivel = False
             return
         try:
-            paginas = extrair_paginas(caminho)
-        except Exception:  # PDF corrompido ou protegido
+            from obranexo.documents.formatos import extrair_paginas_arquivo
+
+            paginas = extrair_paginas_arquivo(caminho)  # PDF, DOCX, XLSX, TXT (zip é expandido antes)
+        except Exception:  # arquivo corrompido ou protegido
             documento.extraivel = False
             return
         documento.paginas = len(paginas)

@@ -424,7 +424,7 @@ async function abrirEvidencia(a, ctx, evId) {
     rodape.className = 'modal-foot';
     rodape.innerHTML = html`
       ${doc.url_origem ? html`<a class="btn btn-ghost" href="${doc.url_origem}" target="_blank" rel="noopener">${icon('external')} Origem (PNCP)</a>` : ''}
-      ${doc.tem_arquivo ? html`<a class="btn btn-primary" href="${api.arquivoUrl(a.id, doc.id, ev.pagina)}" target="_blank" rel="noopener">${icon('doc')} Abrir PDF na página ${ev.pagina || ''}</a>` : ''}`.s;
+      ${doc.tem_arquivo ? html`<a class="btn btn-primary" href="${api.arquivoUrl(a.id, doc.id, doc.eh_pdf ? ev.pagina : null)}" target="_blank" rel="noopener">${icon('doc')} ${doc.eh_pdf ? `Abrir PDF na página ${ev.pagina || ''}` : 'Abrir arquivo original'}</a>` : ''}`.s;
     m.el.appendChild(rodape);
     const marca = m.el.querySelector('mark');
     if (marca) marca.scrollIntoView({ block: 'center' });

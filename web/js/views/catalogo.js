@@ -49,7 +49,7 @@ export async function render_(el) {
             <td class="num">${moeda(p.preco_ref)}</td>
           </tr>`)}</tbody>
       </table></div>` : vazio('Nenhum produto encontrado', 'Ajuste a busca ou o filtro de categoria.'));
-    el.querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', () => detalhe(dados.produtos.find((p) => p.id === tr.dataset.id))));
+    el.querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', () => detalhe(dados.produtos.find((p) => p.id === tr.dataset.id), () => render_(el))));
     el.querySelector('#contagem').textContent = `${lista.length} de ${dados.produtos.length} produtos`;
   };
 
@@ -61,7 +61,8 @@ export async function render_(el) {
         <p>${dados.empresa.observacoes}</p>
       </div>
       <div class="actions">
-        <label class="btn">${icon('upload')} Enviar catálogo
+        <button class="btn btn-primary" id="importar-ficha">${icon('bolt')} Importar ficha técnica (IA)</button>
+        <label class="btn">${icon('upload')} Enviar planilha
           <input type="file" id="arquivo" accept=".json,.csv,.xlsx" hidden>
         </label>
         <button class="btn btn-ghost" id="restaurar">${icon('refresh')} Restaurar demo</button>
@@ -111,6 +112,7 @@ export async function render_(el) {
       render_(el);
     } catch (err) { toast(err.message, 'erro'); }
   });
+  el.querySelector('#importar-ficha').addEventListener('click', () => importarFicha(() => render_(el)));
   el.querySelector('#restaurar').addEventListener('click', async () => {
     await api.restaurarCatalogo();
     toast('Catálogo demonstrativo restaurado');
@@ -119,9 +121,70 @@ export async function render_(el) {
   });
 }
 
-function detalhe(p) {
+function importarFicha(aoConcluir) {
+  const m = abrirModal({
+    titulo: 'Importar ficha técnica com IA',
+    subtitulo: 'O modelo lê a ficha do fabricante e propõe os produtos. Você revisa antes de entrar no catálogo.',
+    corpo: html`
+      <form id="form-ficha" class="stack">
+        <label class="field">Link da página ou do PDF do fabricante<input class="input" type="url" name="url" placeholder="https://fabricante.com.br/produto/luminaria-publica-led…"></label>
+        <label class="field">…ou um arquivo (PDF, DOCX, XLSX, TXT ou ZIP)<input class="input" type="file" name="arquivo" accept=".pdf,.docx,.xlsx,.txt,.csv,.zip" style="padding-top:6px"></label>
+        <label class="field">…ou cole o texto da ficha<textarea name="texto" rows="6" placeholder="Ex.: Luminária pública LED 100 W, 16.500 lm, 165 lm/W, 5000 K, IP66, IK08, 100–277 V, INMETRO…"></textarea></label>
+        <div class="actions"><button class="btn btn-primary" type="submit">${icon('bolt')} Extrair produtos</button></div>
+      </form>
+      <div id="previa"></div>`,
+  });
+  const form = m.el.querySelector('#form-ficha');
+  const previa = m.el.querySelector('#previa');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = new FormData(form);
+    const arquivo = f.get('arquivo');
+    const texto = (f.get('texto') || '').trim();
+    const url = (f.get('url') || '').trim();
+    if ((!arquivo || !arquivo.size) && !texto && !url) { toast('Informe um link, um arquivo ou o texto da ficha', 'erro'); return; }
+    const botao = form.querySelector('button');
+    botao.disabled = true;
+    botao.innerHTML = '<span class="spinner"></span> Lendo a ficha…';
+    try {
+      const r = await api.importarFicha(arquivo && arquivo.size ? arquivo : null, texto, url);
+      render(previa, html`
+        <hr>
+        <div class="muted small" style="margin-bottom:10px">${r.produtos.length} produto(s) identificado(s) em <strong>${r.origem}</strong> (${r.caracteres} caracteres, ${r.llm.chamadas} chamada(s) ao LLM).</div>
+        ${r.avisos.length ? html`<div class="alert alert-warn" style="margin-bottom:12px">${icon('alert')}<div class="alert-body"><strong>Descartado na validação:</strong><ul style="margin:4px 0 0;padding-left:18px">${r.avisos.slice(0, 12).map((a) => html`<li>${a}</li>`)}</ul></div></div>` : ''}
+        ${r.produtos.map((p, i) => html`
+          <label class="card card-pad" style="display:flex;gap:12px;margin-bottom:8px;cursor:pointer">
+            <input type="checkbox" data-i="${i}" checked style="margin-top:4px">
+            <div style="min-width:0">
+              <div><strong>${p.nome}</strong> <span class="mono small muted">${p.sku}</span> · <span class="badge plain">${rotuloCategoria(p.categoria)}</span></div>
+              <div class="chips" style="margin-top:6px">${Object.entries(p.atributos).map(([k, a]) => html`<span class="badge plain mono">${k}=${valorTecnico(a.valor, a.unidade)}</span>`)}</div>
+              ${p.certificacoes.length ? html`<div class="small muted" style="margin-top:6px">Certificações: ${p.certificacoes.join(' · ')}</div>` : ''}
+            </div>
+          </label>`)}
+        ${r.produtos.length ? html`<div class="actions" style="justify-content:flex-end"><button class="btn btn-primary" id="confirmar">${icon('check')} Adicionar selecionados ao catálogo</button></div>` : ''}`);
+      previa.querySelector('#confirmar')?.addEventListener('click', async () => {
+        const escolhidos = [...previa.querySelectorAll('input[data-i]:checked')].map((c) => r.produtos[Number(c.dataset.i)]);
+        if (!escolhidos.length) { toast('Nenhum produto selecionado', 'erro'); return; }
+        try {
+          const res = await api.adicionarProdutos(escolhidos);
+          toast(`${res.adicionados} produto(s) adicionado(s); catálogo com ${res.produtos}`);
+          m.fechar();
+          atualizarStatus();
+          aoConcluir();
+        } catch (err) { toast(err.message, 'erro'); }
+      });
+    } catch (err) {
+      toast(err.message, 'erro', 8000);
+    } finally {
+      botao.disabled = false;
+      botao.innerHTML = `${icon('bolt').s} Extrair produtos`;
+    }
+  });
+}
+
+function detalhe(p, aoMudar) {
   const atributos = Object.entries(p.atributos);
-  abrirModal({
+  const m = abrirModal({
     titulo: p.nome,
     subtitulo: `${p.sku} · ${rotuloCategoria(p.categoria)}`,
     corpo: html`
@@ -144,6 +207,15 @@ function detalhe(p) {
           <div class="chips">${p.certificacoes.length ? p.certificacoes.map((n) => html`<span class="badge b-accent plain">${n}</span>`) : html`<span class="muted">—</span>`}</div>
         </div>
       </div>`,
+    rodape: html`<button class="btn btn-ghost" id="remover" style="color:var(--bad)">${icon('x')} Remover do catálogo</button>`,
+  });
+  m.el.querySelector('#remover').addEventListener('click', async () => {
+    try {
+      await api.removerProduto(p.sku);
+      toast(`${p.sku} removido`);
+      m.fechar();
+      aoMudar();
+    } catch (err) { toast(err.message, 'erro'); }
   });
 }
 

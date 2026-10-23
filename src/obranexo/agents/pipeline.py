@@ -16,7 +16,8 @@ from datetime import datetime
 from pathlib import Path
 
 from obranexo.agents.contexto import Contexto, OnEvento
-from obranexo.agents.extrator import extrair_item
+from obranexo.agents.especificador import especificar_pelo_tr
+from obranexo.agents.extrator import extrair_item, extrair_lotes
 from obranexo.agents.investigador import investigar
 from obranexo.agents.planejador import planejar, qualificar
 from obranexo.agents.verificador import verificar
@@ -35,16 +36,45 @@ MAX_PRODUTOS_POR_ITEM = 3
 _CATEGORIAS_COM_EXIGENCIAS_GLOBAIS = {"luminaria_publica_led", "luminaria_interna", "refletor_led", "lampada", "rele_fotoeletrico"}
 
 
+def _expandir_compactados(ctx: Contexto, documentos: list[Documento]) -> list[Documento]:
+    """Zips (projetos, atas, planilhas) viram documentos individuais citáveis."""
+    from obranexo.documents.formatos import expandir_zip, tipo_arquivo
+
+    saida: list[Documento] = []
+    for doc in documentos:
+        saida.append(doc)
+        if not doc.caminho_local or not Path(doc.caminho_local).exists() or tipo_arquivo(Path(doc.caminho_local)) != "zip":
+            continue
+        membros = expandir_zip(Path(doc.caminho_local))
+        doc.extraivel = False
+        doc.nome = f"{doc.nome} (compactado: {len(membros)} arquivo(s) legíveis)"
+        for k, membro in enumerate(membros, start=1):
+            saida.append(
+                Documento(
+                    id=f"{doc.id}-z{k}",
+                    contratacao_id=doc.contratacao_id,
+                    nome=f"{Path(doc.caminho_local).stem} › {membro.name}",
+                    tipo_doc=doc.tipo_doc,
+                    url_origem=doc.url_origem,
+                    caminho_local=str(membro),
+                )
+            )
+        ctx.evento("coletar_documentos", f"{Path(doc.caminho_local).name}: {len(membros)} arquivo(s) extraído(s) do pacote", documento=doc.id)
+    return saida
+
+
 def _no_coletar_documentos(ctx: Contexto, documentos: list[Documento]) -> None:
+    documentos = _expandir_compactados(ctx, documentos)
     ctx.evento("coletar_documentos", f"Indexando {len(documentos)} documento(s)")
     for doc in documentos:
         ctx.indice.adicionar(doc)
         ctx.analise.documentos.append(doc)
-        ctx.evento(
-            "coletar_documentos",
-            f"{doc.nome}: {doc.paginas} página(s), {'texto extraído' if doc.extraivel else 'sem texto extraível (zip/imagem)'}",
-            documento=doc.id,
-        )
+        if doc.caminho_local and "compactado" not in doc.nome:
+            ctx.evento(
+                "coletar_documentos",
+                f"{doc.nome}: {doc.paginas} página(s), {'texto extraído' if doc.extraivel else 'sem texto legível (imagem/digitalizado)'}",
+                documento=doc.id,
+            )
     # Cada item do PNCP vira um documento virtual citável
     for item in ctx.analise.itens:
         doc = Documento(
@@ -58,32 +88,12 @@ def _no_coletar_documentos(ctx: Contexto, documentos: list[Documento]) -> None:
         ctx.analise.documentos.append(doc)
 
 
-def _prefetch_extracoes(ctx: Contexto) -> None:
-    """Dispara as chamadas de extração ao LLM em paralelo; o processamento continua sequencial e
-    determinístico (lê do cache). Num pregão de 32 itens, em série, a extração levava ~8 min."""
-    if not ctx.usar_llm or len(ctx.analise.itens) < 2:
-        return
-    from concurrent.futures import ThreadPoolExecutor
-
-    from obranexo.agents.extrator import chamar_extrator
-
-    def tentar(item: ItemDemanda) -> bool:
-        try:
-            chamar_extrator(ctx, item)
-            return True
-        except Exception:  # falha aqui é tratada de novo (e registrada) no processamento sequencial
-            return False
-
-    with ThreadPoolExecutor(max_workers=max(1, ctx.cfg.llm_paralelo)) as pool:
-        ok = sum(pool.map(tentar, ctx.analise.itens))
-    ctx.evento("extrair_itens", f"Extração LLM de {ok}/{len(ctx.analise.itens)} itens em paralelo ({ctx.cfg.llm_paralelo} simultâneas)")
-
-
 def _no_extrair_itens(ctx: Contexto) -> None:
-    _prefetch_extracoes(ctx)
+    # Lotes de itens por chamada (em paralelo); o processamento item a item segue sequencial e determinístico
+    extracoes = extrair_lotes(ctx, ctx.analise.itens)
     for item in ctx.analise.itens:
         item.categoria_inferida = inferir_categoria(item.descricao)
-        reqs = extrair_item(ctx, item, f"pncp-item-{item.numero_item}")
+        reqs = extrair_item(ctx, item, f"pncp-item-{item.numero_item}", extracoes.get(item.numero_item))
         ctx.analise.requisitos.extend(reqs)
 
 
@@ -103,7 +113,9 @@ def _casar(ctx: Contexto, itens: list[ItemDemanda]) -> None:
         reqs = [r for r in ctx.analise.requisitos if r.item_id == item.id]
         # Só cláusulas gerais do edital (garantia, prazo, amostra) não provam que o produto serve:
         # sem nenhuma especificação técnica do próprio item, o resultado é INDETERMINADO.
-        tecnicos = [r for r in reqs if natureza(r.atributo) == "produto" and r.fonte_extracao != "investigador"]
+        # Especificação achada pelo Investigador no TR para ESTE item (citação conferida) também conta
+        tecnicos = [r for r in reqs if natureza(r.atributo) == "produto" and r.atributo not in ATRIBUTOS_INVESTIGAVEIS
+                    and (r.fonte_extracao != "investigador" or r.obrigatorio)]
         candidatos = [p for p in ctx.empresa.produtos if p.categoria == item.categoria_inferida]
         resultados = []
         for p in candidatos:
@@ -120,27 +132,55 @@ def _casar(ctx: Contexto, itens: list[ItemDemanda]) -> None:
         ctx.evento("casar_com_catalogo", f"Item {item.numero_item}: {len(candidatos)} candidato(s); melhor = {melhor}", item=item.id)
 
 
+def _itens_sem_especificacao(ctx: Contexto, itens: list[ItemDemanda], limite: int | None = 8) -> list[ItemDemanda]:
+    """Itens do portfólio cuja descrição no PNCP quase não tem especificação técnica ("conforme TR")."""
+    pouco = []
+    for item in itens:
+        tecnicos = [r for r in ctx.analise.requisitos if r.item_id == item.id and natureza(r.atributo) == "produto"
+                    and r.atributo not in ATRIBUTOS_INVESTIGAVEIS and r.fonte_extracao != "investigador"]
+        if len(tecnicos) < 2:
+            pouco.append(item)
+    return pouco if limite is None else pouco[:limite]  # no Investigador cada item custa passos do agente
+
+
+def _no_especificador(ctx: Contexto, itens: list[ItemDemanda]) -> None:
+    """Lê no TR, em lote, a especificação dos itens publicados só com o nome (ver agents/especificador.py)."""
+    pendentes = _itens_sem_especificacao(ctx, itens, limite=None)
+    if not pendentes:
+        return
+    ctx.analise.requisitos.extend(especificar_pelo_tr(ctx, pendentes))
+
+
 def _no_investigador(ctx: Contexto, itens: list[ItemDemanda]) -> list[ItemDemanda]:
-    """Procura exigências contratuais ausentes nas descrições (garantia, prazo de entrega, amostra...)."""
+    """Procura nos anexos (1) a especificação técnica de itens com descrição pobre e (2) exigências
+    contratuais ausentes nas descrições (garantia, prazo de entrega, amostra...)."""
     alvo = [i for i in itens if i.categoria_inferida in _CATEGORIAS_COM_EXIGENCIAS_GLOBAIS]
-    if not alvo:
+    itens_sem_spec = _itens_sem_especificacao(ctx, itens)
+    if not alvo and not itens_sem_spec:
         return []
     presentes_em_todos = set(ATRIBUTOS_INVESTIGAVEIS)
     for item in alvo:
         presentes_em_todos &= {r.atributo for r in ctx.analise.requisitos if r.item_id == item.id}
-    faltantes = [a for a in ATRIBUTOS_INVESTIGAVEIS if a not in presentes_em_todos]
+    faltantes = [a for a in ATRIBUTOS_INVESTIGAVEIS if a not in presentes_em_todos] if alvo else []
     if not any(d.extraivel for d in ctx.analise.documentos if not d.id.startswith("pncp-item")):
         ctx.evento("investigador", "Nenhum documento com texto extraível; investigação não é possível.")
         ctx.analise.lacunas.append("Os anexos da contratação não têm texto extraível; exigências do edital (garantia, prazo, amostra) não puderam ser verificadas.")
         return []
-    achados = investigar(ctx, faltantes)
+    todos = investigar(ctx, faltantes, itens_sem_spec)
+    especificos = [r for r in todos if r.item_id != "*"]
+    achados = [r for r in todos if r.item_id == "*"]
+    afetados: list[ItemDemanda] = []
+    for r in especificos:
+        ctx.analise.requisitos.append(r)
+        item = ctx.analise.item(r.item_id)
+        if item and item not in afetados:
+            afetados.append(item)
     # As cláusulas gerais do edital valem como obrigatórias para a categoria principal da contratação
     # (a de maior valor); para as demais categorias entram como desejáveis, pois podem referir-se só ao objeto principal.
     valor_por_categoria: dict[str, float] = {}
     for item in alvo:
         valor_por_categoria[item.categoria_inferida] = valor_por_categoria.get(item.categoria_inferida, 0.0) + (item.quantidade or 0) * (item.valor_unit_estimado or 0)
     categoria_principal = max(valor_por_categoria, key=valor_por_categoria.get) if valor_por_categoria else None
-    afetados: list[ItemDemanda] = []
     for item in alvo:
         existentes = {r.atributo for r in ctx.analise.requisitos if r.item_id == item.id}
         for ach in achados:
@@ -155,7 +195,7 @@ def _no_investigador(ctx: Contexto, itens: list[ItemDemanda]) -> list[ItemDemand
             )
             if item not in afetados:
                 afetados.append(item)
-    ctx.evento("investigador", f"{len(achados)} informação(ões) encontrada(s); {len(afetados)} item(ns) reavaliado(s)")
+    ctx.evento("investigador", f"{len(achados)} exigência(s) geral(is) e {len(especificos)} especificação(ões) de item encontrada(s); {len(afetados)} item(ns) reavaliado(s)")
     return afetados
 
 
@@ -220,6 +260,8 @@ def executar_analise(
         itens=[i.model_copy() for i in itens],
     )
     llm = criar_llm_client(cfg, analise.uso_llm)
+    # Orçamento proporcional ao tamanho: um pregão de 206 itens esgotava o limite fixo já na extração
+    llm.orcamento = cfg.orcamento_tokens + 4000 * len(itens)
     analise.modo = f"llm:{llm.provedor}" if llm.disponivel else "deterministico"
     ctx = Contexto(analise=analise, empresa=empresa, indice=IndiceDocumentos(), llm=llm, cfg=cfg, on_evento=on_evento)
     try:
@@ -227,6 +269,7 @@ def executar_analise(
         _no_coletar_documentos(ctx, [d.model_copy() for d in documentos])
         _no_extrair_itens(ctx)
         relevantes = _no_filtrar_relevantes(ctx)
+        _no_especificador(ctx, relevantes)
         _casar(ctx, relevantes)
         afetados = _no_investigador(ctx, relevantes)
         if afetados:

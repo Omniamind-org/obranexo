@@ -15,12 +15,15 @@ pytestmark = pytest.mark.skipif(not (config.dir_casos / CASO / "contratacao.json
 
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "dir_analises", tmp_path)
+    monkeypatch.setattr(config, "dir_analises", tmp_path / "analises")
+    monkeypatch.setattr(config, "dir_dados", tmp_path)  # catálogo ativo e prospecções num diretório temporário
     monkeypatch.setattr(config, "llm_provider", None)  # rápido e sem cota
-    from obranexo.api.main import app
+    from obranexo.api import main
 
-    with TestClient(app) as c:
+    main._estado["empresa"] = None
+    with TestClient(main.app) as c:
         yield c
+    main._estado["empresa"] = None
 
 
 def _executar(client: TestClient, caso: str = CASO) -> str:
@@ -74,6 +77,29 @@ def test_upload_catalogo_csv(client):
     assert client.get("/api/catalogo").json()["produtos"][0]["sku"] == "X-1"
     assert client.post("/api/catalogo", files={"arquivo": ("x.txt", b"oi", "text/plain")}).status_code == 400
     assert client.delete("/api/catalogo").json()["produtos"] > 10
+
+
+def test_catalogo_editavel_e_persistido(client, tmp_path):
+    from obranexo.api import main
+
+    produto = {"id": "NOVO-1", "sku": "NOVO-1", "nome": "Luminária importada", "categoria": "luminaria_publica_led",
+               "atributos": {"potencia_w": {"valor": 120, "unidade": "W", "tipo": "numero"}}}
+    r = client.post("/api/catalogo/produtos", json={"produtos": [produto]})
+    assert r.status_code == 200 and r.json()["adicionados"] == 1
+    assert (tmp_path / "catalogo_ativo.json").exists()
+    main._estado["empresa"] = None  # simula reinício do servidor: recarrega do disco
+    skus = [p["sku"] for p in client.get("/api/catalogo").json()["produtos"]]
+    assert "NOVO-1" in skus
+    assert client.delete("/api/catalogo/produtos/NOVO-1").status_code == 200
+    assert client.delete("/api/catalogo/produtos/NOVO-1").status_code == 404
+    client.delete("/api/catalogo")
+    assert not (tmp_path / "catalogo_ativo.json").exists()
+
+
+def test_funcoes_de_ia_exigem_llm(client):
+    assert client.post("/api/catalogo/importar", data={"texto": "x" * 100}).status_code == 409
+    assert client.post("/api/prospeccoes", json={"ufs": ["GO"]}).status_code == 409
+    assert client.get("/api/prospeccoes").json() == []
 
 
 def test_fluxo_completo_de_analise(client):

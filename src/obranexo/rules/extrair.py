@@ -299,7 +299,7 @@ def extrair_requisitos(descricao: str) -> list[RequisitoBruto]:
             ("coaxial", r"COAXIAL"),
             ("multiplexado", r"MULTIPLEXAD"),
             ("aluminio", r"CONDUTOR\s*:?\s*(?:DE\s*)?ALUMINIO|CABO\s*DE\s*ALUMINIO"),
-            ("nu", r"COBRE\s*NU\b(?![^.;]*ISOLAD)"),
+            ("nu", r"COBRE\s*NU\b(?![^.;]*ISOLAD)|^(?:FIO|CABO)\b[^,;:]{0,30}\bNU\b"),
             ("pp", r"\bPP\b"),
         ):
             m = re.search(padrao, tu)

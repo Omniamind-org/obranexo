@@ -119,6 +119,7 @@ class PNCPClient:
         self.dir_cache.mkdir(parents=True, exist_ok=True)
         self.pausa_s = pausa_s
         self.offline = config.offline if offline is None else offline
+        self.aviso: str | None = None
         self._http = httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=90, follow_redirects=True)
 
     # ---------------------------------------------------------------- HTTP
@@ -128,8 +129,8 @@ class PNCPClient:
 
     @retry(
         retry=retry_if_exception_type(_Transiente),
-        stop=stop_after_attempt(4),
-        wait=wait_exponential(multiplier=1.5, min=2, max=20),
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=2, min=3, max=30),
         reraise=True,
     )
     def _get(self, url: str, params: dict[str, Any] | None = None) -> httpx.Response:
@@ -137,18 +138,30 @@ class PNCPClient:
             raise PNCPError(f"modo offline: não consulto {url}")
         resp = self._http.get(url, params=params)
         if resp.status_code in (429, 500, 502, 503, 504):
+            espera = resp.headers.get("Retry-After")
+            if resp.status_code == 429 and espera and espera.isdigit():
+                time.sleep(min(int(espera), 60))  # o portal diz quanto esperar: respeitamos
             raise _Transiente(f"HTTP {resp.status_code} em {resp.url}")
         if resp.status_code >= 400:
             raise PNCPError(f"HTTP {resp.status_code} em {resp.url}: {resp.text[:200]}")
         time.sleep(self.pausa_s)
         return resp
 
-    def get_json(self, url: str, params: dict[str, Any] | None = None, usar_cache: bool = True) -> Any:
+    def get_json(self, url: str, params: dict[str, Any] | None = None, usar_cache: bool = True, ttl_s: float | None = None) -> Any:
+        """Cache em disco. `ttl_s` define a validade (None = para sempre). Se o PNCP falhar e houver uma cópia
+        antiga, ela é usada e `self.aviso` explica a idade — melhor do que parar a prospecção."""
         chave = str(httpx.URL(url, params=params or {}))
         cache = self._cache_path(chave, ".json")
-        if usar_cache and cache.exists():
+        idade = time.time() - cache.stat().st_mtime if cache.exists() else None
+        if usar_cache and idade is not None and (ttl_s is None or idade <= ttl_s):
             return json.loads(cache.read_text(encoding="utf-8"))
-        resp = self._get(url, params)
+        try:
+            resp = self._get(url, params)
+        except (PNCPError, httpx.HTTPError) as exc:
+            if idade is not None:
+                self.aviso = f"PNCP indisponível ({str(exc)[:80]}); usando a consulta de {idade / 60:.0f} min atrás"
+                return json.loads(cache.read_text(encoding="utf-8"))
+            raise PNCPError(str(exc)) from exc
         if resp.status_code == 204 or not resp.content:
             dados: Any = []
         else:
@@ -204,7 +217,8 @@ class PNCPClient:
         }
         if uf:
             params["uf"] = uf
-        dados = self.get_json(f"{BASE_CONSULTA}/contratacoes/proposta", params, usar_cache=False)
+        # Listagem muda devagar: 30 min de cache evita o limite de requisições do portal entre prospecções
+        dados = self.get_json(f"{BASE_CONSULTA}/contratacoes/proposta", params, ttl_s=1800)
         # 204 (sem corpo) chega aqui como lista vazia
         if not isinstance(dados, dict):
             return [], 1
@@ -243,12 +257,16 @@ class PNCPClient:
             blob = resp.content
             cache.write_bytes(blob)
         nome = _nome_arquivo_seguro(nome_sugerido)
-        if blob[:4] == b"%PDF" and not nome.lower().endswith(".pdf"):
-            nome += ".pdf"
-        elif blob[:2] == b"PK" and not nome.lower().endswith((".zip", ".docx", ".xlsx")):
-            nome += ".zip"
         destino = destino_dir / nome
         destino.write_bytes(blob)
+        # Extensão pelo conteúdo: o PNCP manda docx/xlsx sem extensão (antes viravam ".zip")
+        from obranexo.documents.formatos import tipo_arquivo
+
+        sufixo = {"pdf": ".pdf", "docx": ".docx", "xlsx": ".xlsx", "zip": ".zip"}.get(tipo_arquivo(destino))
+        if sufixo and not nome.lower().endswith(sufixo):
+            final = destino.with_name(nome + sufixo)
+            destino.replace(final)
+            destino = final
         return destino
 
     # -------------------------------------------------------------- Casos
@@ -290,7 +308,7 @@ class PNCPClient:
             doc.nome = caminho.name
             doc.sha256 = hashlib.sha256(caminho.read_bytes()).hexdigest()
             doc.caminho_local = str(caminho.relative_to(destino))
-            doc.extraivel = caminho.suffix.lower() == ".pdf"
+            doc.extraivel = caminho.suffix.lower() in {".pdf", ".docx", ".xlsx", ".zip"}
             documentos.append(doc)
         salvar_caso(destino, contratacao, itens, documentos)
         return contratacao, itens, documentos

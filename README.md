@@ -8,16 +8,19 @@ MVP v0.1 para o AKCIT Camp Multicêntrico 2026.
 - Roadmap do MVP: `ROADMAP_MVP.txt`
 - Fluxo dos agentes: `docs/fluxo_agentes.md`
 
-## O que a v0.1 faz
+## O que faz
 
-1. Carrega o catálogo do fornecedor (demo em `data/catalogo_demo/produtos.json`, ou upload CSV/XLSX/JSON).
-2. Busca contratações no PNCP (ou usa os **casos reais congelados** em `data/casos/`).
-3. Extrai texto dos editais com número de página e lê cada item da contratação.
-4. Extrai requisitos técnicos (regras determinísticas + LLM opcional).
-5. Compara requisito a requisito com o catálogo por um **motor de regras** (sem LLM).
-6. O **Agente Investigador** procura no edital o que faltava (garantia, prazo de entrega, amostra…).
-7. O **Agente Verificador** confere cada citação no documento, detecta conflitos e marca o que precisa de revisão humana.
-8. Classifica a oportunidade (publicada / planejada / indireta), prioriza e gera o **dossiê comercial** com evidências e próximos passos.
+1. **Catálogo a partir de fichas reais**: link da página/PDF do fabricante, arquivo (PDF, DOCX, XLSX, ZIP) ou texto
+   colado → o LLM propõe os produtos com atributos validados → o usuário revisa e adiciona. Também aceita planilha.
+2. **Agente de Prospecção**: lê o catálogo, decide os termos de busca, consulta as licitações com propostas abertas
+   no PNCP, examina itens, escolhe o que analisar a fundo e entrega um ranking justificado — sem palavras-chave fixas.
+3. **Análise de uma licitação**: lê edital e anexos (PDF, DOCX, XLSX e ZIPs expandidos), extrai requisitos dos itens
+   em lote, o **Especificador** busca no TR a especificação de itens publicados só com o nome, o **motor de regras**
+   compara com o catálogo, o **Investigador** procura o que falta com ferramentas, o **Verificador** confere cada
+   citação e o **Planejador** escreve o **dossiê** com evidências e próximos passos.
+
+Toda citação é conferida literalmente no documento; todo valor proposto por um modelo é validado por tipo e faixa.
+Detalhes em `docs/fluxo_agentes.md`.
 
 Sem chave de API, tudo roda em modo determinístico. Com uma chave, os agentes de linguagem complementam a
 extração, a investigação, a verificação e o plano. Provedores suportados (SDKs oficiais):
@@ -74,7 +77,7 @@ navegador ──► web/ (HTML + CSS + JavaScript puro, ES modules, sem build)
 
 O frontend não tem dependências externas nem etapa de build: o próprio FastAPI serve a pasta `web/`,
 e a demo funciona offline. Rotas da interface (hash): `#/inicio`, `#/catalogo`, `#/demandas`,
-`#/casos/<caso>`, `#/analises`, `#/analises/<id>`, `#/metricas`, `#/sobre`.
+`#/agente`, `#/agente/<id>`, `#/casos/<caso>`, `#/analises`, `#/analises/<id>`, `#/metricas`, `#/sobre`.
 
 ### Endpoints
 
@@ -82,6 +85,10 @@ e a demo funciona offline. Rotas da interface (hash): `#/inicio`, `#/catalogo`, 
 |---|---|---|
 | GET | `/api/status` | versão, provedor/modelos de LLM, modo offline, contadores |
 | GET · POST · DELETE | `/api/catalogo` | catálogo ativo · enviar JSON/CSV/XLSX (multipart `arquivo`) · restaurar o demo |
+| POST | `/api/catalogo/importar` | ficha técnica real (multipart `url`, `arquivo` ou `texto`) → produtos propostos pelo LLM, para revisão |
+| POST · DELETE | `/api/catalogo/produtos` · `/api/catalogo/produtos/{sku}` | adicionar produtos revisados · remover (o catálogo fica salvo em disco) |
+| POST | `/api/prospeccoes` | `{ufs, horizonte_dias, max_analises}` → inicia o Agente de Prospecção (202, devolve o job) |
+| GET | `/api/prospeccoes` · `/api/prospeccoes/{id}` | histórico · ranking, buscas, candidatos e trilha de decisões do agente |
 | GET | `/api/casos` · `/api/casos/{caso}` | casos congelados · itens, anexos e análises de um caso |
 | GET | `/api/pncp/buscar?uf&palavras&abertas&dias&max_paginas` | busca ao vivo no PNCP |
 | POST | `/api/pncp/coletar` | `{cnpj, ano, sequencial, max_mb}` → baixa e congela uma contratação |
@@ -100,6 +107,7 @@ e a demo funciona offline. Rotas da interface (hash): `#/inicio`, `#/catalogo`, 
 |---|---|---|
 | `goianira_pe038_2026` | Goianira/GO — PE 038/2026 — RP de luminárias LED (R$ 1,67 mi) | COMPATÍVEL, INCOMPATÍVEL e INDETERMINADO com evidências no edital |
 | `aruana_pp005_2026` | Aruanã/GO — PP 005/2026 — luminárias LED 50/100/150 W (R$ 1,42 mi) | exigência de 170 lm/W derruba produtos comuns |
+| `anapolis_pe_material_eletrico_2026` | Anápolis/GO — RP de material elétrico e iluminação pública (R$ 26,5 mi, 206 itens), escolhida e baixada pelo Agente de Prospecção | itens publicados só com o nome ("Cabo elétrico flexível"): o Especificador lê a especificação na relação de itens do TR (dentro de um ZIP) |
 | `cego_*` (5 casos) | Pregões **com propostas abertas** em GO em 23/10/2026: refletores (Itumbiara), material elétrico (Itaberaí), iluminação de rodovia (Chapadão do Céu), iluminação pública (Cezarina), material de consumo (Base Aérea de Anápolis) | teste cego de robustez — ver `docs/teste_cego_2026-10-23.md`; gabarito humano pendente em `docs/teste_cego_rotulagem.csv` |
 | `seinfra_basileu_franca_2026` | Estado de Goiás — Concorrência 02/2026 — obra da EFG Basileu França (R$ 31,98 mi) | classificação INDIRETA (o comprador é a construtora) e varredura de insumos elétricos nos projetos; dos 100 anexos, só edital, TR, ETP, orçamento e projeto elétrico foram congelados — os demais ficam listados sem download |
 

@@ -48,13 +48,81 @@ def _valor_bruto_llm(r: RequisitoLLM):
     return r.valor_texto
 
 
+class ItemExtraido(BaseModel):
+    numero_item: int
+    categoria: str
+    requisitos: list[RequisitoLLM]
+
+
+class ExtracaoLote(BaseModel):
+    itens: list[ItemExtraido]
+
+
 def prompt_item(item: ItemDemanda) -> str:
     return f'<item numero="{item.numero_item}">\n{item.descricao}\n</item>\nExtraia os requisitos técnicos deste item.'
 
 
 def chamar_extrator(ctx: Contexto, item: ItemDemanda) -> ExtracaoItem:
-    """Só a chamada ao modelo (fica no cache em disco) — usada também para pré-carregar itens em paralelo."""
+    """Extração de um item só (fallback quando o lote falha ou não traz o item)."""
     return ctx.llm.extrair(ctx.cfg.model_extracao, SYSTEM_EXTRATOR, prompt_item(item), ExtracaoItem)
+
+
+# Limites de um lote: mantêm a saída bem abaixo do teto do modelo e o erro de um lote não custa muito
+_LOTE_MAX_ITENS = 10
+_LOTE_MAX_CHARS = 9000
+
+
+def _lotes(itens: list[ItemDemanda]) -> list[list[ItemDemanda]]:
+    lotes: list[list[ItemDemanda]] = []
+    atual: list[ItemDemanda] = []
+    tamanho = 0
+    for item in itens:
+        n = len(item.descricao)
+        if atual and (len(atual) >= _LOTE_MAX_ITENS or tamanho + n > _LOTE_MAX_CHARS):
+            lotes.append(atual)
+            atual, tamanho = [], 0
+        atual.append(item)
+        tamanho += n
+    if atual:
+        lotes.append(atual)
+    return lotes
+
+
+def extrair_lotes(ctx: Contexto, itens: list[ItemDemanda]) -> dict[int, ExtracaoItem]:
+    """Vários itens por chamada ao LLM (até 10). Num pregão de 32 itens: 4 chamadas em vez de 32 —
+    é o que torna viável rodar os agentes no nível gratuito, que limita requisições por minuto."""
+    if not ctx.usar_llm or not itens:
+        return {}
+    from concurrent.futures import ThreadPoolExecutor
+
+    lotes = _lotes(itens)
+
+    def chamar(lote: list[ItemDemanda]) -> ExtracaoLote | None:
+        prompt = (
+            "\n\n".join(f'<item numero="{i.numero_item}">\n{i.descricao}\n</item>' for i in lote)
+            + f"\n\nExtraia os requisitos técnicos de CADA um dos {len(lote)} itens acima, um objeto por item, "
+            "com o mesmo numero_item. Os requisitos de um item vêm só da descrição DELE."
+        )
+        try:
+            return ctx.llm.extrair(ctx.cfg.model_extracao, SYSTEM_EXTRATOR, prompt, ExtracaoLote, max_tokens=24000)
+        except Exception:
+            return None
+
+    with ThreadPoolExecutor(max_workers=max(1, min(ctx.cfg.llm_paralelo, len(lotes)))) as pool:
+        respostas = list(pool.map(chamar, lotes))
+    resultado: dict[int, ExtracaoItem] = {}
+    validos = {i.numero_item for i in itens}
+    for resp in respostas:
+        for it in (resp.itens if resp else []):
+            if it.numero_item in validos and it.numero_item not in resultado:
+                resultado[it.numero_item] = ExtracaoItem(categoria=it.categoria, requisitos=it.requisitos)
+    falhas = sum(1 for r in respostas if r is None)
+    ctx.evento(
+        "extrair_itens",
+        f"Analista Técnico (LLM): {len(resultado)}/{len(itens)} itens em {len(lotes)} chamada(s)" + (f"; {falhas} lote(s) falharam" if falhas else ""),
+        modelo=ctx.cfg.model_extracao,
+    )
+    return resultado
 
 
 def _mesmo_valor(a, b) -> bool:
@@ -66,8 +134,9 @@ def _mesmo_valor(a, b) -> bool:
         return str(a).strip().lower() == str(b).strip().lower()
 
 
-def extrair_item(ctx: Contexto, item: ItemDemanda, doc_item_id: str) -> list[Requisito]:
-    """Extrai os requisitos de um item. `doc_item_id` é o documento virtual com a descrição do item."""
+def extrair_item(ctx: Contexto, item: ItemDemanda, doc_item_id: str, extracao: ExtracaoItem | None = None) -> list[Requisito]:
+    """Extrai os requisitos de um item. `doc_item_id` é o documento virtual com a descrição do item.
+    `extracao` vem do lote; se faltar, faz uma chamada só para este item."""
     item.categoria_inferida = item.categoria_inferida or inferir_categoria(item.descricao)
     requisitos: list[Requisito] = []
 
@@ -93,11 +162,12 @@ def extrair_item(ctx: Contexto, item: ItemDemanda, doc_item_id: str) -> list[Req
     # 2) LLM (complementar)
     if not ctx.usar_llm:
         return requisitos
-    try:
-        extracao = chamar_extrator(ctx, item)
-    except Exception as exc:  # LLM é complementar: falha não derruba a análise
-        ctx.evento("extrair_itens", f"Item {item.numero_item}: extrator LLM indisponível ({exc})", item=item.id)
-        return requisitos
+    if extracao is None:
+        try:
+            extracao = chamar_extrator(ctx, item)
+        except Exception as exc:  # LLM é complementar: falha não derruba a análise
+            ctx.evento("extrair_itens", f"Item {item.numero_item}: extrator LLM indisponível ({exc})", item=item.id)
+            return requisitos
 
     # O LLM só sugere categoria quando as regras não reconheceram o item — nunca para um acessório,
     # que as regras tiram do portfólio de propósito ("suporte para luminária" não é luminária).

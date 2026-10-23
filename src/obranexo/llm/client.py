@@ -68,14 +68,19 @@ class LLMClient(ABC):
     def __init__(self, cfg: Config | None = None, uso: UsoLLM | None = None):
         self.cfg = cfg or config
         self.uso = uso or UsoLLM()
+        self.orcamento = self.cfg.orcamento_tokens  # quem cria o cliente pode ajustar (ex.: pelo nº de itens)
         self.cfg.dir_llm_cache.mkdir(parents=True, exist_ok=True)
 
     @property
     def disponivel(self) -> bool:
         return False
 
-    def excedeu_orcamento(self) -> bool:
-        return (self.uso.tokens_entrada + self.uso.tokens_saida) > self.cfg.orcamento_tokens
+    def tokens_usados(self) -> int:
+        return self.uso.tokens_entrada + self.uso.tokens_saida
+
+    def excedeu_orcamento(self, desde: int = 0, limite: int | None = None) -> bool:
+        """Sem argumentos: orçamento total do cliente. Com `desde`/`limite`: orçamento de um trecho (ex.: um agente)."""
+        return (self.tokens_usados() - desde) > (limite if limite is not None else self.orcamento)
 
     # ------------------------------------------------------------ cache
 

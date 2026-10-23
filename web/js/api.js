@@ -32,6 +32,19 @@ export const api = {
     return req('POST', '/api/catalogo', fd);
   },
   restaurarCatalogo: () => req('DELETE', '/api/catalogo'),
+  importarFicha: (arquivo, texto, url) => {
+    const fd = new FormData();
+    if (arquivo) fd.append('arquivo', arquivo);
+    if (texto) fd.append('texto', texto);
+    if (url) fd.append('url', url);
+    return req('POST', '/api/catalogo/importar', fd);
+  },
+  adicionarProdutos: (produtos) => req('POST', '/api/catalogo/produtos', { produtos }),
+  removerProduto: (sku) => req('DELETE', `/api/catalogo/produtos/${encodeURIComponent(sku)}`),
+
+  iniciarProspeccao: (pedido) => req('POST', '/api/prospeccoes', pedido),
+  prospeccoes: () => req('GET', '/api/prospeccoes'),
+  prospeccao: (id) => req('GET', `/api/prospeccoes/${encodeURIComponent(id)}`),
 
   casos: () => req('GET', '/api/casos'),
   caso: (nome) => req('GET', `/api/casos/${encodeURIComponent(nome)}`),
