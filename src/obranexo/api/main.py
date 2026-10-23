@@ -620,5 +620,9 @@ def conteudo_fluxo() -> PlainTextResponse:
 # Frontend estático (montado por último para não sombrear /api)
 # ---------------------------------------------------------------------------
 
+if (config.raiz / "images").exists():
+    app.mount("/images", StaticFiles(directory=config.raiz / "images"), name="images")
+
 if config.dir_web.exists():
     app.mount("/", StaticFiles(directory=config.dir_web, html=True), name="web")
+

@@ -3,39 +3,40 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ObraNexo</title>
-  <meta name="description" content="Inteligência comercial agêntica para contratações públicas">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23102a35'/%3E%3Cpath d='M9 22V10l14 12V10' stroke='%232bb3a3' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <title>ObraNexo // Mission Control PNCP</title>
+  <meta name="description" content="Inteligência comercial agêntica e auditoria forense para contratações públicas">
+  <link rel="icon" type="image/png" href="/images/emblem.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar">
-      <a class="brand" href="#/inicio">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 32 32"><path d="M9 22V10l14 12V10" /></svg>
-        </span>
-        <span>
-          <span class="brand-name">ObraNexo</span>
-          <span class="brand-sub">Inteligência comercial</span>
-        </span>
-      </a>
-      <nav class="nav" id="nav" aria-label="Navegação principal">
-        <a href="#/inicio" data-rota="inicio"><span data-icon="home"></span>Início</a>
-        <a href="#/agente" data-rota="agente"><span data-icon="bolt"></span>Agente de prospecção</a>
-        <a href="#/catalogo" data-rota="catalogo"><span data-icon="box"></span>Catálogo</a>
-        <a href="#/demandas" data-rota="demandas"><span data-icon="search"></span>Demandas</a>
-        <a href="#/analises" data-rota="analises"><span data-icon="file"></span>Análises</a>
-        <a href="#/metricas" data-rota="metricas"><span data-icon="chart"></span>Métricas</a>
-        <a href="#/sobre" data-rota="sobre"><span data-icon="info"></span>Como funciona</a>
-      </nav>
-      <div class="sidebar-foot" id="status-sistema">
-        <div class="skeleton-line"></div>
+    <header class="topbar">
+      <div class="topbar-brand">
+        <a class="brand" href="#/inicio">
+          <img class="brand-emblem" src="/images/emblem.png" alt="ObraNexo">
+          <img class="brand-text-img" src="/images/text.png" alt="ObraNexo">
+        </a>
       </div>
-    </aside>
+      <nav class="nav" id="nav" aria-label="Navegação principal">
+        <a href="#/inicio" data-rota="inicio"><span data-icon="home"></span><span>Painel Geral</span><span class="nav-hotkey">01</span></a>
+        <a href="#/agente" data-rota="agente"><span data-icon="bolt"></span><span>Prospecção IA</span><span class="nav-hotkey">02</span></a>
+        <a href="#/catalogo" data-rota="catalogo"><span data-icon="box"></span><span>Catálogo Técnico</span><span class="nav-hotkey">03</span></a>
+        <a href="#/demandas" data-rota="demandas"><span data-icon="search"></span><span>Radar PNCP</span><span class="nav-hotkey">04</span></a>
+        <a href="#/analises" data-rota="analises"><span data-icon="file"></span><span>Dossiês & Análises</span><span class="nav-hotkey">05</span></a>
+        <a href="#/metricas" data-rota="metricas"><span data-icon="chart"></span><span>Métricas</span><span class="nav-hotkey">06</span></a>
+        <a href="#/sobre" data-rota="sobre"><span data-icon="info"></span><span>Arquitetura</span><span class="nav-hotkey">07</span></a>
+      </nav>
+    </header>
     <main class="main">
+      <div class="scanlines" aria-hidden="true"></div>
       <div id="view" class="view" tabindex="-1"></div>
     </main>
+  </div>
+  <div id="status-sistema" class="status-dock" aria-label="Telemetria do sistema">
+    <div class="skeleton-line" style="width:180px;height:24px"></div>
   </div>
   <div id="modal-root"></div>
   <div id="toasts" class="toasts" aria-live="polite"></div>
