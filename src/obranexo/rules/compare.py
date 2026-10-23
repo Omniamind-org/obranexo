@@ -137,6 +137,14 @@ def comparar_requisito(req: Requisito, produto: Produto) -> DetalheRequisito:
         if req.atributo == "classe_isolacao":
             romanos = {"i": "1", "ii": "2", "iii": "3"}
             alvo, base = romanos.get(alvo, alvo), romanos.get(base, base)
+        if req.atributo == "tipo_cabo":
+            # Valores curtos ("pp", "nu"): similaridade aproximada daria falso acerto; exige a palavra exata
+            ok = re.search(rf"\b{re.escape(alvo)}\b", base) is not None
+            return detalhe(
+                ResultadoRequisito.ATENDE if ok else ResultadoRequisito.NAO_ATENDE,
+                f"{nome}: exigido '{req.valor}', produto '{atr.valor}'.",
+                atr.valor,
+            )
         if req.atributo == "frequencia_hz":
             # "50/60" exigido: produto precisa cobrir ambas; "60" exigido: basta conter 60
             exigidas = set(re.findall(r"50|60", alvo))
@@ -241,7 +249,22 @@ def agregar(detalhes: list[DetalheRequisito], requisitos: dict[str, Requisito]) 
     return ResultadoItem.COMPATIVEL, score
 
 
+def comparar_requisito_seguro(req: Requisito, produto: Produto) -> DetalheRequisito:
+    """Um valor que não dá para interpretar vira INDETERMINADO — nunca derruba a análise inteira
+    (no teste cego, `cct_k = "branca fria"` vindo do LLM quebrava a comparação de todos os itens)."""
+    try:
+        return comparar_requisito(req, produto)
+    except (TypeError, ValueError, IndexError) as exc:
+        return DetalheRequisito(
+            requisito_id=req.id,
+            atributo=req.atributo,
+            resultado=ResultadoRequisito.INDETERMINADO,
+            justificativa=f"{rotulo(req.atributo)}: valor não interpretável ({req.valor!r}; {type(exc).__name__}).",
+            valor_exigido=req.valor,
+        )
+
+
 def comparar_item(requisitos: list[Requisito], produto: Produto) -> tuple[ResultadoItem, float, list[DetalheRequisito]]:
-    detalhes = [comparar_requisito(r, produto) for r in requisitos]
+    detalhes = [comparar_requisito_seguro(r, produto) for r in requisitos]
     resultado, score = agregar(detalhes, {r.id: r for r in requisitos})
     return resultado, score, detalhes

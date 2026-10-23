@@ -1,0 +1,46 @@
+[
+ {
+  "id": "doc-1",
+  "contratacao_id": "25043530000148-1-000066/2026",
+  "nome": "1_Pregão_Eletrônico_009-2026_-_MATERIAIS_DE_ILUMINACAO_PUBLICA_-_ATUALIZADO.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/25043530000148/compras/2026/66/arquivos/1",
+  "sha256": "499c6c2df2d6dc0ffbbd913cbbe3b3b738a28e0f13a00fcd0727c85c3a2df3be",
+  "caminho_local": "arquivos\\1_Pregão_Eletrônico_009-2026_-_MATERIAIS_DE_ILUMINACAO_PUBLICA_-_ATUALIZADO.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-2",
+  "contratacao_id": "25043530000148-1-000066/2026",
+  "nome": "2_Certidão_de_Publicação_3106.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/25043530000148/compras/2026/66/arquivos/2",
+  "sha256": "a330813cedab7c60dcde95cf281b8daeaf8fd5b006b3ca6501ba657b41ea6fa6",
+  "caminho_local": "arquivos\\2_Certidão_de_Publicação_3106.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-3",
+  "contratacao_id": "25043530000148-1-000066/2026",
+  "nome": "3_TR_-_MATERIAIS_DE_CONSTRUÇÃO.pdf",
+  "tipo_doc": "Termo de Referência",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/25043530000148/compras/2026/66/arquivos/3",
+  "sha256": "0c7ad931aa6b1fe43fa03fd2e84ffa5ef2b5bbe3e5c996292bd9c55f8a5cae10",
+  "caminho_local": "arquivos\\3_TR_-_MATERIAIS_DE_CONSTRUÇÃO.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-4",
+  "contratacao_id": "25043530000148-1-000066/2026",
+  "nome": "4_ESTUDO_TÉCNICO_PRELIMINAR_-_MATERIAIS_DE_CONSTRUÇÃO.pdf",
+  "tipo_doc": "Estudo Técnico Preliminar",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/25043530000148/compras/2026/66/arquivos/4",
+  "sha256": "221a27e277d96cb05df94cf80a6c0160342e5efa55718254d43fda60e7d896d7",
+  "caminho_local": "arquivos\\4_ESTUDO_TÉCNICO_PRELIMINAR_-_MATERIAIS_DE_CONSTRUÇÃO.pdf",
+  "paginas": 0,
+  "extraivel": true
+ }
+]

@@ -3,119 +3,1051 @@
     "id": "demo-eletrica",
     "nome": "Distribuidora Demo Elétrica Ltda. (fictícia)",
     "cnpj": null,
-    "ufs_atendidas": ["GO", "DF", "TO", "MT"],
+    "ufs_atendidas": [
+      "GO",
+      "DF",
+      "TO",
+      "MT"
+    ],
     "raio_km": 600,
     "observacoes": "Catálogo DEMONSTRATIVO construído para o MVP. Produtos e valores são fictícios, inspirados em fichas técnicas públicas típicas do mercado. Inclui de propósito produtos que atendem, que não atendem e produtos com ficha incompleta."
   },
   "produtos": [
     {
-      "sku": "LPL-100-50K", "nome": "Luminária pública LED 100 W 5000 K", "categoria": "luminaria_publica_led", "subcategoria": "via pública",
+      "sku": "LPL-100-50K",
+      "nome": "Luminária pública LED 100 W 5000 K",
+      "categoria": "luminaria_publica_led",
+      "subcategoria": "via pública",
       "descricao": "Luminária viária LED 100 W, corpo em alumínio injetado, lente PMMA, driver dimerizável 0-10 V, tomada NEMA 7 pinos.",
-      "atributos": {"potencia_w": 100, "tensao_v": [100, 277], "frequencia_hz": "50/60", "cct_k": 5000, "fluxo_lm": 14500, "eficiencia_lm_w": 145, "irc": 70, "fator_potencia": 0.98, "ip": "IP66", "ik": "IK09", "vida_util_h": 60000, "garantia_anos": 5, "inmetro": true, "dimerizavel": true, "tomada_rele": true, "dps_ka": 10, "classe_isolacao": "I", "temp_operacao_c": [-10, 50], "material_corpo": "alumínio injetado", "lente": "PMMA", "led_tipo": "SMD", "angulo_abertura": "70x140"},
-      "normas": ["ABNT NBR 15129", "ABNT NBR IEC 60598-1", "ABNT NBR IEC 61547", "ABNT NBR 16026"],
-      "certificacoes": ["INMETRO Portaria 62/2022", "Curva fotométrica IES", "Relatório de ensaios LM-79/LM-80", "Termo de garantia do fabricante 5 anos"],
-      "preco_ref": 289.0, "prazo_entrega_dias": 10, "estoque": 1800
+      "atributos": {
+        "potencia_w": 100,
+        "tensao_v": [
+          100,
+          277
+        ],
+        "frequencia_hz": "50/60",
+        "cct_k": 5000,
+        "fluxo_lm": 14500,
+        "eficiencia_lm_w": 145,
+        "irc": 70,
+        "fator_potencia": 0.98,
+        "ip": "IP66",
+        "ik": "IK09",
+        "vida_util_h": 60000,
+        "garantia_anos": 5,
+        "inmetro": true,
+        "dimerizavel": true,
+        "tomada_rele": true,
+        "dps_ka": 10,
+        "classe_isolacao": "I",
+        "temp_operacao_c": [
+          -10,
+          50
+        ],
+        "material_corpo": "alumínio injetado",
+        "lente": "PMMA",
+        "led_tipo": "SMD",
+        "angulo_abertura": "70x140"
+      },
+      "normas": [
+        "ABNT NBR 15129",
+        "ABNT NBR IEC 60598-1",
+        "ABNT NBR IEC 61547",
+        "ABNT NBR 16026"
+      ],
+      "certificacoes": [
+        "INMETRO Portaria 62/2022",
+        "Curva fotométrica IES",
+        "Relatório de ensaios LM-79/LM-80",
+        "Termo de garantia do fabricante 5 anos"
+      ],
+      "preco_ref": 289.0,
+      "prazo_entrega_dias": 10,
+      "estoque": 1800
     },
     {
-      "sku": "LPL-100-50K-PRO", "nome": "Luminária pública LED 100 W 5000 K PRO (alta eficiência)", "categoria": "luminaria_publica_led", "subcategoria": "via pública",
+      "sku": "LPL-100-50K-PRO",
+      "nome": "Luminária pública LED 100 W 5000 K PRO (alta eficiência)",
+      "categoria": "luminaria_publica_led",
+      "subcategoria": "via pública",
       "descricao": "Linha PRO: 175 lm/W, lente policarbonato com refrator de vidro plano temperado, IK10. Ficha técnica incompleta no catálogo (garantia a confirmar com o fabricante).",
-      "atributos": {"potencia_w": 100, "tensao_v": [100, 277], "frequencia_hz": "50/60", "cct_k": 5000, "fluxo_lm": 17500, "eficiencia_lm_w": 175, "irc": 70, "fator_potencia": 0.98, "ip": "IP66", "ik": "IK10", "vida_util_h": 120000, "inmetro": true, "dimerizavel": true, "tomada_rele": true, "dps_ka": 10, "classe_isolacao": "I", "temp_operacao_c": [-20, 50], "material_corpo": "alumínio injetado a alta pressão", "lente": "policarbonato com refrator de vidro plano", "led_tipo": "SMD", "angulo_abertura": "70x140"},
-      "normas": ["ABNT NBR 15129", "ABNT NBR IEC 60598-1"],
-      "certificacoes": ["INMETRO Portaria 62/2022", "Curva fotométrica IES", "Relatório de ensaios LM-79/LM-80", "Termo de garantia do fabricante (prazo a confirmar)"],
-      "preco_ref": 455.0, "prazo_entrega_dias": 30, "estoque": 400
+      "atributos": {
+        "potencia_w": 100,
+        "tensao_v": [
+          100,
+          277
+        ],
+        "frequencia_hz": "50/60",
+        "cct_k": 5000,
+        "fluxo_lm": 17500,
+        "eficiencia_lm_w": 175,
+        "irc": 70,
+        "fator_potencia": 0.98,
+        "ip": "IP66",
+        "ik": "IK10",
+        "vida_util_h": 120000,
+        "inmetro": true,
+        "dimerizavel": true,
+        "tomada_rele": true,
+        "dps_ka": 10,
+        "classe_isolacao": "I",
+        "temp_operacao_c": [
+          -20,
+          50
+        ],
+        "material_corpo": "alumínio injetado a alta pressão",
+        "lente": "policarbonato com refrator de vidro plano",
+        "led_tipo": "SMD",
+        "angulo_abertura": "70x140"
+      },
+      "normas": [
+        "ABNT NBR 15129",
+        "ABNT NBR IEC 60598-1"
+      ],
+      "certificacoes": [
+        "INMETRO Portaria 62/2022",
+        "Curva fotométrica IES",
+        "Relatório de ensaios LM-79/LM-80",
+        "Termo de garantia do fabricante (prazo a confirmar)"
+      ],
+      "preco_ref": 455.0,
+      "prazo_entrega_dias": 30,
+      "estoque": 400
     },
     {
-      "sku": "LPL-150-50K-PRO", "nome": "Luminária pública LED 150 W 5000 K PRO", "categoria": "luminaria_publica_led", "subcategoria": "via pública",
+      "sku": "LPL-150-50K-PRO",
+      "nome": "Luminária pública LED 150 W 5000 K PRO",
+      "categoria": "luminaria_publica_led",
+      "subcategoria": "via pública",
       "descricao": "Linha PRO 150 W para avenidas: 173 lm/W, 26.000 lm, IK10, DPS 10 kA integrado, fixação ajustável 0-15° para braço 33-60,3 mm.",
-      "atributos": {"potencia_w": 150, "tensao_v": [100, 277], "frequencia_hz": "50/60", "cct_k": 5000, "fluxo_lm": 26000, "eficiencia_lm_w": 173, "irc": 70, "fator_potencia": 0.96, "ip": "IP66", "ik": "IK10", "vida_util_h": 120000, "garantia_anos": 5, "inmetro": true, "dimerizavel": true, "tomada_rele": true, "dps_ka": 10, "classe_isolacao": "I", "temp_operacao_c": [-20, 50], "material_corpo": "alumínio injetado a alta pressão", "lente": "policarbonato com refrator de vidro plano", "led_tipo": "SMD", "angulo_abertura": "70x140", "fixacao": "encaixe para braço 33 a 60,3 mm, ajuste 0-15°"},
-      "normas": ["ABNT NBR 15129", "ABNT NBR IEC 60598-1", "ABNT NBR IEC 61547"],
-      "certificacoes": ["INMETRO Portaria 62/2022", "Curva fotométrica IES", "Relatório de ensaios LM-79/LM-80", "Termo de garantia do fabricante 5 anos"],
-      "preco_ref": 610.0, "prazo_entrega_dias": 15, "estoque": 250
+      "atributos": {
+        "potencia_w": 150,
+        "tensao_v": [
+          100,
+          277
+        ],
+        "frequencia_hz": "50/60",
+        "cct_k": 5000,
+        "fluxo_lm": 26000,
+        "eficiencia_lm_w": 173,
+        "irc": 70,
+        "fator_potencia": 0.96,
+        "ip": "IP66",
+        "ik": "IK10",
+        "vida_util_h": 120000,
+        "garantia_anos": 5,
+        "inmetro": true,
+        "dimerizavel": true,
+        "tomada_rele": true,
+        "dps_ka": 10,
+        "classe_isolacao": "I",
+        "temp_operacao_c": [
+          -20,
+          50
+        ],
+        "material_corpo": "alumínio injetado a alta pressão",
+        "lente": "policarbonato com refrator de vidro plano",
+        "led_tipo": "SMD",
+        "angulo_abertura": "70x140",
+        "fixacao": "encaixe para braço 33 a 60,3 mm, ajuste 0-15°"
+      },
+      "normas": [
+        "ABNT NBR 15129",
+        "ABNT NBR IEC 60598-1",
+        "ABNT NBR IEC 61547"
+      ],
+      "certificacoes": [
+        "INMETRO Portaria 62/2022",
+        "Curva fotométrica IES",
+        "Relatório de ensaios LM-79/LM-80",
+        "Termo de garantia do fabricante 5 anos"
+      ],
+      "preco_ref": 610.0,
+      "prazo_entrega_dias": 15,
+      "estoque": 250
     },
     {
-      "sku": "LPL-50-60K", "nome": "Luminária pública LED 50 W 6000 K", "categoria": "luminaria_publica_led", "subcategoria": "via pública",
+      "sku": "LPL-50-60K",
+      "nome": "Luminária pública LED 50 W 6000 K",
+      "categoria": "luminaria_publica_led",
+      "subcategoria": "via pública",
       "descricao": "Luminária viária LED 50 W para ruas residenciais, corpo em alumínio, lente PMMA, driver dimerizável, tomada para relé.",
-      "atributos": {"potencia_w": 50, "tensao_v": [100, 277], "frequencia_hz": "50/60", "cct_k": 6000, "fluxo_lm": 7200, "eficiencia_lm_w": 144, "irc": 70, "fator_potencia": 0.98, "ip": "IP66", "ik": "IK08", "vida_util_h": 50000, "garantia_anos": 5, "inmetro": true, "dimerizavel": true, "tomada_rele": true, "dps_ka": 6, "classe_isolacao": "I", "temp_operacao_c": [-10, 50], "material_corpo": "alumínio injetado", "lente": "PMMA", "led_tipo": "SMD", "angulo_abertura": "70x140"},
-      "normas": ["ABNT NBR 15129", "ABNT NBR IEC 60598-1"],
-      "certificacoes": ["INMETRO Portaria 62/2022", "Curva fotométrica IES", "Relatório de ensaios LM-79/LM-80", "Termo de garantia do fabricante 5 anos"],
-      "preco_ref": 238.0, "prazo_entrega_dias": 10, "estoque": 3200
+      "atributos": {
+        "potencia_w": 50,
+        "tensao_v": [
+          100,
+          277
+        ],
+        "frequencia_hz": "50/60",
+        "cct_k": 6000,
+        "fluxo_lm": 7200,
+        "eficiencia_lm_w": 144,
+        "irc": 70,
+        "fator_potencia": 0.98,
+        "ip": "IP66",
+        "ik": "IK08",
+        "vida_util_h": 50000,
+        "garantia_anos": 5,
+        "inmetro": true,
+        "dimerizavel": true,
+        "tomada_rele": true,
+        "dps_ka": 6,
+        "classe_isolacao": "I",
+        "temp_operacao_c": [
+          -10,
+          50
+        ],
+        "material_corpo": "alumínio injetado",
+        "lente": "PMMA",
+        "led_tipo": "SMD",
+        "angulo_abertura": "70x140"
+      },
+      "normas": [
+        "ABNT NBR 15129",
+        "ABNT NBR IEC 60598-1"
+      ],
+      "certificacoes": [
+        "INMETRO Portaria 62/2022",
+        "Curva fotométrica IES",
+        "Relatório de ensaios LM-79/LM-80",
+        "Termo de garantia do fabricante 5 anos"
+      ],
+      "preco_ref": 238.0,
+      "prazo_entrega_dias": 10,
+      "estoque": 3200
     },
     {
-      "sku": "LPL-50-50K-ECO", "nome": "Luminária pública LED 50 W 5000 K ECO", "categoria": "luminaria_publica_led", "subcategoria": "via pública",
+      "sku": "LPL-50-50K-ECO",
+      "nome": "Luminária pública LED 50 W 5000 K ECO",
+      "categoria": "luminaria_publica_led",
+      "subcategoria": "via pública",
       "descricao": "Linha econômica: 130 lm/W, IP65, sem dimerização, garantia 3 anos.",
-      "atributos": {"potencia_w": 50, "tensao_v": [100, 240], "frequencia_hz": "50/60", "cct_k": 5000, "fluxo_lm": 6500, "eficiencia_lm_w": 130, "irc": 70, "fator_potencia": 0.95, "ip": "IP65", "ik": "IK08", "vida_util_h": 30000, "garantia_anos": 3, "inmetro": true, "dimerizavel": false, "tomada_rele": true, "classe_isolacao": "I", "temp_operacao_c": [-10, 45], "material_corpo": "alumínio", "lente": "policarbonato", "led_tipo": "SMD", "angulo_abertura": "120"},
-      "normas": ["ABNT NBR IEC 60598-1"],
-      "certificacoes": ["INMETRO Portaria 62/2022"],
-      "preco_ref": 169.0, "prazo_entrega_dias": 10, "estoque": 5000
+      "atributos": {
+        "potencia_w": 50,
+        "tensao_v": [
+          100,
+          240
+        ],
+        "frequencia_hz": "50/60",
+        "cct_k": 5000,
+        "fluxo_lm": 6500,
+        "eficiencia_lm_w": 130,
+        "irc": 70,
+        "fator_potencia": 0.95,
+        "ip": "IP65",
+        "ik": "IK08",
+        "vida_util_h": 30000,
+        "garantia_anos": 3,
+        "inmetro": true,
+        "dimerizavel": false,
+        "tomada_rele": true,
+        "classe_isolacao": "I",
+        "temp_operacao_c": [
+          -10,
+          45
+        ],
+        "material_corpo": "alumínio",
+        "lente": "policarbonato",
+        "led_tipo": "SMD",
+        "angulo_abertura": "120"
+      },
+      "normas": [
+        "ABNT NBR IEC 60598-1"
+      ],
+      "certificacoes": [
+        "INMETRO Portaria 62/2022"
+      ],
+      "preco_ref": 169.0,
+      "prazo_entrega_dias": 10,
+      "estoque": 5000
     },
     {
-      "sku": "LPL-80-57K", "nome": "Luminária pública LED 80 W 5700 K", "categoria": "luminaria_publica_led", "subcategoria": "via pública",
-      "atributos": {"potencia_w": 80, "tensao_v": [100, 277], "frequencia_hz": "50/60", "cct_k": 5700, "fluxo_lm": 11200, "eficiencia_lm_w": 140, "irc": 70, "fator_potencia": 0.97, "ip": "IP66", "ik": "IK08", "vida_util_h": 50000, "garantia_anos": 5, "inmetro": true, "dimerizavel": true, "tomada_rele": true, "dps_ka": 10, "classe_isolacao": "I", "material_corpo": "alumínio injetado", "lente": "PMMA", "led_tipo": "SMD", "angulo_abertura": "70x140"},
-      "normas": ["ABNT NBR 15129", "ABNT NBR IEC 60598-1"],
-      "certificacoes": ["INMETRO Portaria 62/2022", "Curva fotométrica IES", "Relatório de ensaios LM-79/LM-80", "Termo de garantia do fabricante 5 anos"],
-      "preco_ref": 262.0, "prazo_entrega_dias": 20, "estoque": 900
+      "sku": "LPL-80-57K",
+      "nome": "Luminária pública LED 80 W 5700 K",
+      "categoria": "luminaria_publica_led",
+      "subcategoria": "via pública",
+      "atributos": {
+        "potencia_w": 80,
+        "tensao_v": [
+          100,
+          277
+        ],
+        "frequencia_hz": "50/60",
+        "cct_k": 5700,
+        "fluxo_lm": 11200,
+        "eficiencia_lm_w": 140,
+        "irc": 70,
+        "fator_potencia": 0.97,
+        "ip": "IP66",
+        "ik": "IK08",
+        "vida_util_h": 50000,
+        "garantia_anos": 5,
+        "inmetro": true,
+        "dimerizavel": true,
+        "tomada_rele": true,
+        "dps_ka": 10,
+        "classe_isolacao": "I",
+        "material_corpo": "alumínio injetado",
+        "lente": "PMMA",
+        "led_tipo": "SMD",
+        "angulo_abertura": "70x140"
+      },
+      "normas": [
+        "ABNT NBR 15129",
+        "ABNT NBR IEC 60598-1"
+      ],
+      "certificacoes": [
+        "INMETRO Portaria 62/2022",
+        "Curva fotométrica IES",
+        "Relatório de ensaios LM-79/LM-80",
+        "Termo de garantia do fabricante 5 anos"
+      ],
+      "preco_ref": 262.0,
+      "prazo_entrega_dias": 20,
+      "estoque": 900
     },
     {
-      "sku": "LPL-200-40K", "nome": "Luminária pública LED 200 W 4000 K", "categoria": "luminaria_publica_led", "subcategoria": "via pública",
-      "atributos": {"potencia_w": 200, "tensao_v": [100, 277], "frequencia_hz": "50/60", "cct_k": 4000, "fluxo_lm": 28000, "eficiencia_lm_w": 140, "irc": 70, "fator_potencia": 0.97, "ip": "IP66", "ik": "IK09", "vida_util_h": 50000, "garantia_anos": 5, "inmetro": true, "dimerizavel": true, "tomada_rele": true, "dps_ka": 10, "classe_isolacao": "I", "material_corpo": "alumínio injetado", "lente": "PMMA", "led_tipo": "SMD", "angulo_abertura": "70x140"},
-      "normas": ["ABNT NBR 15129", "ABNT NBR IEC 60598-1"],
-      "certificacoes": ["INMETRO Portaria 62/2022", "Curva fotométrica IES", "Relatório de ensaios LM-79/LM-80", "Termo de garantia do fabricante 5 anos"],
-      "preco_ref": 690.0, "prazo_entrega_dias": 30, "estoque": 120
+      "sku": "LPL-200-40K",
+      "nome": "Luminária pública LED 200 W 4000 K",
+      "categoria": "luminaria_publica_led",
+      "subcategoria": "via pública",
+      "atributos": {
+        "potencia_w": 200,
+        "tensao_v": [
+          100,
+          277
+        ],
+        "frequencia_hz": "50/60",
+        "cct_k": 4000,
+        "fluxo_lm": 28000,
+        "eficiencia_lm_w": 140,
+        "irc": 70,
+        "fator_potencia": 0.97,
+        "ip": "IP66",
+        "ik": "IK09",
+        "vida_util_h": 50000,
+        "garantia_anos": 5,
+        "inmetro": true,
+        "dimerizavel": true,
+        "tomada_rele": true,
+        "dps_ka": 10,
+        "classe_isolacao": "I",
+        "material_corpo": "alumínio injetado",
+        "lente": "PMMA",
+        "led_tipo": "SMD",
+        "angulo_abertura": "70x140"
+      },
+      "normas": [
+        "ABNT NBR 15129",
+        "ABNT NBR IEC 60598-1"
+      ],
+      "certificacoes": [
+        "INMETRO Portaria 62/2022",
+        "Curva fotométrica IES",
+        "Relatório de ensaios LM-79/LM-80",
+        "Termo de garantia do fabricante 5 anos"
+      ],
+      "preco_ref": 690.0,
+      "prazo_entrega_dias": 30,
+      "estoque": 120
     },
-
     {
-      "sku": "RF-MULTI", "nome": "Relé fotoelétrico térmico multitensão 105-305 V", "categoria": "rele_fotoeletrico",
+      "sku": "RF-MULTI",
+      "nome": "Relé fotoelétrico térmico multitensão 105-305 V",
+      "categoria": "rele_fotoeletrico",
       "descricao": "Relé fotocontrolador térmico, base NEMA 3 pinos, 105-305 V, 1000 W, com DPS.",
-      "atributos": {"tensao_v": [105, 305], "frequencia_hz": "50/60", "corrente_a": 10, "ip": "IP67", "vida_util_h": 50000, "garantia_anos": 2, "inmetro": true, "dps_ka": 4},
-      "normas": ["ABNT NBR 5123"], "certificacoes": ["INMETRO", "Termo de garantia 2 anos"],
-      "preco_ref": 21.5, "prazo_entrega_dias": 7, "estoque": 12000
+      "atributos": {
+        "tensao_v": [
+          105,
+          305
+        ],
+        "frequencia_hz": "50/60",
+        "corrente_a": 10,
+        "ip": "IP67",
+        "vida_util_h": 50000,
+        "garantia_anos": 2,
+        "inmetro": true,
+        "dps_ka": 4
+      },
+      "normas": [
+        "ABNT NBR 5123"
+      ],
+      "certificacoes": [
+        "INMETRO",
+        "Termo de garantia 2 anos"
+      ],
+      "preco_ref": 21.5,
+      "prazo_entrega_dias": 7,
+      "estoque": 12000
     },
     {
-      "sku": "RF-127", "nome": "Relé fotoelétrico térmico 127 V", "categoria": "rele_fotoeletrico",
-      "atributos": {"tensao_v": 127, "frequencia_hz": "60", "corrente_a": 10, "ip": "IP67", "vida_util_h": 30000, "garantia_anos": 1, "inmetro": true},
-      "normas": ["ABNT NBR 5123"], "certificacoes": ["INMETRO"],
-      "preco_ref": 16.9, "prazo_entrega_dias": 7, "estoque": 3000
+      "sku": "RF-127",
+      "nome": "Relé fotoelétrico térmico 127 V",
+      "categoria": "rele_fotoeletrico",
+      "atributos": {
+        "tensao_v": 127,
+        "frequencia_hz": "60",
+        "corrente_a": 10,
+        "ip": "IP67",
+        "vida_util_h": 30000,
+        "garantia_anos": 1,
+        "inmetro": true
+      },
+      "normas": [
+        "ABNT NBR 5123"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 16.9,
+      "prazo_entrega_dias": 7,
+      "estoque": 3000
     },
-
-    {"sku": "RFL-30", "nome": "Refletor LED 30 W 6500 K", "categoria": "refletor_led", "atributos": {"potencia_w": 30, "tensao_v": [100, 240], "cct_k": 6500, "fluxo_lm": 3000, "eficiencia_lm_w": 100, "irc": 80, "ip": "IP66", "ik": "IK07", "vida_util_h": 30000, "garantia_anos": 2, "inmetro": true}, "certificacoes": ["INMETRO"], "preco_ref": 39.0, "prazo_entrega_dias": 7},
-    {"sku": "RFL-50", "nome": "Refletor LED 50 W 6500 K", "categoria": "refletor_led", "atributos": {"potencia_w": 50, "tensao_v": [100, 240], "cct_k": 6500, "fluxo_lm": 5000, "eficiencia_lm_w": 100, "irc": 80, "ip": "IP66", "ik": "IK07", "vida_util_h": 30000, "garantia_anos": 2, "inmetro": true}, "certificacoes": ["INMETRO"], "preco_ref": 59.0, "prazo_entrega_dias": 7},
-    {"sku": "RFL-100", "nome": "Refletor LED 100 W 6500 K", "categoria": "refletor_led", "atributos": {"potencia_w": 100, "tensao_v": [100, 240], "cct_k": 6500, "fluxo_lm": 10000, "eficiencia_lm_w": 100, "irc": 80, "ip": "IP66", "ik": "IK07", "vida_util_h": 30000, "garantia_anos": 2, "inmetro": true}, "certificacoes": ["INMETRO"], "preco_ref": 98.0, "prazo_entrega_dias": 7},
-    {"sku": "RFL-200", "nome": "Refletor LED 200 W 5000 K (quadras e pátios)", "categoria": "refletor_led", "atributos": {"potencia_w": 200, "tensao_v": [100, 277], "cct_k": 5000, "fluxo_lm": 24000, "eficiencia_lm_w": 120, "irc": 70, "ip": "IP66", "ik": "IK08", "vida_util_h": 50000, "garantia_anos": 3, "inmetro": true}, "certificacoes": ["INMETRO", "Curva fotométrica IES"], "preco_ref": 320.0, "prazo_entrega_dias": 15},
-
-    {"sku": "LMP-BULBO-9", "nome": "Lâmpada LED bulbo 9 W 6500 K E27", "categoria": "lampada", "atributos": {"potencia_w": 9, "tensao_v": [100, 240], "cct_k": 6500, "fluxo_lm": 810, "eficiencia_lm_w": 90, "irc": 80, "vida_util_h": 25000, "garantia_anos": 1, "inmetro": true}, "certificacoes": ["INMETRO"], "preco_ref": 5.9, "prazo_entrega_dias": 5},
-    {"sku": "LMP-BULBO-12", "nome": "Lâmpada LED bulbo 12 W 6500 K E27", "categoria": "lampada", "atributos": {"potencia_w": 12, "tensao_v": [100, 240], "cct_k": 6500, "fluxo_lm": 1100, "eficiencia_lm_w": 92, "irc": 80, "vida_util_h": 25000, "garantia_anos": 1, "inmetro": true}, "certificacoes": ["INMETRO"], "preco_ref": 7.5, "prazo_entrega_dias": 5},
-    {"sku": "LMP-TUB-18", "nome": "Lâmpada LED tubular T8 18 W 120 cm 6500 K", "categoria": "lampada", "atributos": {"potencia_w": 18, "tensao_v": [100, 240], "cct_k": 6500, "fluxo_lm": 1850, "eficiencia_lm_w": 103, "irc": 80, "vida_util_h": 25000, "garantia_anos": 1, "inmetro": true}, "certificacoes": ["INMETRO"], "preco_ref": 14.9, "prazo_entrega_dias": 5},
-    {"sku": "LMP-HO-40", "nome": "Lâmpada LED tubular HO 40 W 240 cm 6500 K", "categoria": "lampada", "atributos": {"potencia_w": 40, "tensao_v": [100, 240], "cct_k": 6500, "fluxo_lm": 4200, "eficiencia_lm_w": 105, "irc": 80, "vida_util_h": 25000, "garantia_anos": 1, "inmetro": true}, "certificacoes": ["INMETRO"], "preco_ref": 42.0, "prazo_entrega_dias": 7},
-
-    {"sku": "PNL-40-6060", "nome": "Painel LED embutir 60x60 40 W 6500 K", "categoria": "luminaria_interna", "atributos": {"potencia_w": 40, "tensao_v": [100, 240], "cct_k": 6500, "fluxo_lm": 4000, "eficiencia_lm_w": 100, "irc": 80, "ip": "IP20", "vida_util_h": 30000, "garantia_anos": 2, "inmetro": true}, "certificacoes": ["INMETRO"], "preco_ref": 69.0, "prazo_entrega_dias": 7},
-    {"sku": "PLF-18", "nome": "Plafon LED sobrepor 18 W 6500 K", "categoria": "luminaria_interna", "atributos": {"potencia_w": 18, "tensao_v": [100, 240], "cct_k": 6500, "fluxo_lm": 1500, "eficiencia_lm_w": 83, "irc": 80, "ip": "IP20", "vida_util_h": 25000, "garantia_anos": 1, "inmetro": true}, "certificacoes": ["INMETRO"], "preco_ref": 24.0, "prazo_entrega_dias": 5},
-    {"sku": "LHB-150", "nome": "Luminária industrial high bay LED 150 W 5000 K", "categoria": "luminaria_interna", "atributos": {"potencia_w": 150, "tensao_v": [100, 277], "cct_k": 5000, "fluxo_lm": 21000, "eficiencia_lm_w": 140, "irc": 70, "ip": "IP65", "ik": "IK08", "vida_util_h": 50000, "garantia_anos": 5, "inmetro": true, "dimerizavel": true}, "certificacoes": ["INMETRO", "Curva fotométrica IES"], "preco_ref": 390.0, "prazo_entrega_dias": 15},
-
-    {"sku": "BR-1M", "nome": "Braço para luminária 1 m aço galvanizado a fogo", "categoria": "braco_luminaria", "atributos": {"material_corpo": "aço galvanizado a fogo", "fixacao": "ponta 60,3 mm, fixação em poste por cinta"}, "normas": ["ABNT NBR 6323"], "preco_ref": 85.0, "prazo_entrega_dias": 15},
-    {"sku": "BR-2M", "nome": "Braço para luminária 2 m aço galvanizado a fogo", "categoria": "braco_luminaria", "atributos": {"material_corpo": "aço galvanizado a fogo", "fixacao": "ponta 60,3 mm, fixação em poste por cinta"}, "normas": ["ABNT NBR 6323"], "preco_ref": 145.0, "prazo_entrega_dias": 15},
-
-    {"sku": "CB-1.5", "nome": "Cabo flexível 1,5 mm² 750 V antichama", "categoria": "cabo", "atributos": {"secao_mm2": 1.5, "tensao_v": 750, "material_corpo": "cobre"}, "normas": ["ABNT NBR NM 247-3"], "certificacoes": ["INMETRO"], "preco_ref": 1.1, "prazo_entrega_dias": 5},
-    {"sku": "CB-2.5", "nome": "Cabo flexível 2,5 mm² 750 V antichama", "categoria": "cabo", "atributos": {"secao_mm2": 2.5, "tensao_v": 750, "material_corpo": "cobre"}, "normas": ["ABNT NBR NM 247-3"], "certificacoes": ["INMETRO"], "preco_ref": 1.7, "prazo_entrega_dias": 5},
-    {"sku": "CB-4", "nome": "Cabo flexível 4 mm² 750 V antichama", "categoria": "cabo", "atributos": {"secao_mm2": 4, "tensao_v": 750, "material_corpo": "cobre"}, "normas": ["ABNT NBR NM 247-3"], "certificacoes": ["INMETRO"], "preco_ref": 2.7, "prazo_entrega_dias": 5},
-    {"sku": "CB-6", "nome": "Cabo flexível 6 mm² 750 V antichama", "categoria": "cabo", "atributos": {"secao_mm2": 6, "tensao_v": 750, "material_corpo": "cobre"}, "normas": ["ABNT NBR NM 247-3"], "certificacoes": ["INMETRO"], "preco_ref": 4.1, "prazo_entrega_dias": 5},
-    {"sku": "CB-10", "nome": "Cabo flexível 10 mm² 750 V antichama", "categoria": "cabo", "atributos": {"secao_mm2": 10, "tensao_v": 750, "material_corpo": "cobre"}, "normas": ["ABNT NBR NM 247-3"], "certificacoes": ["INMETRO"], "preco_ref": 6.9, "prazo_entrega_dias": 5},
-    {"sku": "CB-PP-3x2.5", "nome": "Cabo PP 3 x 2,5 mm² 500 V", "categoria": "cabo", "atributos": {"secao_mm2": 2.5, "tensao_v": 500, "material_corpo": "cobre"}, "normas": ["ABNT NBR 13249"], "certificacoes": ["INMETRO"], "preco_ref": 6.2, "prazo_entrega_dias": 5},
-
-    {"sku": "DJ-10", "nome": "Disjuntor monopolar 10 A curva C", "categoria": "disjuntor", "atributos": {"corrente_a": 10, "tensao_v": [127, 240]}, "normas": ["ABNT NBR IEC 60898"], "certificacoes": ["INMETRO"], "preco_ref": 9.9, "prazo_entrega_dias": 5},
-    {"sku": "DJ-16", "nome": "Disjuntor monopolar 16 A curva C", "categoria": "disjuntor", "atributos": {"corrente_a": 16, "tensao_v": [127, 240]}, "normas": ["ABNT NBR IEC 60898"], "certificacoes": ["INMETRO"], "preco_ref": 9.9, "prazo_entrega_dias": 5},
-    {"sku": "DJ-20", "nome": "Disjuntor monopolar 20 A curva C", "categoria": "disjuntor", "atributos": {"corrente_a": 20, "tensao_v": [127, 240]}, "normas": ["ABNT NBR IEC 60898"], "certificacoes": ["INMETRO"], "preco_ref": 9.9, "prazo_entrega_dias": 5},
-    {"sku": "DJ-25", "nome": "Disjuntor monopolar 25 A curva C", "categoria": "disjuntor", "atributos": {"corrente_a": 25, "tensao_v": [127, 240]}, "normas": ["ABNT NBR IEC 60898"], "certificacoes": ["INMETRO"], "preco_ref": 10.9, "prazo_entrega_dias": 5},
-    {"sku": "DJ-32-3P", "nome": "Disjuntor tripolar 32 A curva C", "categoria": "disjuntor", "atributos": {"corrente_a": 32, "tensao_v": [220, 400]}, "normas": ["ABNT NBR IEC 60898"], "certificacoes": ["INMETRO"], "preco_ref": 38.0, "prazo_entrega_dias": 5},
-    {"sku": "DJ-63-3P", "nome": "Disjuntor tripolar 63 A curva C", "categoria": "disjuntor", "atributos": {"corrente_a": 63, "tensao_v": [220, 400]}, "normas": ["ABNT NBR IEC 60898"], "certificacoes": ["INMETRO"], "preco_ref": 52.0, "prazo_entrega_dias": 5},
-
-    {"sku": "ELT-25", "nome": "Eletroduto PVC rígido 25 mm (3/4\") barra 3 m", "categoria": "eletroduto", "atributos": {"material_corpo": "PVC rígido"}, "normas": ["ABNT NBR 15465"], "preco_ref": 11.0, "prazo_entrega_dias": 5},
-    {"sku": "ELT-32", "nome": "Eletroduto PVC rígido 32 mm (1\") barra 3 m", "categoria": "eletroduto", "atributos": {"material_corpo": "PVC rígido"}, "normas": ["ABNT NBR 15465"], "preco_ref": 15.0, "prazo_entrega_dias": 5},
-
-    {"sku": "QD-12", "nome": "Quadro de distribuição embutir 12 disjuntores com barramento", "categoria": "quadro", "atributos": {"material_corpo": "aço", "ip": "IP40"}, "normas": ["ABNT NBR IEC 61439"], "preco_ref": 89.0, "prazo_entrega_dias": 7},
-    {"sku": "QD-24", "nome": "Quadro de distribuição embutir 24 disjuntores com barramento", "categoria": "quadro", "atributos": {"material_corpo": "aço", "ip": "IP40"}, "normas": ["ABNT NBR IEC 61439"], "preco_ref": 149.0, "prazo_entrega_dias": 7},
-
-    {"sku": "TM-2PT-10", "nome": "Tomada 2P+T 10 A padrão NBR 14136", "categoria": "dispositivos", "atributos": {"corrente_a": 10, "tensao_v": 250}, "normas": ["ABNT NBR 14136"], "certificacoes": ["INMETRO"], "preco_ref": 6.5, "prazo_entrega_dias": 5},
-    {"sku": "TM-2PT-20", "nome": "Tomada 2P+T 20 A padrão NBR 14136", "categoria": "dispositivos", "atributos": {"corrente_a": 20, "tensao_v": 250}, "normas": ["ABNT NBR 14136"], "certificacoes": ["INMETRO"], "preco_ref": 7.9, "prazo_entrega_dias": 5},
-    {"sku": "INT-1S", "nome": "Interruptor simples 10 A", "categoria": "dispositivos", "atributos": {"corrente_a": 10, "tensao_v": 250}, "normas": ["ABNT NBR NM 60669-1"], "certificacoes": ["INMETRO"], "preco_ref": 5.5, "prazo_entrega_dias": 5}
+    {
+      "sku": "RFL-30",
+      "nome": "Refletor LED 30 W 6500 K",
+      "categoria": "refletor_led",
+      "atributos": {
+        "potencia_w": 30,
+        "tensao_v": [
+          100,
+          240
+        ],
+        "cct_k": 6500,
+        "fluxo_lm": 3000,
+        "eficiencia_lm_w": 100,
+        "irc": 80,
+        "ip": "IP66",
+        "ik": "IK07",
+        "vida_util_h": 30000,
+        "garantia_anos": 2,
+        "inmetro": true
+      },
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 39.0,
+      "prazo_entrega_dias": 7
+    },
+    {
+      "sku": "RFL-50",
+      "nome": "Refletor LED 50 W 6500 K",
+      "categoria": "refletor_led",
+      "atributos": {
+        "potencia_w": 50,
+        "tensao_v": [
+          100,
+          240
+        ],
+        "cct_k": 6500,
+        "fluxo_lm": 5000,
+        "eficiencia_lm_w": 100,
+        "irc": 80,
+        "ip": "IP66",
+        "ik": "IK07",
+        "vida_util_h": 30000,
+        "garantia_anos": 2,
+        "inmetro": true
+      },
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 59.0,
+      "prazo_entrega_dias": 7
+    },
+    {
+      "sku": "RFL-100",
+      "nome": "Refletor LED 100 W 6500 K",
+      "categoria": "refletor_led",
+      "atributos": {
+        "potencia_w": 100,
+        "tensao_v": [
+          100,
+          240
+        ],
+        "cct_k": 6500,
+        "fluxo_lm": 10000,
+        "eficiencia_lm_w": 100,
+        "irc": 80,
+        "ip": "IP66",
+        "ik": "IK07",
+        "vida_util_h": 30000,
+        "garantia_anos": 2,
+        "inmetro": true
+      },
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 98.0,
+      "prazo_entrega_dias": 7
+    },
+    {
+      "sku": "RFL-200",
+      "nome": "Refletor LED 200 W 5000 K (quadras e pátios)",
+      "categoria": "refletor_led",
+      "atributos": {
+        "potencia_w": 200,
+        "tensao_v": [
+          100,
+          277
+        ],
+        "cct_k": 5000,
+        "fluxo_lm": 24000,
+        "eficiencia_lm_w": 120,
+        "irc": 70,
+        "ip": "IP66",
+        "ik": "IK08",
+        "vida_util_h": 50000,
+        "garantia_anos": 3,
+        "inmetro": true
+      },
+      "certificacoes": [
+        "INMETRO",
+        "Curva fotométrica IES"
+      ],
+      "preco_ref": 320.0,
+      "prazo_entrega_dias": 15
+    },
+    {
+      "sku": "LMP-BULBO-9",
+      "nome": "Lâmpada LED bulbo 9 W 6500 K E27",
+      "categoria": "lampada",
+      "atributos": {
+        "potencia_w": 9,
+        "tensao_v": [
+          100,
+          240
+        ],
+        "cct_k": 6500,
+        "fluxo_lm": 810,
+        "eficiencia_lm_w": 90,
+        "irc": 80,
+        "vida_util_h": 25000,
+        "garantia_anos": 1,
+        "inmetro": true
+      },
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 5.9,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "LMP-BULBO-12",
+      "nome": "Lâmpada LED bulbo 12 W 6500 K E27",
+      "categoria": "lampada",
+      "atributos": {
+        "potencia_w": 12,
+        "tensao_v": [
+          100,
+          240
+        ],
+        "cct_k": 6500,
+        "fluxo_lm": 1100,
+        "eficiencia_lm_w": 92,
+        "irc": 80,
+        "vida_util_h": 25000,
+        "garantia_anos": 1,
+        "inmetro": true
+      },
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 7.5,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "LMP-TUB-18",
+      "nome": "Lâmpada LED tubular T8 18 W 120 cm 6500 K",
+      "categoria": "lampada",
+      "atributos": {
+        "potencia_w": 18,
+        "tensao_v": [
+          100,
+          240
+        ],
+        "cct_k": 6500,
+        "fluxo_lm": 1850,
+        "eficiencia_lm_w": 103,
+        "irc": 80,
+        "vida_util_h": 25000,
+        "garantia_anos": 1,
+        "inmetro": true
+      },
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 14.9,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "LMP-HO-40",
+      "nome": "Lâmpada LED tubular HO 40 W 240 cm 6500 K",
+      "categoria": "lampada",
+      "atributos": {
+        "potencia_w": 40,
+        "tensao_v": [
+          100,
+          240
+        ],
+        "cct_k": 6500,
+        "fluxo_lm": 4200,
+        "eficiencia_lm_w": 105,
+        "irc": 80,
+        "vida_util_h": 25000,
+        "garantia_anos": 1,
+        "inmetro": true
+      },
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 42.0,
+      "prazo_entrega_dias": 7
+    },
+    {
+      "sku": "PNL-40-6060",
+      "nome": "Painel LED embutir 60x60 40 W 6500 K",
+      "categoria": "luminaria_interna",
+      "atributos": {
+        "potencia_w": 40,
+        "tensao_v": [
+          100,
+          240
+        ],
+        "cct_k": 6500,
+        "fluxo_lm": 4000,
+        "eficiencia_lm_w": 100,
+        "irc": 80,
+        "ip": "IP20",
+        "vida_util_h": 30000,
+        "garantia_anos": 2,
+        "inmetro": true
+      },
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 69.0,
+      "prazo_entrega_dias": 7
+    },
+    {
+      "sku": "PLF-18",
+      "nome": "Plafon LED sobrepor 18 W 6500 K",
+      "categoria": "luminaria_interna",
+      "atributos": {
+        "potencia_w": 18,
+        "tensao_v": [
+          100,
+          240
+        ],
+        "cct_k": 6500,
+        "fluxo_lm": 1500,
+        "eficiencia_lm_w": 83,
+        "irc": 80,
+        "ip": "IP20",
+        "vida_util_h": 25000,
+        "garantia_anos": 1,
+        "inmetro": true
+      },
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 24.0,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "LHB-150",
+      "nome": "Luminária industrial high bay LED 150 W 5000 K",
+      "categoria": "luminaria_interna",
+      "atributos": {
+        "potencia_w": 150,
+        "tensao_v": [
+          100,
+          277
+        ],
+        "cct_k": 5000,
+        "fluxo_lm": 21000,
+        "eficiencia_lm_w": 140,
+        "irc": 70,
+        "ip": "IP65",
+        "ik": "IK08",
+        "vida_util_h": 50000,
+        "garantia_anos": 5,
+        "inmetro": true,
+        "dimerizavel": true
+      },
+      "certificacoes": [
+        "INMETRO",
+        "Curva fotométrica IES"
+      ],
+      "preco_ref": 390.0,
+      "prazo_entrega_dias": 15
+    },
+    {
+      "sku": "BR-1M",
+      "nome": "Braço para luminária 1 m aço galvanizado a fogo",
+      "categoria": "braco_luminaria",
+      "atributos": {
+        "material_corpo": "aço galvanizado a fogo",
+        "fixacao": "ponta 60,3 mm, fixação em poste por cinta"
+      },
+      "normas": [
+        "ABNT NBR 6323"
+      ],
+      "preco_ref": 85.0,
+      "prazo_entrega_dias": 15
+    },
+    {
+      "sku": "BR-2M",
+      "nome": "Braço para luminária 2 m aço galvanizado a fogo",
+      "categoria": "braco_luminaria",
+      "atributos": {
+        "material_corpo": "aço galvanizado a fogo",
+        "fixacao": "ponta 60,3 mm, fixação em poste por cinta"
+      },
+      "normas": [
+        "ABNT NBR 6323"
+      ],
+      "preco_ref": 145.0,
+      "prazo_entrega_dias": 15
+    },
+    {
+      "sku": "CB-1.5",
+      "nome": "Cabo flexível 1,5 mm² 750 V antichama",
+      "categoria": "cabo",
+      "atributos": {
+        "secao_mm2": 1.5,
+        "tensao_v": 750,
+        "material_corpo": "cobre",
+        "tipo_cabo": "flexivel isolado PVC 750V (cabinho)"
+      },
+      "normas": [
+        "ABNT NBR NM 247-3"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 1.1,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "CB-2.5",
+      "nome": "Cabo flexível 2,5 mm² 750 V antichama",
+      "categoria": "cabo",
+      "atributos": {
+        "secao_mm2": 2.5,
+        "tensao_v": 750,
+        "material_corpo": "cobre",
+        "tipo_cabo": "flexivel isolado PVC 750V (cabinho)"
+      },
+      "normas": [
+        "ABNT NBR NM 247-3"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 1.7,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "CB-4",
+      "nome": "Cabo flexível 4 mm² 750 V antichama",
+      "categoria": "cabo",
+      "atributos": {
+        "secao_mm2": 4,
+        "tensao_v": 750,
+        "material_corpo": "cobre",
+        "tipo_cabo": "flexivel isolado PVC 750V (cabinho)"
+      },
+      "normas": [
+        "ABNT NBR NM 247-3"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 2.7,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "CB-6",
+      "nome": "Cabo flexível 6 mm² 750 V antichama",
+      "categoria": "cabo",
+      "atributos": {
+        "secao_mm2": 6,
+        "tensao_v": 750,
+        "material_corpo": "cobre",
+        "tipo_cabo": "flexivel isolado PVC 750V (cabinho)"
+      },
+      "normas": [
+        "ABNT NBR NM 247-3"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 4.1,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "CB-10",
+      "nome": "Cabo flexível 10 mm² 750 V antichama",
+      "categoria": "cabo",
+      "atributos": {
+        "secao_mm2": 10,
+        "tensao_v": 750,
+        "material_corpo": "cobre",
+        "tipo_cabo": "flexivel isolado PVC 750V (cabinho)"
+      },
+      "normas": [
+        "ABNT NBR NM 247-3"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 6.9,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "CB-PP-3x2.5",
+      "nome": "Cabo PP 3 x 2,5 mm² 500 V",
+      "categoria": "cabo",
+      "atributos": {
+        "secao_mm2": 2.5,
+        "tensao_v": 500,
+        "material_corpo": "cobre",
+        "tipo_cabo": "PP flexivel multipolar"
+      },
+      "normas": [
+        "ABNT NBR 13249"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 6.2,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "DJ-10",
+      "nome": "Disjuntor monopolar 10 A curva C",
+      "categoria": "disjuntor",
+      "atributos": {
+        "corrente_a": 10,
+        "tensao_v": [
+          127,
+          240
+        ]
+      },
+      "normas": [
+        "ABNT NBR IEC 60898"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 9.9,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "DJ-16",
+      "nome": "Disjuntor monopolar 16 A curva C",
+      "categoria": "disjuntor",
+      "atributos": {
+        "corrente_a": 16,
+        "tensao_v": [
+          127,
+          240
+        ]
+      },
+      "normas": [
+        "ABNT NBR IEC 60898"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 9.9,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "DJ-20",
+      "nome": "Disjuntor monopolar 20 A curva C",
+      "categoria": "disjuntor",
+      "atributos": {
+        "corrente_a": 20,
+        "tensao_v": [
+          127,
+          240
+        ]
+      },
+      "normas": [
+        "ABNT NBR IEC 60898"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 9.9,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "DJ-25",
+      "nome": "Disjuntor monopolar 25 A curva C",
+      "categoria": "disjuntor",
+      "atributos": {
+        "corrente_a": 25,
+        "tensao_v": [
+          127,
+          240
+        ]
+      },
+      "normas": [
+        "ABNT NBR IEC 60898"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 10.9,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "DJ-32-3P",
+      "nome": "Disjuntor tripolar 32 A curva C",
+      "categoria": "disjuntor",
+      "atributos": {
+        "corrente_a": 32,
+        "tensao_v": [
+          220,
+          400
+        ]
+      },
+      "normas": [
+        "ABNT NBR IEC 60898"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 38.0,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "DJ-63-3P",
+      "nome": "Disjuntor tripolar 63 A curva C",
+      "categoria": "disjuntor",
+      "atributos": {
+        "corrente_a": 63,
+        "tensao_v": [
+          220,
+          400
+        ]
+      },
+      "normas": [
+        "ABNT NBR IEC 60898"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 52.0,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "ELT-25",
+      "nome": "Eletroduto PVC rígido 25 mm (3/4\") barra 3 m",
+      "categoria": "eletroduto",
+      "atributos": {
+        "material_corpo": "PVC rígido"
+      },
+      "normas": [
+        "ABNT NBR 15465"
+      ],
+      "preco_ref": 11.0,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "ELT-32",
+      "nome": "Eletroduto PVC rígido 32 mm (1\") barra 3 m",
+      "categoria": "eletroduto",
+      "atributos": {
+        "material_corpo": "PVC rígido"
+      },
+      "normas": [
+        "ABNT NBR 15465"
+      ],
+      "preco_ref": 15.0,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "QD-12",
+      "nome": "Quadro de distribuição embutir 12 disjuntores com barramento",
+      "categoria": "quadro",
+      "atributos": {
+        "material_corpo": "aço",
+        "ip": "IP40"
+      },
+      "normas": [
+        "ABNT NBR IEC 61439"
+      ],
+      "preco_ref": 89.0,
+      "prazo_entrega_dias": 7
+    },
+    {
+      "sku": "QD-24",
+      "nome": "Quadro de distribuição embutir 24 disjuntores com barramento",
+      "categoria": "quadro",
+      "atributos": {
+        "material_corpo": "aço",
+        "ip": "IP40"
+      },
+      "normas": [
+        "ABNT NBR IEC 61439"
+      ],
+      "preco_ref": 149.0,
+      "prazo_entrega_dias": 7
+    },
+    {
+      "sku": "TM-2PT-10",
+      "nome": "Tomada 2P+T 10 A padrão NBR 14136",
+      "categoria": "dispositivos",
+      "atributos": {
+        "corrente_a": 10,
+        "tensao_v": 250
+      },
+      "normas": [
+        "ABNT NBR 14136"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 6.5,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "TM-2PT-20",
+      "nome": "Tomada 2P+T 20 A padrão NBR 14136",
+      "categoria": "dispositivos",
+      "atributos": {
+        "corrente_a": 20,
+        "tensao_v": 250
+      },
+      "normas": [
+        "ABNT NBR 14136"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 7.9,
+      "prazo_entrega_dias": 5
+    },
+    {
+      "sku": "INT-1S",
+      "nome": "Interruptor simples 10 A",
+      "categoria": "dispositivos",
+      "atributos": {
+        "corrente_a": 10,
+        "tensao_v": 250
+      },
+      "normas": [
+        "ABNT NBR NM 60669-1"
+      ],
+      "certificacoes": [
+        "INMETRO"
+      ],
+      "preco_ref": 5.5,
+      "prazo_entrega_dias": 5
+    }
   ]
 }

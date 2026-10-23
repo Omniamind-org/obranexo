@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 import time
 import uuid
 from abc import ABC, abstractmethod
@@ -93,7 +94,13 @@ class LLMClient(ABC):
 
     # ------------------------------------------------------------ custo
 
+    _lock_uso = threading.Lock()  # extrações rodam em paralelo; a contagem precisa ser atômica
+
     def _contabilizar(self, modelo: str, entrada: int, saida: int, cache_leitura: int = 0, cache_escrita: int = 0) -> None:
+        with LLMClient._lock_uso:
+            self._contabilizar_sem_lock(modelo, entrada, saida, cache_leitura, cache_escrita)
+
+    def _contabilizar_sem_lock(self, modelo: str, entrada: int, saida: int, cache_leitura: int, cache_escrita: int) -> None:
         preco_in, preco_out = self.cfg.precos_usd.get(modelo, (0.0, 0.0))
         custo = (entrada * preco_in + cache_escrita * preco_in * 1.25 + cache_leitura * preco_in * 0.1 + saida * preco_out) / 1_000_000
         self.uso.chamadas += 1

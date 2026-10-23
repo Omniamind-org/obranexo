@@ -1,0 +1,63 @@
+{
+ "valorTotalEstimado": 622331.05,
+ "valorTotalHomologado": null,
+ "orcamentoSigilosoCodigo": 1,
+ "orcamentoSigilosoDescricao": "Compra sem sigilo",
+ "numeroControlePNCP": "00394429000100-1-002789/2026",
+ "linkSistemaOrigem": "https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/compras/acompanhamento-compra?compra=12062405003062026",
+ "linkProcessoEletronico": "https://apl1.sti.fab.mil.br/epags/",
+ "anoCompra": 2026,
+ "sequencialCompra": 2789,
+ "numeroCompra": "306",
+ "processo": "67281.000609/2026-98",
+ "orgaoEntidade": {
+  "cnpj": "00394429000100",
+  "razaoSocial": "COMANDO DA AERONAUTICA",
+  "poderId": "E",
+  "esferaId": "F"
+ },
+ "unidadeOrgao": {
+  "ufNome": "Goiás",
+  "ufSigla": "GO",
+  "municipioNome": "Anápolis",
+  "nomeUnidade": "BASE AÉREA DE ANÁPOLIS",
+  "codigoIbge": "5201108",
+  "codigoUnidade": "120624"
+ },
+ "orgaoSubRogado": null,
+ "unidadeSubRogada": null,
+ "modalidadeId": 6,
+ "modalidadeNome": "Pregão - Eletrônico",
+ "justificativaPresencial": null,
+ "modoDisputaId": 3,
+ "modoDisputaNome": "Aberto-Fechado",
+ "tipoInstrumentoConvocatorioCodigo": 1,
+ "tipoInstrumentoConvocatorioNome": "Edital",
+ "amparoLegal": {
+  "nome": "Lei 14.133/2021, Art. 28, I",
+  "descricao": "pregão: modalidade de licitação obrigatória para aquisição de bens e serviços comuns",
+  "codigo": 1
+ },
+ "objetoCompra": "Registro de preços para eventual aquisição de material de consumo - Material Elétrico e Eletrônico, a fim de atender as demandas da Base Aérea de Anápolis",
+ "informacaoComplementar": null,
+ "srp": true,
+ "fontesOrcamentarias": [
+  {
+   "codigo": 4,
+   "nome": "Federal",
+   "descricao": "Recurso orçamentário federal disponível e devidamente vinculado à despesa que será realizada.",
+   "dataInclusao": "2026-10-23T04:00:24"
+  }
+ ],
+ "emendaParlamentar": null,
+ "dataPublicacaoPncp": "2026-10-23T04:00:24",
+ "dataAberturaProposta": "2026-10-23T09:30:00",
+ "dataEncerramentoProposta": "2026-11-10T09:30:00",
+ "situacaoCompraId": 1,
+ "situacaoCompraNome": "Divulgada no PNCP",
+ "existeResultado": false,
+ "dataInclusao": "2026-10-23T04:00:24",
+ "dataAtualizacao": "2026-10-23T04:00:24",
+ "dataAtualizacaoGlobal": "2026-10-23T04:12:56",
+ "usuarioNome": "Compras.gov.br"
+}

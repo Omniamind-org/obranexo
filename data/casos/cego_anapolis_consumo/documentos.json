@@ -1,0 +1,57 @@
+[
+ {
+  "id": "doc-1",
+  "contratacao_id": "00394429000100-1-002789/2026",
+  "nome": "1_MINUTA_DA_ATA_Nov-25.pdf",
+  "tipo_doc": "Minuta de Ata de Registro de Preços",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/00394429000100/compras/2026/2789/arquivos/1",
+  "sha256": "c3ebff927ebd4596a643af261c757db311ea4a46859e371d2445cf5824d8f86b",
+  "caminho_local": "arquivos\\1_MINUTA_DA_ATA_Nov-25.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-2",
+  "contratacao_id": "00394429000100-1-002789/2026",
+  "nome": "2_TR.pdf",
+  "tipo_doc": "Termo de Referência",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/00394429000100/compras/2026/2789/arquivos/2",
+  "sha256": "1192727cd59a59950e2db2a101d525a7955110e2558ba2d4e96e76861c80c117",
+  "caminho_local": "arquivos\\2_TR.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-3",
+  "contratacao_id": "00394429000100-1-002789/2026",
+  "nome": "3_EDITAL_PR_306_2026_.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/00394429000100/compras/2026/2789/arquivos/3",
+  "sha256": "49b7d2ff980df19b20a730e31020dc9eb61f6f90df438a5155bb2334eaa1b922",
+  "caminho_local": "arquivos\\3_EDITAL_PR_306_2026_.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-4",
+  "contratacao_id": "00394429000100-1-002789/2026",
+  "nome": "4_LISTA_DE_ITENS.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/00394429000100/compras/2026/2789/arquivos/4",
+  "sha256": "e29307908d044f30f61ca1a9428e6d113c07af4eb22c631da7f5a40c9d33b90f",
+  "caminho_local": "arquivos\\4_LISTA_DE_ITENS.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-5",
+  "contratacao_id": "00394429000100-1-002789/2026",
+  "nome": "5_ETP.pdf",
+  "tipo_doc": "Estudo Técnico Preliminar",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/00394429000100/compras/2026/2789/arquivos/5",
+  "sha256": "39718dc4630753b8db5cd3b9e5fc2c4418de1b27a97fe35bd6dd151f85cc1a4f",
+  "caminho_local": "arquivos\\5_ETP.pdf",
+  "paginas": 0,
+  "extraivel": true
+ }
+]

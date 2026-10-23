@@ -38,6 +38,8 @@ ATRIBUTOS: dict[str, dict] = {
     "fixacao": {"rotulo": "Fixação/encaixe", "unidade": None, "tipo": TipoAtributo.TEXTO, "operador_padrao": Operador.CONTEM},
     "corrente_a": {"rotulo": "Corrente nominal", "unidade": "A", "tipo": TipoAtributo.NUMERO, "operador_padrao": Operador.IGUAL, "tolerancia": 0.0},
     "secao_mm2": {"rotulo": "Seção nominal", "unidade": "mm²", "tipo": TipoAtributo.NUMERO, "operador_padrao": Operador.IGUAL, "tolerancia": 0.0},
+    # Sem isto, um cabo solar casava com cabo de instalação predial só porque a seção era igual
+    "tipo_cabo": {"rotulo": "Tipo/construção do cabo", "unidade": None, "tipo": TipoAtributo.TEXTO, "operador_padrao": Operador.CONTEM},
     "prazo_entrega_dias": {"rotulo": "Prazo de entrega", "unidade": "dias", "tipo": TipoAtributo.NUMERO, "operador_padrao": Operador.MENOR_IGUAL},
     # Exigências documentais: comparadas com as certificações/documentos que o fornecedor declara possuir
     "doc_termo_garantia": {"rotulo": "Termo de garantia do fabricante", "tipo": TipoAtributo.TEXTO, "operador_padrao": Operador.CONTEM, "natureza": "documental"},

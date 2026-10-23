@@ -1,0 +1,145 @@
+[
+ {
+  "id": "doc-1",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "1_EDITAL.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/1",
+  "sha256": "084560eb47276cc2485770eec3a5633913a3b18f7854bafb902067da8656e35f",
+  "caminho_local": "arquivos\\1_EDITAL.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-2",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "2_DECLARACAO_DE_ATENDIMENTO_A_LEI_DE_RESPONSABILIDADE_FISCAL.pdf (não baixado: sem especificação técnica)",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/2",
+  "sha256": "968a12f8bd76293268f04dd9e04df6836c63dbf86f97b373d725582f14de212f",
+  "caminho_local": null,
+  "paginas": 0,
+  "extraivel": false
+ },
+ {
+  "id": "doc-3",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "3_ESTUDO_TECNICO_PRELIMINAR.pdf",
+  "tipo_doc": "Estudo Técnico Preliminar",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/3",
+  "sha256": "fedaa96e8a40b10f45ef092b2aaf02e2071487fae45360b1214a48416605f2dc",
+  "caminho_local": "arquivos\\3_ESTUDO_TECNICO_PRELIMINAR.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-4",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "4_FORMALIZACAO_DE_DEMANDA.pdf",
+  "tipo_doc": "Documento de Formalização da Demanda - DFD",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/4",
+  "sha256": "b6915a26e2f750fd7c1716c1c7da66efbc1a24b654b0f210a05f91811802aa78",
+  "caminho_local": "arquivos\\4_FORMALIZACAO_DE_DEMANDA.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-5",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "5_PLANILHA_DE_PRECOS.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/5",
+  "sha256": "b4e74d648f81716123d15f6b02cd6eb824cd9f5b044815108fff74025416871e",
+  "caminho_local": "arquivos\\5_PLANILHA_DE_PRECOS.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-6",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "6_TERMO_DE_REFERENCIA.pdf",
+  "tipo_doc": "Termo de Referência",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/6",
+  "sha256": "e5a56512ba3fe0d3b55cd711fee37070ff17627255a59f5f8cca21e27cbf0b24",
+  "caminho_local": "arquivos\\6_TERMO_DE_REFERENCIA.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-7",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "7_ART.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/7",
+  "sha256": "ce1002c58fdc54714c04c9a872177d3fd10bb24a09c853821b12b9622ed6a845",
+  "caminho_local": "arquivos\\7_ART.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-8",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "8_PROJETO_ELETRICO_INGA_LESTE.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/8",
+  "sha256": "64656c02b7a0bf4af673fd1c71b8ff5400627e744ab0302b613c3a5f368a84c2",
+  "caminho_local": "arquivos\\8_PROJETO_ELETRICO_INGA_LESTE.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-9",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "9_PROJETO_ELETRICO_PRACA_FLORES_DO_CERRADO.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/9",
+  "sha256": "c1ccec43f93dadfebbb27f4700496a2fd02f946f1a90ab635822c2eed00837f7",
+  "caminho_local": "arquivos\\9_PROJETO_ELETRICO_PRACA_FLORES_DO_CERRADO.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-10",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "10_PROJETO_ELETRICO_PARQUE_DOS_BURITIS.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/10",
+  "sha256": "58bd0487caaafcf88db396afcb1bd006a4badcda71e62fd998d01402202dcda7",
+  "caminho_local": "arquivos\\10_PROJETO_ELETRICO_PARQUE_DOS_BURITIS.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-11",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "11_PROJETO_ELETRICO_GO-206.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/11",
+  "sha256": "96bb3df58b8471e32098807c4584fe68b4c55c5bb40cfeb1620135e5c1896d4b",
+  "caminho_local": "arquivos\\11_PROJETO_ELETRICO_GO-206.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-12",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "12_AUTORIZACAO_ABERTURA_LICITACAO.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/12",
+  "sha256": "d4b5aaf6a2060ba0ae0db5dea2be79852b5337f3eb691cc0a1ca97cdfc5cfcae",
+  "caminho_local": "arquivos\\12_AUTORIZACAO_ABERTURA_LICITACAO.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-13",
+  "contratacao_id": "24859332000194-1-000734/2026",
+  "nome": "13_AVISO.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/24859332000194/compras/2026/734/arquivos/13",
+  "sha256": "a9a6d9580d978d8bbef2180719041b9b32126adcb8ff0bd14c87c5bf91df0cb2",
+  "caminho_local": "arquivos\\13_AVISO.pdf",
+  "paginas": 0,
+  "extraivel": true
+ }
+]

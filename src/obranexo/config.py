@@ -69,6 +69,7 @@ class Config:
     llm_cache: bool = field(default_factory=lambda: _env_bool("OBRANEXO_LLM_CACHE", True))
     llm_pausa_s: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_LLM_PAUSA_S", "0")))
     llm_timeout_s: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_LLM_TIMEOUT_S", "45")))
+    llm_paralelo: int = field(default_factory=lambda: _env_int("OBRANEXO_LLM_PARALELO", 4))
 
     # Preço (US$ por 1M tokens: entrada, saída) para estimar custo por análise.
     # Modelos Gemini no nível gratuito custam 0; preencha com a tabela paga quando migrar.

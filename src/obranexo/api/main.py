@@ -276,7 +276,7 @@ def buscar_pncp(
     try:
         while pagina <= total and pagina <= max_paginas:
             if abertas:
-                lote, total = cli.buscar_propostas_abertas(datetime.now().strftime("%Y%m%d"), uf=uf or None, pagina=pagina)
+                lote, total = cli.buscar_propostas_abertas(uf=uf or None, pagina=pagina, horizonte_dias=max(dias, 30))
             else:
                 fim = datetime.now()
                 lote, total = cli.buscar_publicacoes((fim - timedelta(days=dias)).strftime("%Y%m%d"), fim.strftime("%Y%m%d"), uf=uf or None, pagina=pagina)

@@ -1,0 +1,233 @@
+[
+ {
+  "id": "02451938000153-1-000300/2026#item-1",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 1,
+  "descricao": "Luminária Iluminação Pública material: alumínio injetado/policarbonato, modelo: led, aplicação: iluminação pública poste, potência nominal lâmpada: 100, quantidade lâmpadas: 1, tipo instalação: em braço, tipo fixação: parafuso, características adicionais: base para relé, cor: branca fria, grau proteção: ip 66",
+  "quantidade": 30.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 1075.0,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-2",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 2,
+  "descricao": "Refletor material corpo: alumínio injetado, aplicação: sistema de iluminação, tipo lâmpada: led, potência lâmpada: 30, tensão alimentação: bivolt, grau proteção: ip65 (tabela ingress protection), características adicionais: haste direcionável, fluxo luminoso: 2.400, temperatura de cor: 6.500",
+  "quantidade": 100.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 46.5,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-3",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 3,
+  "descricao": "Refletor material corpo: alumínio injetado, aplicação: sistema de iluminação, tipo lâmpada: led, potência lâmpada: 50, tensão alimentação: bivolt, grau proteção: ip65 (tabela ingress protection), características adicionais: haste direcionável, fluxo luminoso: 3.800, temperatura de cor: 6.500",
+  "quantidade": 36.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 52.17,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-4",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 4,
+  "descricao": "Caixa Medição material: policarbonato, comprimento: 520, largura: 620, profundidade: 253, aplicação: instalações elétricas residenciais e comerciais, tipo medidor: trifásico, espessura: 1,2, normas técnicas: nbr 15820, padrão: energisa, corrente máxima: 200, tensão isolamento: 600, peso: 1,490, instalação: ambientes internos e externos",
+  "quantidade": 2.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 208.3,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-5",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 5,
+  "descricao": "Cabo Elétrico Flexível tipo: tripolar chato, cor da cobertura: preta, tensão isolamento: 750, seção nominal: 16, material do condutor: cobre eletrolítico, material isolamento: pvc - cloreto de polivinila, material cobertura: composto termoplástico-pvc, cor da isolação: preta, classe encordoamento: 5, quantidade condutores: 3, bitola: 16,0, normas técnicas: nbr 7288",
+  "quantidade": 30.0,
+  "unidade": "Metro",
+  "valor_unit_estimado": 15.3,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-6",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 6,
+  "descricao": "Cabo Elétrico Flexível tipo: tripolar chato, cor da cobertura: preta, tensão isolamento: 750, seção nominal: 16, material do condutor: cobre eletrolítico, material isolamento: pvc - cloreto de polivinila, material cobertura: composto termoplástico-pvc, cor da isolação: preta, classe encordoamento: 5, quantidade condutores: 3, bitola: 16,0, normas técnicas: nbr 7288",
+  "quantidade": 10.0,
+  "unidade": "Metro",
+  "valor_unit_estimado": 15.3,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-7",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 7,
+  "descricao": "Cabo Elétrico Flexível tipo: fotovoltaico unifilar, aplicação: instalação de módulos fotovoltaico, têmpera condutor: mole, formação condutor: 66 fios, cor da cobertura: preta, tensão isolamento: 600, seção nominal: 6, material do condutor: cobre eletrolítico, material isolamento: polietileno reticulado (xlpe), referência: 3361.5, material cobertura: pvc anti-chama, cor da isolação: preta, classe encordoamento: 5, quantidade condutores: 1, temperatura operação: 90, bitola: 6, normas técnicas: ul 4703, retie, ntc, iso 9001",
+  "quantidade": 150.0,
+  "unidade": "Metro",
+  "valor_unit_estimado": 21.31,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-8",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 8,
+  "descricao": "Passa Fio material: pvc, comprimento: 10, aplicação: passagem cabo/fio, características adicionais: com ponta de metal",
+  "quantidade": 4.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 50.14,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-9",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 9,
+  "descricao": "Duto material: polietileno alta densidade (pead), tipo: corrugado, dimensões: 40 cm  x 110, cor: prêta, características adicionais: dupla parede, anelado extern. e liso internamente",
+  "quantidade": 12.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 182.0,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-10",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 10,
+  "descricao": "Cabo Elétrico Flexível tipo: fotovoltaico unifilar, aplicação: instalação de módulos fotovoltaico, têmpera condutor: mole, formação condutor: 66 fios, cor da cobertura: preta, tensão isolamento: 600, seção nominal: 6, material do condutor: cobre eletrolítico, material isolamento: polietileno reticulado (xlpe), referência: 3361.5, material cobertura: pvc anti-chama, cor da isolação: preta, classe encordoamento: 5, quantidade condutores: 1, temperatura operação: 90, bitola: 6, normas técnicas: ul 4703, retie, ntc, iso 9001",
+  "quantidade": 100.0,
+  "unidade": "Metro",
+  "valor_unit_estimado": 63.99,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-11",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 11,
+  "descricao": "Quadro Distribuição quantidade fases: 3, barramento: sem barramento, cor: branca, revestimento: pintura eletrostática, tamanho: 40 x 30 x 10, quantidade ramais: 40, aplicação: instalação elétrica, material: termoplástico, normas técnicas: nbr 5410, nbr 14039, nbr 60947, acessórios: tampa removível/translúcida, suportes, corrente nominal: 63, quantidade de disjuntores: 24, número de pólos: 3, fixação: embutir, padrão: din / modular, posição relativa: embutir, tensão nominal: 220/380",
+  "quantidade": 3.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 198.14,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-12",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 12,
+  "descricao": "Cabo Elétrico Flexível tipo: fotovoltaico unifilar, aplicação: instalação de módulos fotovoltaico, têmpera condutor: mole, formação condutor: 66 fios, cor da cobertura: preta, tensão isolamento: 600, seção nominal: 6, material do condutor: cobre eletrolítico, material isolamento: polietileno reticulado (xlpe), referência: 3361.5, material cobertura: pvc anti-chama, cor da isolação: preta, classe encordoamento: 5, quantidade condutores: 1, temperatura operação: 90, bitola: 6, normas técnicas: ul 4703, retie, ntc, iso 9001",
+  "quantidade": 200.0,
+  "unidade": "Metro",
+  "valor_unit_estimado": 7.9,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-13",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 13,
+  "descricao": "Refletor material corpo: alumínio, material refletor: vidro, formato: retangular, aplicação: iluminação externa, fachadas, áreas abertas, tipo lâmpada: led, potência lâmpada: 100, tensão alimentação: 110/220, material suporte: alumínio, grau proteção: ip-67, comprimento: 12, largura: 15, altura: 3, cor: preta, acessórios: suporte de fixação ajustável, material acabamento: pintura eletrostática, ângulo de abertura da lente: 120°, fluxo luminoso: 2.700, eficiência luminosa: ~27, índice de reprodução de cor - irc: ≥ 70, temperatura de cor: 6.500",
+  "quantidade": 16.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 214.24,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-14",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 14,
+  "descricao": "Refletor material corpo: alumínio, formato: retangular, tipo lâmpada: microled, potência lâmpada: 500, tensão alimentação: bivolt",
+  "quantidade": 14.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 719.45,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-15",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 15,
+  "descricao": "Luminária tipo: sobrepor, formato: quadrado, tipo lâmpada: led, características adicionais: ângulo de abertura: 120º, irc >80, modelo: painel, aplicação: instalações elétricas, tensão nominal: bivolt, grau proteção: ip20, potência nominal lâmpada: 30, temperatura de cor: 6.500",
+  "quantidade": 70.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 104.2,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-16",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 16,
+  "descricao": "Cabo Elétrico Flexível tipo: fotovoltaico unifilar, aplicação: instalação de módulos fotovoltaico, têmpera condutor: mole, formação condutor: 66 fios, cor da cobertura: preta, tensão isolamento: 600, seção nominal: 6, material do condutor: cobre eletrolítico, material isolamento: polietileno reticulado (xlpe), referência: 3361.5, material cobertura: pvc anti-chama, cor da isolação: preta, classe encordoamento: 5, quantidade condutores: 1, temperatura operação: 90, bitola: 6, normas técnicas: ul 4703, retie, ntc, iso 9001",
+  "quantidade": 200.0,
+  "unidade": "Metro",
+  "valor_unit_estimado": 30.42,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-17",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 17,
+  "descricao": "Disjuntor Baixa Tensão funcionamento: termomagnético, acionamento: alavanca, corrente nominal: 16, tipo: mini, aplicação: proteção de instalações elétricas, padrão: iec, referência 1: siemens - 5sy8 116-8, tensão nominal: 127/220, número de fases: monopolar, curva de disparo: d",
+  "quantidade": 3.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 39.7,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-18",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 18,
+  "descricao": "Luminária Iluminação Pública material: chapa alumínio, aplicação: iluminação pública poste, potência nominal lâmpada: 250, quantidade lâmpadas: 2, normas técnicas: nbr 5101, nbr 14744, cor: branca fria, material refletor: alumínio, material difusor: alumínio, grau proteção: ip 66",
+  "quantidade": 146.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 498.95,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-19",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 19,
+  "descricao": "Refletor material corpo: alumínio injetado, aplicação: sistema de iluminação, tipo lâmpada: led, potência lâmpada: 150, tensão alimentação: bivolt, grau proteção: ip65 (tabela ingress protection), características adicionais: haste direcionável, fluxo luminoso: 11.250, temperatura de cor: 6.500",
+  "quantidade": 110.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 348.57,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-20",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 20,
+  "descricao": "Luminária Iluminação Pública modelo: pétala, aplicação: lâmpada led, potência nominal lâmpada: 50, quantidade lâmpadas: 1, normas técnicas: iso 90001:2000 e iso 14001, características adicionais: dimensões: 49 x 26 x 12 cm",
+  "quantidade": 62.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 599.5,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "02451938000153-1-000300/2026#item-21",
+  "contratacao_id": "02451938000153-1-000300/2026",
+  "numero_item": 21,
+  "descricao": "Sinalizador Trânsito material corpo: polietileno de alta densidade, tipo: giratório, alimentação: solar, características adicionais: com sinalizador de 360°, cor: verde/vermelha",
+  "quantidade": 4.0,
+  "unidade": "Unidade",
+  "valor_unit_estimado": 907.0,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ }
+]

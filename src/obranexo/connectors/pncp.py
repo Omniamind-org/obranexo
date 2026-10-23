@@ -18,7 +18,7 @@ import hashlib
 import json
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -183,13 +183,19 @@ class PNCPClient:
 
     def buscar_propostas_abertas(
         self,
-        data_final: str,
+        data_final: str | None = None,
         uf: str | None = "GO",
         modalidade: int = MODALIDADE_PREGAO_ELETRONICO,
         pagina: int = 1,
         tamanho: int = 50,
+        horizonte_dias: int = 60,
     ) -> tuple[list[Contratacao], int]:
-        """Contratações com recebimento de propostas em aberto até data_final (AAAAMMDD)."""
+        """Contratações com propostas ainda abertas cujo prazo encerra ATÉ data_final (AAAAMMDD).
+
+        Atenção: `dataFinal` é o limite do encerramento, não "a data de hoje". Passar hoje devolve só
+        o que fecha hoje (foi o que fez a busca voltar vazia); por isso o padrão é hoje + horizonte_dias."""
+        if data_final is None:
+            data_final = (datetime.now() + timedelta(days=horizonte_dias)).strftime("%Y%m%d")
         params: dict[str, Any] = {
             "dataFinal": data_final,
             "codigoModalidadeContratacao": modalidade,
@@ -199,8 +205,11 @@ class PNCPClient:
         if uf:
             params["uf"] = uf
         dados = self.get_json(f"{BASE_CONSULTA}/contratacoes/proposta", params, usar_cache=False)
-        lista = [contratacao_de_api(d) for d in (dados or {}).get("data", [])]
-        return lista, int((dados or {}).get("totalPaginas") or 1)
+        # 204 (sem corpo) chega aqui como lista vazia
+        if not isinstance(dados, dict):
+            return [], 1
+        lista = [contratacao_de_api(d) for d in dados.get("data", [])]
+        return lista, int(dados.get("totalPaginas") or 1)
 
     def filtrar_por_palavras(self, contratacoes: list[Contratacao], palavras: list[str]) -> list[Contratacao]:
         chaves = [p.lower() for p in palavras]

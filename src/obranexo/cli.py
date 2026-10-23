@@ -102,7 +102,7 @@ def cmd_abertas(args) -> int:
     pagina, total = 1, 1
     achados = []
     while pagina <= total and pagina <= int(args.max_paginas):
-        lista, total = cli.buscar_propostas_abertas(datetime.now().strftime("%Y%m%d"), uf=args.uf, pagina=pagina)
+        lista, total = cli.buscar_propostas_abertas(uf=args.uf, pagina=pagina, horizonte_dias=int(args.dias))
         achados += cli.filtrar_por_palavras(lista, palavras) if palavras else lista
         pagina += 1
     _imprimir(achados)
@@ -145,8 +145,8 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--uf", default="GO")
         p.add_argument("--palavras", default="lumin,led,refletor,ilumina,material elétrico,material eletrico")
         p.add_argument("--max-paginas", default=10)
-        if nome == "buscar":
-            p.add_argument("--dias", default=30)
+        # buscar: publicadas nos últimos N dias · abertas: que encerram nos próximos N dias
+        p.add_argument("--dias", default=30 if nome == "buscar" else 60)
         p.set_defaults(fn=fn)
     args = parser.parse_args(argv)
     return args.fn(args)

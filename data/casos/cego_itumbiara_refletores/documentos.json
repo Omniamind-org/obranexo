@@ -1,0 +1,123 @@
+[
+ {
+  "id": "doc-1",
+  "contratacao_id": "02204196000161-1-000452/2026",
+  "nome": "1_EDITAL_PREGAO_ELETRONICO_037-2026_-_AQUISICAO_DE_REFLETORES_PARA_A_SEC._DE_ESPORTE.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/02204196000161/compras/2026/452/arquivos/1",
+  "sha256": "6c7364f5e15dd854e8ae8954e388d3e8503b0e53c2c4ded66eb531b6e5982097",
+  "caminho_local": "arquivos\\1_EDITAL_PREGAO_ELETRONICO_037-2026_-_AQUISICAO_DE_REFLETORES_PARA_A_SEC._DE_ESPORTE.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-2",
+  "contratacao_id": "02204196000161-1-000452/2026",
+  "nome": "2_PE_037-2026_-_ESTUDO_TECNICO_PRELIMINAR_-_ETP.pdf",
+  "tipo_doc": "Estudo Técnico Preliminar",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/02204196000161/compras/2026/452/arquivos/2",
+  "sha256": "2d4156f36720d5bc3664b44866c162663a9b76c676d5a5914da77a6f36d28b7b",
+  "caminho_local": "arquivos\\2_PE_037-2026_-_ESTUDO_TECNICO_PRELIMINAR_-_ETP.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-3",
+  "contratacao_id": "02204196000161-1-000452/2026",
+  "nome": "3_PE_037-2026_-DOCUMENTO_DE_FORMALIZACAO_DE_DEMANDA_-_DFD.pdf",
+  "tipo_doc": "Documento de Formalização da Demanda - DFD",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/02204196000161/compras/2026/452/arquivos/3",
+  "sha256": "0a37a217a515eb593aef0f834ca08433c8874357e1be6fcbb390946fd7d07e2c",
+  "caminho_local": "arquivos\\3_PE_037-2026_-DOCUMENTO_DE_FORMALIZACAO_DE_DEMANDA_-_DFD.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-4",
+  "contratacao_id": "02204196000161-1-000452/2026",
+  "nome": "4_PE_037-2026_-_PLANILHA_DE_COTACAO_-_FORMACAO_DE_PRECOS.pdf",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/02204196000161/compras/2026/452/arquivos/4",
+  "sha256": "533e86222798e43b2d2fba4e4eed0548ac555cc4ea763f90070ccb17aa5e89a4",
+  "caminho_local": "arquivos\\4_PE_037-2026_-_PLANILHA_DE_COTACAO_-_FORMACAO_DE_PRECOS.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-5",
+  "contratacao_id": "02204196000161-1-000452/2026",
+  "nome": "5_PE_037-2026_-_TERMO_DE_REFERENCIA_E_JUSTIFICATIVA.pdf",
+  "tipo_doc": "Termo de Referência",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/02204196000161/compras/2026/452/arquivos/5",
+  "sha256": "35faa90a7824b314a57f6904dcd35575c114b7d54c786812697991f53dc1bf7a",
+  "caminho_local": "arquivos\\5_PE_037-2026_-_TERMO_DE_REFERENCIA_E_JUSTIFICATIVA.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-6",
+  "contratacao_id": "02204196000161-1-000452/2026",
+  "nome": "6_PE_037-2026_-_PARECER_JURIDICO_INICIAL.pdf (não baixado: sem especificação técnica)",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/02204196000161/compras/2026/452/arquivos/6",
+  "sha256": "a8f41f6fff386d85481929f318e058cbd6a62393b4077bd60aab230b99ac48cf",
+  "caminho_local": null,
+  "paginas": 0,
+  "extraivel": false
+ },
+ {
+  "id": "doc-7",
+  "contratacao_id": "02204196000161-1-000452/2026",
+  "nome": "7_PUBLICACAO_DO_AVISO_-_DOU.pdf (não baixado: sem especificação técnica)",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/02204196000161/compras/2026/452/arquivos/7",
+  "sha256": "26affb7132226dd41c765a05f8bca817b19fd8850696600cef7aa4cbb17c2678",
+  "caminho_local": null,
+  "paginas": 0,
+  "extraivel": false
+ },
+ {
+  "id": "doc-8",
+  "contratacao_id": "02204196000161-1-000452/2026",
+  "nome": "8_PUBLICACAO_DO_AVISO_-_DOE.pdf (não baixado: sem especificação técnica)",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/02204196000161/compras/2026/452/arquivos/8",
+  "sha256": "9263a61c40b4f87eb5d8ecd3ff4024e7889bc9b48071889f8e38e058a57c3add",
+  "caminho_local": null,
+  "paginas": 0,
+  "extraivel": false
+ },
+ {
+  "id": "doc-9",
+  "contratacao_id": "02204196000161-1-000452/2026",
+  "nome": "9_PUBLICACAO_DO_AVISO_-_DOM.pdf (não baixado: sem especificação técnica)",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/02204196000161/compras/2026/452/arquivos/9",
+  "sha256": "1ada5fe384443cb4ad7b959e5873f22597740e3c07907863ad244cd6731e1824",
+  "caminho_local": null,
+  "paginas": 0,
+  "extraivel": false
+ },
+ {
+  "id": "doc-10",
+  "contratacao_id": "02204196000161-1-000452/2026",
+  "nome": "10_PUBLICACAO_DO_AVISO_-_O_HOJE.pdf (não baixado: sem especificação técnica)",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/02204196000161/compras/2026/452/arquivos/10",
+  "sha256": "0dd33a4fdfa6b4dc55844920ca820ada726b8a2a21d0933e6436d184164af2f6",
+  "caminho_local": null,
+  "paginas": 0,
+  "extraivel": false
+ },
+ {
+  "id": "doc-11",
+  "contratacao_id": "02204196000161-1-000452/2026",
+  "nome": "11_COMPROVANTE_DE_PUBLICACAO_PORTAL.pdf (não baixado: sem especificação técnica)",
+  "tipo_doc": "Outros Documentos",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/02204196000161/compras/2026/452/arquivos/11",
+  "sha256": "b9318abc55911e06d9cc982e9eb554d58273745dd586f2a1be58092b7a730634",
+  "caminho_local": null,
+  "paginas": 0,
+  "extraivel": false
+ }
+]

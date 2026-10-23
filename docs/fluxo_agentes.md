@@ -34,6 +34,24 @@ Provedores: Google Gemini (padrão, nível gratuito) ou Anthropic — mesma inte
 fallback automático para o modelo reserva em 429/503.
 | gerar_dossie | Markdown com 12 seções e rodapé de custo/tempo | ✔ | — |
 
+## O LLM interpreta, as regras decidem
+
+Regras que vieram do teste cego de 23/10/2026 (5 pregões abertos nunca vistos — ver `docs/teste_cego_2026-10-23.md`):
+
+- **Todo valor proposto pelo LLM é validado** (`rules/validar.py`) pelo tipo e pela faixa plausível do atributo
+  antes de virar requisito. Exemplos rejeitados: `cct_k = "branca fria"`, `tensao_v = 600–1000` (tensão de
+  isolação de cabo), `material_corpo = "PRETA"`, `tipo_cabo` em texto livre. No Investigador, o valor inválido
+  volta como erro da ferramenta para o agente corrigir.
+- **Requisito encontrado só pelo LLM é desejável**: aparece no dossiê e pode deixar o item PARCIAL, mas sozinho
+  nunca o torna INCOMPATÍVEL.
+- **A comparação nunca derruba a análise**: valor não interpretável vira INDETERMINADO com justificativa.
+- **Categoria pelo núcleo da descrição**: "SUPORTE PARA … LUMINÁRIA" é acessório, não luminária; o LLM não
+  reclassifica acessórios.
+- **Sem especificação técnica do item, não há compatibilidade**: se só há cláusulas gerais do edital
+  (garantia, prazo, amostra), o resultado é INDETERMINADO.
+- As extrações por item rodam **em paralelo** (`OBRANEXO_LLM_PARALELO`, padrão 4) e o processamento segue
+  sequencial, lendo do cache — o resultado não depende da ordem das respostas.
+
 ## Guardrails
 
 - Documentos e descrições são injetados como **dados** (`<documento>`, `<item>`), nunca como instruções.

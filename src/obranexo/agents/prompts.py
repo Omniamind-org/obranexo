@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from obranexo.catalog.atributos import ATRIBUTOS
 
-VERSAO = "v0.2"
+VERSAO = "v0.3"
 
 GUARDRAILS_BASE = """
 REGRAS INEGOCIÁVEIS
@@ -48,6 +48,13 @@ ORIENTAÇÕES
   com valor_faixa=[100, 277]; característica presente ("selo INMETRO", "dimerizável") => "verdadeiro".
 - Para atributos documentais (doc_*), use operador "contem" e valor_booleano=true.
 - obrigatorio=false apenas quando o texto indicar preferência ("preferencialmente", "desejável").
+- tensao_v é a tensão de ALIMENTAÇÃO do equipamento. Tensão de isolação de cabo ("0,6/1 kV", "750 V",
+  "tensão isolamento") NÃO é tensao_v: ignore-a.
+- material_corpo é o material (alumínio, aço, PVC…); cor não é material.
+- tipo_cabo só pode ser um destes valores: fotovoltaico, logico, coaxial, multiplexado, aluminio, nu, pp.
+  Se o cabo não for de nenhum desses tipos, não registre tipo_cabo.
+- Use valor_numero para números (sem unidade no texto), valor_faixa para faixas [mín, máx] e valor_booleano
+  para características presentes. Nunca coloque descrição em palavras ("branca fria") num atributo numérico.
 - Classifique a categoria do item em: luminaria_publica_led, luminaria_interna, refletor_led, lampada,
   rele_fotoeletrico, poste, braco_luminaria, cabo, disjuntor, eletroduto, quadro, dispositivos,
   transformador, bateria ou outro.

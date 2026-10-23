@@ -20,12 +20,12 @@ from obranexo.agents.extrator import extrair_item
 from obranexo.agents.investigador import investigar
 from obranexo.agents.planejador import planejar, qualificar
 from obranexo.agents.verificador import verificar
-from obranexo.catalog.atributos import ATRIBUTOS_INVESTIGAVEIS
+from obranexo.catalog.atributos import ATRIBUTOS_INVESTIGAVEIS, natureza
 from obranexo.config import Config, config
 from obranexo.documents.extract import IndiceDocumentos
 from obranexo.dossier.render import renderizar
 from obranexo.llm.client import criar_llm_client
-from obranexo.models import Analise, Contratacao, Correspondencia, Documento, Dossie, Empresa, ItemDemanda, Requisito
+from obranexo.models import Analise, Contratacao, Correspondencia, Documento, Dossie, Empresa, ItemDemanda, Requisito, ResultadoItem
 from obranexo.rules.compare import comparar_item
 from obranexo.rules.extrair import inferir_categoria
 from obranexo.storage import store
@@ -58,7 +58,29 @@ def _no_coletar_documentos(ctx: Contexto, documentos: list[Documento]) -> None:
         ctx.analise.documentos.append(doc)
 
 
+def _prefetch_extracoes(ctx: Contexto) -> None:
+    """Dispara as chamadas de extração ao LLM em paralelo; o processamento continua sequencial e
+    determinístico (lê do cache). Num pregão de 32 itens, em série, a extração levava ~8 min."""
+    if not ctx.usar_llm or len(ctx.analise.itens) < 2:
+        return
+    from concurrent.futures import ThreadPoolExecutor
+
+    from obranexo.agents.extrator import chamar_extrator
+
+    def tentar(item: ItemDemanda) -> bool:
+        try:
+            chamar_extrator(ctx, item)
+            return True
+        except Exception:  # falha aqui é tratada de novo (e registrada) no processamento sequencial
+            return False
+
+    with ThreadPoolExecutor(max_workers=max(1, ctx.cfg.llm_paralelo)) as pool:
+        ok = sum(pool.map(tentar, ctx.analise.itens))
+    ctx.evento("extrair_itens", f"Extração LLM de {ok}/{len(ctx.analise.itens)} itens em paralelo ({ctx.cfg.llm_paralelo} simultâneas)")
+
+
 def _no_extrair_itens(ctx: Contexto) -> None:
+    _prefetch_extracoes(ctx)
     for item in ctx.analise.itens:
         item.categoria_inferida = inferir_categoria(item.descricao)
         reqs = extrair_item(ctx, item, f"pncp-item-{item.numero_item}")
@@ -79,11 +101,18 @@ def _casar(ctx: Contexto, itens: list[ItemDemanda]) -> None:
     ctx.analise.correspondencias = [c for c in ctx.analise.correspondencias if c.item_id not in {i.id for i in itens}]
     for item in itens:
         reqs = [r for r in ctx.analise.requisitos if r.item_id == item.id]
+        # Só cláusulas gerais do edital (garantia, prazo, amostra) não provam que o produto serve:
+        # sem nenhuma especificação técnica do próprio item, o resultado é INDETERMINADO.
+        tecnicos = [r for r in reqs if natureza(r.atributo) == "produto" and r.fonte_extracao != "investigador"]
         candidatos = [p for p in ctx.empresa.produtos if p.categoria == item.categoria_inferida]
         resultados = []
         for p in candidatos:
             resultado, score, detalhes = comparar_item(reqs, p)
-            resultados.append(Correspondencia(id=ctx.novo_id("corr"), item_id=item.id, produto_id=p.id, resultado=resultado, detalhes=detalhes, score=score))
+            obs = []
+            if not tecnicos and resultado in (ResultadoItem.COMPATIVEL, ResultadoItem.PARCIAL):
+                resultado, score = ResultadoItem.INDETERMINADO, round(score * 0.5, 4)
+                obs.append("A descrição do item não traz especificação técnica verificável; só há exigências gerais do edital.")
+            resultados.append(Correspondencia(id=ctx.novo_id("corr"), item_id=item.id, produto_id=p.id, resultado=resultado, detalhes=detalhes, score=score, observacoes=obs))
         ordem = {"COMPATIVEL": 3, "PARCIAL": 2, "INDETERMINADO": 1, "INCOMPATIVEL": 0}
         resultados.sort(key=lambda c: (ordem[c.resultado.value], c.score), reverse=True)
         ctx.analise.correspondencias.extend(resultados[:MAX_PRODUTOS_POR_ITEM])

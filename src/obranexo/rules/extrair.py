@@ -56,35 +56,68 @@ def _janela(texto: str, inicio: int, fim: int, margem: int = 0) -> str:
 
 def _operador_por_contexto(contexto: str, padrao: Operador) -> Operador:
     c = _sem_acentos(contexto).lower()
-    if re.search(r"\b(maxim[ao]|ate|no maximo|nao superior|inferior ou igual)\b", c):
+    if re.search(r"\b(maxim[ao]|ate|no maximo|nao superior|inferior ou igual)\b|<=|≤|<", c):
         return Operador.MENOR_IGUAL
-    if re.search(r"\b(minim[ao]|no minimo|ou maior|ou superior|superior|pelo menos|igual ou maior|>=|≥)\b", c):
+    if re.search(r"\b(minim[ao]|no minimo|ou maior|ou superior|superior|pelo menos|igual ou maior)\b|>=|≥|>", c):
         return Operador.MAIOR_IGUAL
     return padrao
 
 
+# Separador entre rótulo e valor: "IRC: >80", "fator de potência: > 0,99", "IRC ≥ 70", "seção nominal - 2,5"
+_SEP = r"[\s:=>≥~\-–]*"
+# Número em formato brasileiro, sem pegar pontuação da frase: "8.500", "2,5", "1.671,18", "14000"
+_NUM_BR = r"(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)"
+
+# Ordem importa: o primeiro padrão que casar com o NÚCLEO da descrição define a categoria.
+_REGRAS_CATEGORIA = [
+    # Acessórios que costumam citar o produto principal ("suporte para luminária", "braço para iluminação")
+    ("braco_luminaria", r"^braco\b"),
+    ("acessorio", r"^(suporte|adaptador|fita|haste|grampo|conector|terminal|espacador|passa fio|abracadeira|parafuso|base|caixa|tampa|bucha|fixador|luva|curva)\b"),
+    ("poste", r"^poste\b"),
+    ("rele_fotoeletrico", r"\brele\b.*foto|fotocel|fotocontrol"),
+    ("luminaria", r"luminaria|plafon|painel (de )?led|arandela|luminaria"),
+    ("refletor_led", r"refletor|^projetor\b|projetor.*led"),
+    ("lampada", r"\blampada"),
+    ("disjuntor", r"disjuntor"),
+    ("cabo", r"\bcabo\b|\bfio\b|condutor"),
+    ("eletroduto", r"eletroduto|conduite|duto pead|\bduto\b"),
+    ("quadro", r"\bquadro\b|painel eletrico|centro de distribuicao"),
+    ("dispositivos", r"tomada|interruptor|plugue"),
+    ("transformador", r"transformador"),
+    ("bateria", r"bateria|nobreak|no-break"),
+]
+
+
+def _nucleo(descricao: str) -> str:
+    """Núcleo da descrição: o trecho antes do primeiro ',', ':', ';' ou ' para '/' com '/' de '.
+    'SUPORTE PARA 1 PÉTALA PARA LUMINÁRIA' -> 'suporte'; 'Cabo Elétrico Flexível tipo: ...' -> 'cabo eletrico flexivel tipo'."""
+    d = _sem_acentos(descricao).lower().strip()
+    nucleo = re.split(r"[,:;(]|\s(?:para|com|de|em|a|tipo)\s", d, maxsplit=1)[0]
+    return nucleo.strip()[:80]
+
+
+def eh_acessorio(descricao: str) -> bool:
+    """O núcleo da descrição é um acessório (suporte, adaptador, grampo…) e não o produto que ele cita."""
+    padrao = dict(_REGRAS_CATEGORIA)["acessorio"]
+    return re.search(padrao, _nucleo(descricao)) is not None
+
+
 def inferir_categoria(descricao: str) -> str:
+    """Categoria pelo NÚCLEO da descrição (o que está sendo comprado), não por qualquer menção no texto.
+    Antes, 'BRAÇO PARA … FIXAÇÃO DE LUMINÁRIAS' virava luminária e casava com uma luminária do catálogo."""
     d = _sem_acentos(descricao).lower()
-    regras = [
-        ("luminaria_publica_led", r"luminaria.*(publica|led|via|logradouro|iluminacao publica)|luminaria.*led"),
-        ("luminaria_interna", r"luminaria|painel (de )?led|plafon"),
-        ("rele_fotoeletrico", r"\brele\b.*foto|fotocel|fotocontrol"),
-        ("refletor_led", r"refletor|projetor.*led"),
-        ("lampada", r"\blampada"),
-        ("poste", r"\bposte\b"),
-        ("braco_luminaria", r"\bbraco\b"),
-        ("disjuntor", r"disjuntor"),
-        ("cabo", r"\bcabo\b|\bfio\b|condutor"),
-        ("eletroduto", r"eletroduto|conduite"),
-        ("quadro", r"\bquadro\b|painel eletrico|centro de distribuicao"),
-        ("dispositivos", r"tomada|interruptor|plugue|adaptador"),
-        ("transformador", r"transformador"),
-        ("bateria", r"bateria|nobreak|no-break"),
-    ]
-    for categoria, padrao in regras:
-        if re.search(padrao, d):
-            return categoria
-    return "outro"
+    nucleo = _nucleo(descricao)
+    categoria = next((c for c, p in _REGRAS_CATEGORIA if re.search(p, nucleo)), None)
+    if categoria is None:
+        # Núcleo genérico ("item 1", "aquisição de…"): usa o começo da descrição, sem os padrões de acessório
+        inicio = d[:90]
+        categoria = next((c for c, p in _REGRAS_CATEGORIA if not p.startswith("^") and re.search(p, inicio)), "outro")
+    if categoria == "luminaria":
+        publica = re.search(r"publica|\bvia(s|ria)?\b|logradouro|rodovia|viario|poste|braco|ilum\w* externa|\bled\b.*\bip\s*-?6", d)
+        return "luminaria_publica_led" if publica else "luminaria_interna"
+    if categoria == "acessorio":
+        return "outro"
+    return categoria
 
 
 def extrair_requisitos(descricao: str) -> list[RequisitoBruto]:
@@ -116,16 +149,23 @@ def extrair_requisitos(descricao: str) -> list[RequisitoBruto]:
     if m:
         add("potencia_w", [numero_br(m.group(1)), numero_br(m.group(2))], m, Operador.ENTRE)
     else:
-        m = re.search(r"POTENCIA\s*(?:NOMINAL\s*)?(?:MAXIMA|MINIMA)?\s*(?:DE\s*)?(\d+(?:[.,]\d+)?)\s*(?:W|WTS|WATTS?)\b", tu) or re.search(
-            r"\b(\d+(?:[.,]\d+)?)\s*(?:W|WTS|WATTS)\b(?!\s*/)", tu
+        m = (
+            re.search(r"POTENCIA\s*(?:NOMINAL\s*)?(?:MAXIMA|MINIMA)?\s*(?:DE\s*)?(\d+(?:[.,]\d+)?)\s*(?:W|WTS|WATTS?)\b", tu)
+            or re.search(r"\b(\d+(?:[.,]\d+)?)\s*(?:W|WTS|WATTS)\b(?!\s*/)", tu)
+            # Formato CATMAT, sem unidade: "potência lâmpada: 100", "potência nominal: 150"
+            or re.search(r"POTENCIA(?:\s+(?:LAMPADA|NOMINAL|MAXIMA|MINIMA|DA LAMPADA))?\s*:" + _SEP + r"(\d+(?:[.,]\d+)?)\b(?!\s*(?:K?VA|CV|HP)\b)", tu)
         )
         if m:
             add("potencia_w", numero_br(m.group(1)), m)
 
     # --- Tensão ---------------------------------------------------------
-    m = re.search(r"(\d{2,3})\s*(V)?\s*(?:-|A|À|/|ATE)\s*(\d{2,3})\s*(V(?:CA|AC)?)?\b", tu)
-    if m and (m.group(2) or m.group(4)) and 90 <= float(m.group(1)) <= 480 and 90 <= float(m.group(3)) <= 480:
+    m = re.search(r"(\d{2,3})\s*(V)?\s*(?:-|~|A|À|/|ATE)\s*(\d{2,3})\s*(V(?:CA|AC)?)?\b", tu)
+    # CATMAT sem unidade: "tensão alimentação: 110/220", "tensão de funcionamento: 85~265"
+    rotulada = re.search(r"TENSAO\s*(?:DE\s*)?(?:ALIMENTACAO|FUNCIONAMENTO|NOMINAL|OPERACAO|ENTRADA)?\s*:" + _SEP + r"(\d{2,3})\s*V?\s*(?:-|~|A|/|ATE)\s*(\d{2,3})", tu)
+    if m and (m.group(2) or m.group(4)) and 80 <= float(m.group(1)) <= 480 and 90 <= float(m.group(3)) <= 480:
         add("tensao_v", [float(m.group(1)), float(m.group(3))], m, Operador.ENTRE)
+    elif rotulada and 80 <= float(rotulada.group(1)) <= 480 and 90 <= float(rotulada.group(2)) <= 480:
+        add("tensao_v", [float(rotulada.group(1)), float(rotulada.group(2))], rotulada, Operador.ENTRE)
     elif re.search(r"\bBIVOLT\b", tu):
         m = re.search(r"\bBIVOLT\b", tu)
         add("tensao_v", [127.0, 220.0], m, Operador.ENTRE)
@@ -140,31 +180,43 @@ def extrair_requisitos(descricao: str) -> list[RequisitoBruto]:
         add("frequencia_hz", m.group(1).replace(" ", ""), m, Operador.CONTEM, obrigatorio=False)
 
     # --- Temperatura de cor --------------------------------------------
-    m = re.search(r"\b([2-6]\d{3})\s*K\b", tu)
+    # Faixa: "TEMPERATURA DE COR DE 4000K A 5000K" (antes virava só 4000)
+    m = re.search(r"\b([2-6][.,]?\d{3})\s*K?\s*(?:A|-|~|ATE)\s*([2-6][.,]?\d{3})\s*K\b", tu)
     if m:
-        add("cct_k", float(m.group(1)), m, Operador.IGUAL)
+        add("cct_k", [numero_br(m.group(1)), numero_br(m.group(2))], m, Operador.ENTRE)
+    else:
+        m = re.search(r"\b([2-6][.,]?\d{3})\s*K\b", tu) or re.search(r"TEMPERATURA\s*(?:DE\s*)?COR\s*(?:\(CCT\))?" + _SEP + r"(?:DE\s*)?([2-6][.,]?\d{3})\b", tu)
+        if m:
+            add("cct_k", numero_br(m.group(1)), m, Operador.IGUAL)
 
     # --- Fluxo luminoso -------------------------------------------------
-    m = re.search(r"FLUXO\s*LUMINOSO\s*(?:EFETIVO|NOMINAL|MINIMO)?\s*(?:DE\s*)?([\d.,]+)\s*(?:LM|LUMENS?)\b", tu) or re.search(
-        r"\b([\d.,]{4,})\s*(?:LM|LUMENS)\b(?!\s*/)", tu
+    m = (
+        re.search(r"FLUXO\s*LUMINOSO\s*(?:EFETIVO|NOMINAL|MINIMO)?\s*(?:DE\s*)?([\d.,]+)\s*(?:LM|LUMENS?)\b", tu)
+        or re.search(r"\b([\d.,]{4,})\s*(?:LM|LUMENS)\b(?!\s*/)", tu)
+        # CATMAT sem unidade: "fluxo luminoso: 2.700, eficiência…" (o número não pode engolir a vírgula seguinte)
+        or re.search(r"FLUXO\s*LUMINOSO\s*(?:EFETIVO|NOMINAL|MINIMO)?\s*:" + _SEP + _NUM_BR, tu)
     )
     if m and numero_br(m.group(1)):
         add("fluxo_lm", numero_br(m.group(1)), m)
 
     # --- Eficiência -----------------------------------------------------
-    m = re.search(r"EFICIENCIA\s*(?:LUMINOSA|ENERGETICA)?\s*(?:MINIMA)?\s*(?:DE\s*)?(\d+(?:[.,]\d+)?)\s*LM\s*/\s*W", tu) or re.search(
-        r"\b(\d{2,3})\s*LM\s*/\s*W(?:ATT)?\b", tu
+    m = (
+        re.search(r"EFICIENCIA\s*(?:LUMINOSA|ENERGETICA)?\s*(?:MINIMA)?" + _SEP + r"(?:DE\s*)?(\d+(?:[.,]\d+)?)\s*LM\s*/\s*W", tu)
+        or re.search(r"\b(\d{2,3})\s*LM\s*/\s*W(?:ATT)?\b", tu)
+        or re.search(r"EFICIENCIA\s*LUMINOSA\s*(?:MINIMA)?\s*:" + _SEP + r"(\d+(?:[.,]\d+)?)", tu)
     )
     if m:
         add("eficiencia_lm_w", numero_br(m.group(1)), m)
 
     # --- IRC ------------------------------------------------------------
-    m = re.search(r"\bIRC\s*(?:MINIMO|>=|≥)?\s*(\d{2})\b", tu) or re.search(r"REPRODUCAO\s*DE\s*COR\s*(?:\(IRC\))?\s*(?:MINIMO|>=|≥|DE)?\s*(\d{2})\b", tu)
+    m = re.search(r"\bIRC\s*(?:MINIMO)?" + _SEP + r"(\d{2})\b", tu) or re.search(
+        r"REPRODUCAO\s*DE\s*COR\s*(?:\(IRC\)|-\s*IRC)?\s*(?:MINIMO)?" + _SEP + r"(?:DE\s*)?(\d{2})\b", tu
+    )
     if m:
         add("irc", float(m.group(1)), m)
 
     # --- Fator de potência ---------------------------------------------
-    m = re.search(r"FATOR\s*DE\s*POTENCIA\s*(?:MINIMO)?\s*\(?\s*(?:>=|≥|DE)?\s*(0[.,]\d+)", tu)
+    m = re.search(r"FATOR\s*DE\s*POTENCIA\s*(?:MINIMO)?\s*\(?" + _SEP + r"(?:DE\s*)?(0[.,]\d+)", tu)
     if m:
         add("fator_potencia", numero_br(m.group(1)), m)
 
@@ -232,9 +284,29 @@ def extrair_requisitos(descricao: str) -> list[RequisitoBruto]:
     m = re.search(r"\b(\d+(?:[.,]\d+)?)\s*A\b(?!\s*[+/-]?\s*\d{2,3}\s*C)", tu)
     if m and re.search(r"DISJUNTOR|CORRENTE", tu):
         add("corrente_a", numero_br(m.group(1)), m, Operador.IGUAL)
-    m = re.search(r"(\d+(?:[.,]\d+)?)\s*MM\s*(?:2|²)", tu)
+    m = re.search(r"(\d+(?:[.,]\d+)?)\s*MM\s*(?:2|²)", tu) or re.search(
+        # CATMAT sem unidade: "seção nominal: 16", "seção nominal condutor: 3 x 2,5", "bitola: 16,0"
+        r"(?:SECAO\s*NOMINAL(?:\s*(?:DO\s*)?CONDUTOR)?|BITOLA(?:\s*(?:DO\s*)?CONDUTOR)?)\s*:" + _SEP + r"(?:\d+\s*X\s*)?(\d+(?:[.,]\d+)?)", tu
+    )
     if m:
         add("secao_mm2", numero_br(m.group(1)), m, Operador.IGUAL)
+
+    # --- Tipo de cabo (só quando o item É um cabo) ----------------------
+    if re.search(r"\bcabo\b|\bfio\b|\bcondutor\b", _nucleo(descricao)):
+        for valor, padrao in (
+            ("fotovoltaico", r"FOTOVOLTAIC|\bSOLAR\b"),
+            ("logico", r"\bLOGICO\b|\bUTP\b|\bCAT\s*-?\s*[56]|\bREDE\b"),
+            ("coaxial", r"COAXIAL"),
+            ("multiplexado", r"MULTIPLEXAD"),
+            ("aluminio", r"CONDUTOR\s*:?\s*(?:DE\s*)?ALUMINIO|CABO\s*DE\s*ALUMINIO"),
+            ("nu", r"COBRE\s*NU\b(?![^.;]*ISOLAD)"),
+            ("pp", r"\bPP\b"),
+        ):
+            m = re.search(padrao, tu)
+            # "cobre nu" em cabo ISOLADO é só o material do condutor (formato CATMAT), não cabo nu
+            if m and not (valor == "nu" and re.search(r"ISOLAD|ISOLAMENTO|ISOLACAO", tu)):
+                add("tipo_cabo", valor, m, Operador.CONTEM)
+                break
 
     # --- Exigências documentais ----------------------------------------
     for atributo, padrao in (

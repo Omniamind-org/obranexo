@@ -16,6 +16,7 @@ from obranexo.agents.prompts import SYSTEM_INVESTIGADOR
 from obranexo.catalog.atributos import ATRIBUTOS, ATRIBUTOS_INVESTIGAVEIS, rotulo
 from obranexo.models import Evidencia, Operador, Requisito
 from obranexo.rules.extrair import extrair_requisitos, numero_br
+from obranexo.rules.validar import normalizar_valor
 
 FERRAMENTAS: list[dict[str, Any]] = [
     {
@@ -102,13 +103,17 @@ def _executar_ferramenta(ctx: Contexto, nome: str, entrada: dict[str, Any], acha
         if atributo not in ATRIBUTOS:
             return f"ERRO: atributo '{atributo}' não é canônico. Use um dos: {', '.join(ATRIBUTOS)}"
         if entrada.get("valor_numero") is not None:
-            valor: Any = float(entrada["valor_numero"])
+            bruto: Any = entrada["valor_numero"]
         elif entrada.get("valor_booleano") is not None:
-            valor = bool(entrada["valor_booleano"])
+            bruto = entrada["valor_booleano"]
         else:
-            valor = entrada.get("valor_texto")
-        if valor is None:
+            bruto = entrada.get("valor_texto")
+        if bruto is None:
             return "ERRO: informe valor_numero, valor_texto ou valor_booleano."
+        valor, motivo = normalizar_valor(atributo, bruto)
+        if valor is None:
+            # Volta para o agente corrigir (ex.: garantia em anos, prazo em dias), em vez de entrar errado
+            return f"ERRO: valor inválido para {atributo} ({motivo}). Registre o valor normalizado na unidade {ATRIBUTOS[atributo].get('unidade') or 'canônica'}."
         ev = ctx.nova_evidencia(str(entrada.get("documento_id")), int(entrada.get("pagina") or 0) or None, str(entrada.get("trecho_literal", "")))
         achados.append(
             Requisito(
