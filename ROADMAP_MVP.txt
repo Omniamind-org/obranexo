@@ -232,8 +232,8 @@ a v1.0.
   Linguagem              Python 3.12                    Python 3.12
   Dependências           uv + pyproject.toml            idem
   Backend/API            FastAPI (opcional na v0.1)     FastAPI (obrigatório)
-  Interface              Streamlit                      Streamlit refinado ou
-                                                        React (Next.js) + FastAPI
+  Interface              JavaScript puro (ES modules,   idem; avaliar framework se a
+                         sem build) servido pela API    interface crescer muito
   Orquestração           LangGraph                      LangGraph (com checkpointer)
   LLM                    API Claude (ver 5.1)           Claude via Amazon Bedrock
                                                         ou API direta
@@ -282,7 +282,7 @@ a v1.0.
 
   +---------------------------------------------------------------------+
   |                     CAMADA DE APLICAÇÃO (UI)                        |
-  |   Streamlit: Catálogo | Demandas | Análise ao vivo | Dossiê | Métricas|
+  |   Web (JS): Catálogo | Demandas | Análise ao vivo | Dossiê | Métricas|
   +-------------------------------+-------------------------------------+
                                   | (chamada direta na v0.1 / HTTP na v0.2)
   +-------------------------------v-------------------------------------+
@@ -555,7 +555,7 @@ Implementação em Python puro (sem LLM), testada com pytest.
   │   ├── storage/db.py
   │   ├── api/main.py              (FastAPI)
   │   └── observability/logging.py
-  ├── app/streamlit_app.py
+  ├── web/                         (frontend em JavaScript: index.html, css/, js/views/)
   ├── eval/
   │   ├── run_benchmark.py
   │   └── metrics.py
@@ -656,7 +656,7 @@ Implementação em Python puro (sem LLM), testada com pytest.
   [ ] Agente Investigador com 3 ferramentas (MVP-05.1 a 05.3).
   [ ] Verificação de citações com rapidfuzz (MVP-06.2).
   Noite
-  [ ] Streamlit: catálogo, demandas, análise ao vivo e dossiê.
+  [x] Interface web (JS + FastAPI): catálogo, demandas, análise ao vivo e dossiê.
   [ ] Pacotes congelados + modo offline (MVP-02.4).
   [ ] Rodar o benchmark mínimo (3 casos) e anotar os números para o pitch.
   [ ] docs/fluxo_agentes.md + Business Model Canvas + roteiro do pitch.
@@ -718,7 +718,7 @@ Implementação em Python puro (sem LLM), testada com pytest.
   Frente 2 — Dados e processamento ........ responsável: __________
     Conector PNCP/PCA, cache, extração de PDF/tabelas, banco, evidências.
   Frente 3 — Produto e experiência ........ responsável: __________
-    Streamlit/React, dossiê, exportação, roteiro e ensaio da demo.
+    Interface web (web/), dossiê, exportação, roteiro e ensaio da demo.
   Frente 4 — Negócio e validação .......... responsável: __________
     Catálogo demo, gabarito do benchmark, entrevistas, BMC, pitch, métricas.
 

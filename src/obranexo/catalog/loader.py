@@ -47,13 +47,14 @@ def _parse_valor(atributo: str, bruto: Any) -> Atributo:
 
 def produto_de_dict(d: dict[str, Any]) -> Produto:
     atributos = {k: _parse_valor(k, v) for k, v in (d.get("atributos") or {}).items() if v is not None and v != ""}
+    # Colunas ausentes em CSV/XLSX chegam como None: normaliza para os padrões do modelo
     return Produto(
         id=str(d.get("id") or d.get("sku")),
         sku=str(d.get("sku") or d.get("id")),
-        nome=d.get("nome", ""),
-        categoria=d.get("categoria", "outro"),
+        nome=str(d.get("nome") or ""),
+        categoria=str(d.get("categoria") or "outro"),
         subcategoria=d.get("subcategoria"),
-        descricao=d.get("descricao", ""),
+        descricao=str(d.get("descricao") or ""),
         atributos=atributos,
         normas=list(d.get("normas") or []),
         certificacoes=list(d.get("certificacoes") or []),

@@ -43,8 +43,9 @@ copy .env.example .env     # preencha GEMINI_API_KEY (ou ANTHROPIC_API_KEY)
 ## Uso
 
 ```powershell
-# Interface
-streamlit run app/streamlit_app.py
+# API + interface web (abre em http://127.0.0.1:8000 · documentação dos endpoints em /api/docs)
+obranexo servidor
+obranexo servidor --reload      # desenvolvimento: recarrega ao editar o código Python
 
 # Linha de comando
 obranexo casos
@@ -54,9 +55,44 @@ obranexo abertas --uf GO
 obranexo coletar 01291707000167 2026 75 meu_caso
 
 # Testes e benchmark
-pytest
+pytest -m "not integracao"      # unitários + API, sem chamar o LLM
+pytest -m integracao -v         # chama o provedor de LLM configurado
 python eval/run_benchmark.py
 ```
+
+## Arquitetura da aplicação
+
+```
+navegador ──► web/ (HTML + CSS + JavaScript puro, ES modules, sem build)
+                │  fetch / Server-Sent Events
+                ▼
+             FastAPI  src/obranexo/api/main.py  ──►  pipeline de agentes (thread em segundo plano)
+                │                                     │
+                ▼                                     ▼
+       data/casos (PNCP congelado)         data/analises (JSON) · data/llm_cache
+```
+
+O frontend não tem dependências externas nem etapa de build: o próprio FastAPI serve a pasta `web/`,
+e a demo funciona offline. Rotas da interface (hash): `#/inicio`, `#/catalogo`, `#/demandas`,
+`#/casos/<caso>`, `#/analises`, `#/analises/<id>`, `#/metricas`, `#/sobre`.
+
+### Endpoints
+
+| Método | Rota | Para quê |
+|---|---|---|
+| GET | `/api/status` | versão, provedor/modelos de LLM, modo offline, contadores |
+| GET · POST · DELETE | `/api/catalogo` | catálogo ativo · enviar JSON/CSV/XLSX (multipart `arquivo`) · restaurar o demo |
+| GET | `/api/casos` · `/api/casos/{caso}` | casos congelados · itens, anexos e análises de um caso |
+| GET | `/api/pncp/buscar?uf&palavras&abertas&dias&max_paginas` | busca ao vivo no PNCP |
+| POST | `/api/pncp/coletar` | `{cnpj, ano, sequencial, max_mb}` → baixa e congela uma contratação |
+| POST | `/api/analises` | `{caso}` → inicia a análise em segundo plano (202, devolve o job) |
+| GET | `/api/jobs/{id}` · `/api/jobs/{id}/eventos` | estado do job · stream SSE (`log` a cada passo, `fim` com `analise_id`) |
+| GET | `/api/analises` · `/api/analises/{id}` | histórico resumido · análise completa + rótulos + produtos |
+| GET | `/api/analises/{id}/dossie.md[?download=true]` | dossiê em Markdown |
+| PATCH | `/api/analises/{id}/revisao` | `{status: PENDENTE\|APROVADO\|REJEITADO, comentario}` |
+| GET | `/api/analises/{id}/evidencias/{ev}` | trecho citado + texto da página de origem |
+| GET | `/api/analises/{id}/documentos/{doc}/arquivo` | PDF original (abre na página com `#page=N`) |
+| GET | `/api/metricas` · `/api/conteudo/fluxo` | agregados + benchmark · documentação do fluxo |
 
 ## Casos reais congelados (dados públicos do PNCP, coletados em 22/10/2026)
 
@@ -80,7 +116,16 @@ src/obranexo/
   evidence/verify.py     verificação literal das citações
   dossier/render.py      dossiê em Markdown
   storage/store.py       persistência JSON (v0.2: PostgreSQL)
-app/streamlit_app.py     interface
+  api/main.py            API FastAPI (endpoints acima) + servidor estático do frontend
+  api/jobs.py            execução das análises em segundo plano com eventos SSE
+web/
+  index.html             casca da aplicação
+  css/app.css            design system (tokens, tema claro/escuro, responsivo)
+  js/app.js              roteador por hash
+  js/api.js              cliente da API (fetch + SSE com fallback para polling)
+  js/ui.js · format.js   template com escape, ícones, modal, toasts, badges · formatação pt-BR
+  js/markdown.js         renderizador Markdown seguro (dossiê e documentação)
+  js/views/              início, catálogo, demandas, caso (execução ao vivo), análises, resultado, métricas, sobre
 eval/run_benchmark.py    benchmark contra gabaritos
 tests/                   pytest
 ```

@@ -16,4 +16,4 @@ data/llm_cache/
 # Ferramentas
 .pytest_cache/
 .ruff_cache/
-.streamlit/secrets.toml
+node_modules/

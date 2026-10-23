@@ -55,6 +55,7 @@ class Config:
     dir_llm_cache: Path = RAIZ / "data" / "llm_cache"
     dir_analises: Path = RAIZ / "data" / "analises"
     catalogo_demo: Path = RAIZ / "data" / "catalogo_demo" / "produtos.json"
+    dir_web: Path = RAIZ / "web"
 
     llm_provider: str | None = field(default_factory=_provedor_auto)
     anthropic_api_key: str | None = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY") or None)
@@ -67,6 +68,7 @@ class Config:
     offline: bool = field(default_factory=lambda: _env_bool("OBRANEXO_OFFLINE", False))
     llm_cache: bool = field(default_factory=lambda: _env_bool("OBRANEXO_LLM_CACHE", True))
     llm_pausa_s: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_LLM_PAUSA_S", "0")))
+    llm_timeout_s: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_LLM_TIMEOUT_S", "45")))
 
     # Preço (US$ por 1M tokens: entrada, saída) para estimar custo por análise.
     # Modelos Gemini no nível gratuito custam 0; preencha com a tabela paga quando migrar.

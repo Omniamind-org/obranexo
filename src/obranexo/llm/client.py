@@ -108,26 +108,26 @@ class LLMClient(ABC):
 
     # ------------------------------------------------------------ fallback
 
-    _QUARENTENA_S = 600.0  # após falhar por 429/503, o modelo fica fora por 10 min nesta sessão
+    # Após falhar (429/503/timeout), o modelo fica fora por 10 min em TODO o processo — compartilhado
+    # entre análises, para o servidor não voltar a esperar um modelo sobrecarregado a cada requisição.
+    _QUARENTENA_S = 600.0
+    _indisponiveis: dict[str, float] = {}
 
     def _candidatos(self, modelo: str) -> list[str]:
         agora = time.time()
-        quarentena = getattr(self, "_indisponiveis", {})
         lista = [modelo] + [m for m in self.cfg.modelos_reserva if m != modelo]
-        ativos = [m for m in lista if quarentena.get(m, 0) < agora]
+        ativos = [m for m in lista if LLMClient._indisponiveis.get(m, 0) < agora]
         return ativos or lista
 
     def _com_reserva(self, modelo: str, fn):
         """Executa fn(candidato) no modelo pedido ou, se ele estiver indisponível, nos reservas.
         Devolve (resultado, modelo_que_respondeu)."""
-        if not hasattr(self, "_indisponiveis"):
-            self._indisponiveis: dict[str, float] = {}
         ultimo: Exception | None = None
         for candidato in self._candidatos(modelo):
             try:
                 return fn(candidato), candidato
             except LLMIndisponivel as exc:
-                self._indisponiveis[candidato] = time.time() + self._QUARENTENA_S
+                LLMClient._indisponiveis[candidato] = time.time() + self._QUARENTENA_S
                 ultimo = exc
                 continue
         raise ultimo or LLMIndisponivel("nenhum modelo disponível")
@@ -191,8 +191,10 @@ class GeminiClient(LLMClient):
     def __init__(self, cfg: Config | None = None, uso: UsoLLM | None = None):
         super().__init__(cfg, uso)
         from google import genai
+        from google.genai import types
 
-        self._client = genai.Client(api_key=self.cfg.gemini_api_key)
+        # Sem timeout, uma chamada ao modelo sobrecarregado chegou a levar 275 s; com ele, cai para o reserva
+        self._client = genai.Client(api_key=self.cfg.gemini_api_key, http_options=types.HttpOptions(timeout=int(self.cfg.llm_timeout_s * 1000)))
 
     @property
     def disponivel(self) -> bool:
@@ -200,6 +202,7 @@ class GeminiClient(LLMClient):
 
     def _gerar(self, modelo: str, contents: Any, config_extra: dict[str, Any]) -> Any:
         """generate_content com retentativas para 429/503 e espera crescente."""
+        import httpx
         from google.genai import errors, types
 
         cfg = types.GenerateContentConfig(**config_extra)
@@ -211,6 +214,9 @@ class GeminiClient(LLMClient):
                 if self.cfg.llm_pausa_s:
                     time.sleep(self.cfg.llm_pausa_s)
                 return self._client.models.generate_content(model=modelo, contents=contents, config=cfg)
+            except (httpx.TimeoutException, httpx.TransportError) as exc:
+                # Timeout já é longo: não repete no mesmo modelo, vai direto para o reserva
+                raise LLMIndisponivel(f"{modelo}: sem resposta em {self.cfg.llm_timeout_s:.0f}s ({type(exc).__name__})") from exc
             except errors.APIError as exc:
                 codigo = getattr(exc, "code", None)
                 if codigo in _TRANSIENTES and tentativa < len(esperas):

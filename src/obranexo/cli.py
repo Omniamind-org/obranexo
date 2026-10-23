@@ -1,5 +1,6 @@
 """Linha de comando do ObraNexo.
 
+  obranexo servidor [--porta 8000]        sobe a API + interface web (http://127.0.0.1:8000)
   obranexo casos                         lista os pacotes congelados em data/casos
   obranexo analisar <caso> [--catalogo]  executa a análise completa de um caso
   obranexo coletar <cnpj> <ano> <seq> <nome>   baixa uma contratação do PNCP e congela em data/casos/<nome>
@@ -109,9 +110,22 @@ def cmd_abertas(args) -> int:
     return 0
 
 
+def cmd_servidor(args) -> int:
+    import uvicorn
+
+    print(f"ObraNexo em http://{args.host}:{args.porta}  ·  API: http://{args.host}:{args.porta}/api/docs")
+    uvicorn.run("obranexo.api.main:app", host=args.host, port=int(args.porta), reload=args.reload)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="obranexo", description="ObraNexo — inteligência comercial agêntica")
     sub = parser.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("servidor", help="sobe a API e a interface web")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--porta", default=8000)
+    p.add_argument("--reload", action="store_true", help="recarrega ao editar o código (desenvolvimento)")
+    p.set_defaults(fn=cmd_servidor)
     sub.add_parser("casos", help="lista os casos congelados").set_defaults(fn=cmd_casos)
     p = sub.add_parser("analisar", help="analisa um caso congelado")
     p.add_argument("caso")

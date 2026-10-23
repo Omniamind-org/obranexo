@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ObraNexo</title>
+  <meta name="description" content="Inteligência comercial agêntica para contratações públicas">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23102a35'/%3E%3Cpath d='M9 22V10l14 12V10' stroke='%232bb3a3' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <a class="brand" href="#/inicio">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M9 22V10l14 12V10" /></svg>
+        </span>
+        <span>
+          <span class="brand-name">ObraNexo</span>
+          <span class="brand-sub">Inteligência comercial</span>
+        </span>
+      </a>
+      <nav class="nav" id="nav" aria-label="Navegação principal">
+        <a href="#/inicio" data-rota="inicio"><span data-icon="home"></span>Início</a>
+        <a href="#/catalogo" data-rota="catalogo"><span data-icon="box"></span>Catálogo</a>
+        <a href="#/demandas" data-rota="demandas"><span data-icon="search"></span>Demandas</a>
+        <a href="#/analises" data-rota="analises"><span data-icon="file"></span>Análises</a>
+        <a href="#/metricas" data-rota="metricas"><span data-icon="chart"></span>Métricas</a>
+        <a href="#/sobre" data-rota="sobre"><span data-icon="info"></span>Como funciona</a>
+      </nav>
+      <div class="sidebar-foot" id="status-sistema">
+        <div class="skeleton-line"></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div id="view" class="view" tabindex="-1"></div>
+    </main>
+  </div>
+  <div id="modal-root"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
