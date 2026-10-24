@@ -47,6 +47,8 @@
   <sub>Cada conclusão abre o trecho literal que a sustenta. Pregão real: Goianira/GO, PE 038/2026, luminárias LED.</sub>
 </p>
 
+<p align="center">▶ <a href="pitch/demo_obranexo_90s.mp4"><b>Demo em vídeo (90 s)</b></a> — catálogo, pregão real, veredito com prova, trilha dos agentes, dossiê e assistente · sem áudio, feita para rodar dentro do pitch</p>
+
 ---
 
 ## Sumário
@@ -649,7 +651,7 @@ bmc/                     modelo de negócio: BMC, pesquisa, medição no PNCP, c
 - [`ROADMAP_MVP.txt`](ROADMAP_MVP.txt) — roadmap original do MVP (requisitos, stack, métricas, DoD)
 - [`docs/teste_cego_2026-10-23.md`](docs/teste_cego_2026-10-23.md) — teste cego em 5 pregões abertos
 - [`bmc/`](bmc/) ([relatório](bmc/BMC_ObraNexo.txt) · [pesquisa](bmc/pesquisa/) · [canvas A3](bmc/canvas/) · [PM Canvas](bmc/pmc/)) — modelo de negócio, medição própria no PNCP, concorrentes, impacto
-- [`pitch/`](pitch/) — planejamento e fala do pitch
+- [`pitch/`](pitch/) — planejamento e fala do pitch; [`demo_obranexo_90s.mp4`](pitch/demo_obranexo_90s.mp4) é a demo gravada (90 s, sem áudio) com a capa em [`demo_obranexo_90s.jpg`](pitch/demo_obranexo_90s.jpg)
 - [`ObraNexo_PreProjeto_Documento_Norteador_v0.1.pdf`](ObraNexo_PreProjeto_Documento_Norteador_v0.1.pdf) — documento norteador
 
 ## Time e contato
