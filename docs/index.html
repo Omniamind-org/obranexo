@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
 <style>
-/* Layout: logo no topo → grade de 9 cartões (5 em cima, 4 embaixo) sobre degradê roxo, seguindo o template do Canva → detalhe em janela ao clicar na seta */
+/* Layout: logo no topo → grade de 9 cartões (5 em cima, 4 embaixo) sobre degradê roxo, seguindo o template do Canva → cada cartão traz resumo e um número-âncora; a seta abre o detalhe em janela */
 :root {
   --fundo: #4a0a6a;
   --fundo-escuro: #2c0646;
@@ -59,9 +59,9 @@ body::after {
 .cartao.baixo { grid-column: span 5; }
 
 .cartao {
-  position: relative; min-width: 0; min-height: 262px;
+  position: relative; min-width: 0; min-height: 300px;
   background: var(--cor); border: 2px solid var(--teal); border-radius: 8px;
-  padding: 20px 20px 66px; display: flex; flex-direction: column; gap: 14px;
+  padding: 20px 20px 18px; display: flex; flex-direction: column; gap: 12px;
   cursor: pointer; transition: transform .18s ease, box-shadow .18s ease;
 }
 .cartao:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(20, 0, 40, 0.35); }
@@ -72,6 +72,11 @@ body::after {
 .cartao .regua { height: 2px; background: var(--branco); opacity: .92; }
 .cartao p { margin: 0; font-size: 13px; line-height: 1.42; color: var(--branco); opacity: .93; }
 .c5 p, .c5 h2 { color: #fbf7ff; }
+
+/* número-âncora do cartão, à esquerda do selo */
+.destaque { margin-top: auto; padding: 10px 62px 0 0; display: grid; gap: 1px; min-height: 48px; }
+.destaque b { font-size: 21px; font-weight: 700; line-height: 1.1; color: var(--branco); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.destaque span { font-size: 11.5px; line-height: 1.3; color: var(--branco); opacity: .88; }
 
 .seta {
   position: absolute; top: 16px; right: 14px; width: 30px; height: 30px; border: 0; border-radius: 6px;
@@ -91,9 +96,6 @@ body::after {
 .c1 { --cor: var(--c1); } .c2 { --cor: var(--c2); } .c3 { --cor: var(--c3); } .c4 { --cor: var(--c4); } .c5 { --cor: var(--c5); }
 .c6 { --cor: var(--c6); } .c7 { --cor: var(--c7); } .c8 { --cor: var(--c8); } .c9 { --cor: var(--c9); }
 
-.nota { font-size: 12px; color: var(--texto-2); display: flex; flex-wrap: wrap; gap: 4px 18px; justify-content: space-between; }
-.nota span { opacity: .9; }
-
 /* Janela de detalhe */
 dialog {
   width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 2px solid var(--teal); border-radius: 10px;
@@ -112,15 +114,19 @@ dialog::backdrop { background: rgba(28, 4, 48, 0.62); backdrop-filter: blur(3px)
 .fechar:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
 .det .regua { height: 2px; background: var(--branco); opacity: .9; }
 .det .resumo { margin: 0; font-size: 15px; font-weight: 500; color: var(--branco); max-width: 60ch; }
+.det h3 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--t-proprio); }
+.secao { display: grid; gap: 9px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.14); }
 .det ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 9px; }
 .det li { position: relative; padding-left: 18px; font-size: 13.5px; color: var(--texto); }
 .det li::before { content: ""; position: absolute; left: 0; top: .6em; width: 7px; height: 7px; border-radius: 2px; background: var(--teal); }
 .det li small { display: block; color: var(--texto-2); font-size: 12.5px; }
+.det li .tag { margin-left: 6px; }
+.det .nota { margin: 0; font-size: 12.5px; color: var(--texto-2); }
 .ancoras { display: grid; gap: 10px; }
 .ancora { border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 8px; padding: 12px 14px; display: grid; gap: 3px; background: rgba(255, 255, 255, 0.05); }
 .ancora b { font-size: 20px; font-weight: 700; color: var(--branco); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
 .ancora span { font-size: 12.5px; color: var(--texto-2); }
-.tag { font-size: 10.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; }
+.tag { font-size: 10.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
 .tag::before { content: "● "; }
 .t-fato { color: var(--t-fato); } .t-proprio { color: var(--t-proprio); } .t-estim { color: var(--t-estim); }
 .t-prem { color: var(--t-prem); } .t-interno { color: var(--t-interno); }
@@ -177,13 +183,14 @@ const T = {
 const BLOCOS = [
   {
     titulo: 'Parcerias-chave',
-    resumo: 'Dados abertos do PNCP, provedores de IA, fomento da AKCIT/Embrapii e FAPEG, e assessorias e fabricantes como canal de venda.',
+    resumo: 'O PNCP fornece o dado, as assessorias de licitação revendem para vários clientes e AKCIT/Embrapii e FAPEG financiam o desenvolvimento.',
+    destaque: ['R$ 85,4 mil', 'Centelha GO por projeto · Embrapii até 50% sem reembolso'],
     itens: [
       ['PNCP / MGI', 'dados abertos que viabilizam o modelo (Lei 14.133, art. 174)'],
+      ['Assessorias de licitação', 'revenda para vários clientes'],
+      ['AKCIT / Embrapii, FAPEG e Finep', 'P&D e fomento'],
       ['Google, Anthropic e Groq', 'vários provedores de IA, com troca automática'],
       ['GCP', 'hospedagem e execução'],
-      ['AKCIT / Embrapii, FAPEG e Finep', 'P&D e fomento'],
-      ['Assessorias de licitação', 'revenda para vários clientes'],
       ['Fabricantes, ABILUX, ABINEE, Sebrae e INMETRO', 'canal, catálogos e normas'],
       ['Suítes de lances', 'integração em vez de disputa']
     ],
@@ -191,7 +198,8 @@ const BLOCOS = [
   },
   {
     titulo: 'Atividades-chave',
-    resumo: 'Conector PNCP, orquestração dos agentes de IA, motor de regras com taxonomia elétrica e benchmark com gabaritos revisados.',
+    resumo: 'Ler todos os pregões do PNCP, extrair as exigências de cada item e decidir, com regras e não só com IA, se o produto do cliente atende.',
+    destaque: ['64 mil', 'pregões eletrônicos lidos pelo conector em um mês'],
     itens: [
       ['Conector PNCP e observatório do nicho', 'prospecção diária de pregões e itens'],
       ['Orquestração dos agentes de IA', 'sete agentes na análise completa de um edital'],
@@ -199,11 +207,12 @@ const BLOCOS = [
       ['Benchmark com gabaritos revisados', 'mede acerto e rastreabilidade a cada versão'],
       ['Venda por assessorias e fabricantes', '']
     ],
-    ancoras: []
+    ancoras: [['64.473', 'pregões eletrônicos do PNCP lidos na medição própria (24/09–23/10/2026 e junho/2026)', 'proprio']]
   },
   {
     titulo: 'Recursos-chave',
-    resumo: 'Motor determinístico de 4 estados, gabaritos rotulados por humanos, roteador entre provedores de IA e casos reais dos clientes.',
+    resumo: 'Regras que decidem a compatibilidade sem depender só da IA, gabaritos revisados por pessoas e liberdade para trocar de provedor de IA.',
+    destaque: ['4 estados', 'por veredito: compatível, parcial, indeterminado, incompatível'],
     itens: [
       ['Motor determinístico com 4 estados', 'compatível, parcial, indeterminado ou incompatível'],
       ['Gabaritos rotulados por humanos', 'base do benchmark'],
@@ -216,6 +225,7 @@ const BLOCOS = [
   {
     titulo: 'Proposta de valor',
     resumo: '“Posso atender este item?” respondido antes do concorrente, com veredito por regra e o trecho do edital como prova.',
+    destaque: ['90%', 'dos pregões com material elétrico não citam isso no objeto: alerta por palavra-chave não vê'],
     itens: [
       ['Descobre os 90% de pregões que a busca por objeto não vê', 'leitura item a item, não só do objeto'],
       ['Compara cada exigência com cada produto do catálogo', 'compatível, parcial, indeterminado ou incompatível'],
@@ -223,6 +233,17 @@ const BLOCOS = [
       ['Prioridade, riscos e próximos passos em um dossiê', ''],
       ['Acha demanda indireta em obras', 'material elétrico dentro de editais de construção']
     ],
+    secoes: [{
+      titulo: 'O que só o ObraNexo faz',
+      itens: [
+        ['Compara item do edital com o catálogo usando regras, com o estado “indeterminado” explícito', 'só a LiciteCerto anuncia esse cruzamento, e sem regras determinísticas', 'fato'],
+        ['Cada veredito traz a citação do edital conferida', 'a Acumi só oferece isso no chat', 'fato'],
+        ['Catálogo montado a partir da ficha técnica do produto', ''],
+        ['Demanda indireta em obras', 'nenhum concorrente pesquisado faz'],
+        ['Vertical em elétrica e construção', 'suítes de lances e startups de IA de edital são horizontais']
+      ],
+      nota: 'Líderes declaram de 3 mil a 20 mil clientes e ler edital com IA já é padrão. O diferencial é a combinação, não uma função isolada.'
+    }],
     ancoras: [
       ['R$ 110–700', 'custo interno evitado por edital analisado', 'estim'],
       ['100%', 'acerto por item e citações conferidas no conjunto de teste', 'interno']
@@ -230,10 +251,11 @@ const BLOCOS = [
   },
   {
     titulo: 'Relacionamento com clientes',
-    resumo: 'Autosserviço com implantação assistida, uma pessoa decidindo cada oportunidade e assistente de conversa dentro do produto.',
+    resumo: 'A pessoa decide: a IA recomenda, o fornecedor escolhe seguir ou descartar. Autosserviço com implantação assistida e assistente de conversa no produto.',
+    destaque: ['< 3% ao mês', 'meta de churn (referência para PMEs: 3–7%)'],
     itens: [
-      ['Autosserviço com implantação assistida', 'catálogo montado a partir das fichas técnicas'],
       ['A pessoa decide: seguir ou descartar', 'a IA recomenda, o fornecedor decide'],
+      ['Autosserviço com implantação assistida', 'catálogo montado a partir das fichas técnicas'],
       ['Assistente de conversa no produto', 'busca licitações e consulta catálogo e análises'],
       ['Plano anual com desconto', 'reduz o churn']
     ],
@@ -241,7 +263,8 @@ const BLOCOS = [
   },
   {
     titulo: 'Canais',
-    resumo: 'Assessorias de licitação, radar gratuito que leva ao plano pago, fabricantes, Sebrae e feiras do setor elétrico.',
+    resumo: 'Assessorias de licitação que atendem vários CNPJs, radar gratuito que leva ao plano pago, fabricantes, Sebrae e feiras do setor.',
+    destaque: ['≤ R$ 5 mil', 'custo máximo de aquisição por cliente (LTV/CAC ≥ 3)'],
     itens: [
       ['Assessorias de licitação', 'revenda para vários CNPJs'],
       ['Radar gratuito → plano pago', 'freemium dentro do produto'],
@@ -252,7 +275,8 @@ const BLOCOS = [
   },
   {
     titulo: 'Segmentos de clientes',
-    resumo: 'Núcleo: atacadistas de material elétrico e iluminação. Expansão: varejo elétrico, lojas de construção, fabricantes e assessorias.',
+    resumo: 'Atacadistas de material elétrico e iluminação no núcleo; varejo elétrico, lojas de construção, fabricantes e assessorias na expansão.',
+    destaque: ['R$ 6,1–6,4 bi', 'por ano em itens de material elétrico nos pregões eletrônicos'],
     itens: [
       ['Núcleo: atacadistas de material elétrico e iluminação', '3,4–4,2 mil empresas ativas'],
       ['Varejo elétrico', 'cerca de 45 mil empresas'],
@@ -260,14 +284,26 @@ const BLOCOS = [
       ['Fabricantes de luminárias', ''],
       ['Assessorias e construtoras', 'demanda indireta em obras']
     ],
+    secoes: [{
+      titulo: 'Impacto público',
+      itens: [
+        ['−3,4% no preço a cada licitante a mais', 'estudo em municípios eslovacos', 'fato'],
+        ['+2,2 p.p. de crescimento trimestral para a empresa que ganha um contrato', '93% das contratações vêm do desemprego ou da informalidade (NBER)', 'fato'],
+        ['6–12% dos itens elétricos terminam desertos ou fracassados', 'linha de base a reduzir', 'proprio'],
+        ['80% dos 22 milhões de pontos de iluminação pública ainda sem LED', 'cada 10 mil pontos LED ≈ 5,2 GWh/ano evitados', 'estim'],
+        ['ODS 7.3, 8, 9, 11, 12.7 e 16', '']
+      ]
+    }],
     ancoras: [
-      ['7–13 mil', 'empresas que vendem ou podem vender ao governo', 'estim'],
-      ['45%', 'dos itens elétricos são exclusivos para ME/EPP', 'proprio']
+      ['R$ 6,1–6,4 bi', 'por ano em itens elétricos, em cerca de 3 mil pregões por mês', 'proprio'],
+      ['45%', 'dos itens elétricos são exclusivos para ME/EPP', 'proprio'],
+      ['7–13 mil', 'empresas que vendem ou podem vender ao governo', 'estim']
     ]
   },
   {
     titulo: 'Estrutura de custos',
     resumo: 'Equipe e aquisição de clientes dominam. A IA custa centavos por análise e a infraestrutura é quase nula no início.',
+    destaque: ['R$ 0,02–0,48', 'por análise de edital · margem bruta-alvo de 75–85%'],
     itens: [
       ['Equipe e aquisição de clientes', 'o custo dominante'],
       ['IA por análise: centavos em modelos baratos', 'escolher o modelo por etapa é a principal alavanca de margem'],
@@ -280,7 +316,8 @@ const BLOCOS = [
   },
   {
     titulo: 'Fontes de receita',
-    resumo: 'Assinatura mensal em degraus, de R$ 0 a R$ 1.490+, com cota de análises, créditos avulsos e taxa de êxito opcional.',
+    resumo: 'Assinatura mensal em degraus, de R$ 0 a R$ 1.490+, com cota de análises e taxa de êxito opcional. Preços são premissa, ainda sem cliente pagante.',
+    destaque: ['250 clientes', 'R$ 1,8 mi/ano no cenário-base em 36 meses'],
     planos: [['R$ 0', 'Radar grátis'], ['R$ 397', 'Essencial'], ['R$ 897', 'Profissional'], ['R$ 1.490+', 'Assessorias e redes']],
     itens: [
       ['Assinatura mensal com cota de análises', 'créditos avulsos, multi-CNPJ e enterprise'],
@@ -294,6 +331,8 @@ const BLOCOS = [
 const SETA = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3 3 13M3 5.5V13h7.5"/></svg>';
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const num = i => String(i + 1).padStart(2, '0');
+const tag = t => t ? ` <span class="tag ${T[t][0]}">${T[t][1]}</span>` : '';
+const lista = itens => `<ul>${itens.map(([t, s, g]) => `<li>${esc(t)}${tag(g)}${s ? `<small>${esc(s)}</small>` : ''}</li>`).join('')}</ul>`;
 
 const grade = document.getElementById('grade');
 grade.innerHTML = BLOCOS.map((b, i) => {
@@ -306,7 +345,8 @@ grade.innerHTML = BLOCOS.map((b, i) => {
     <button class="seta" type="button" id="seta-${i + 1}" aria-label="Ver detalhe de ${esc(b.titulo)}">${SETA}</button>
     <div class="regua"></div>
     <p>${esc(b.resumo)}</p>
-    <span class="selo${i < 3 ? ' teal' : ''}" aria-hidden="true">${num(i)}</span>
+    <div class="destaque"><b>${esc(b.destaque[0])}</b><span>${esc(b.destaque[1])}</span></div>
+    <span class="selo" aria-hidden="true">${num(i)}</span>
   </article>`;
 }).join('');
 
@@ -317,22 +357,23 @@ let origem = null;
 function abrir(i) {
   const b = BLOCOS[i];
   const planos = b.planos ? `<div class="planos">${b.planos.map(([v, n]) => `<div class="plano"><b>${esc(v)}</b><span>${esc(n)}</span></div>`).join('')}</div>` : '';
-  const itens = `<ul>${b.itens.map(([t, s]) => `<li>${esc(t)}${s ? `<small>${esc(s)}</small>` : ''}</li>`).join('')}</ul>`;
+  const secoes = (b.secoes || []).map(s => `<div class="secao"><h3>${esc(s.titulo)}</h3>${lista(s.itens)}${s.nota ? `<p class="nota">${esc(s.nota)}</p>` : ''}</div>`).join('');
   const ancoras = b.ancoras.length ? `<div class="ancoras">${b.ancoras.map(([v, l, t]) =>
     `<div class="ancora"><b>${esc(v)}</b><span>${esc(l)}</span><span class="tag ${T[t][0]}">${T[t][1]}</span></div>`).join('')}</div>` : '';
   det.innerHTML = `
     <div class="det-topo">
-      <span class="selo${i < 3 ? ' teal' : ''}">${num(i)}</span>
+      <span class="selo">${num(i)}</span>
       <h2 id="det-titulo">${esc(b.titulo)}</h2>
       <button class="fechar" type="button" id="fechar" aria-label="Fechar">×</button>
     </div>
     <div class="regua"></div>
     <p class="resumo">${esc(b.resumo)}</p>
-    ${planos}${itens}${ancoras}`;
+    ${planos}${lista(b.itens)}${secoes}${ancoras}`;
   janela.style.background = getComputedStyle(document.querySelector('.c' + (i + 1))).getPropertyValue('--cor');
   if (i === 4 || i === 3) janela.style.background = 'var(--c3)';
   document.getElementById('fechar').addEventListener('click', () => janela.close());
   janela.showModal();
+  det.scrollTop = 0;
 }
 
 grade.addEventListener('click', e => {
