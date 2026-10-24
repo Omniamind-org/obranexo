@@ -81,18 +81,28 @@ class Config:
     llm_timeout_s: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_LLM_TIMEOUT_S", "45")))
     llm_paralelo: int = field(default_factory=lambda: _env_int("OBRANEXO_LLM_PARALELO", 4))
 
-    # Preço (US$ por 1M tokens: entrada, saída) para estimar custo por análise.
-    # Gemini e Groq no nível gratuito custam 0; preencha com a tabela paga quando migrar.
+    # Preço de tabela (US$ por 1M tokens: entrada, saída) para estimar o custo de IA por análise — métrica interna
+    # de margem, não a fatura: o nível gratuito custa 0 e lote/cache dão desconto. Fontes e data em
+    # research_notes/Modelo de negócio ObraNexo/modelo_receita_custos.md (preços oficiais de out/2026).
     precos_usd: dict[str, tuple[float, float]] = field(
         default_factory=lambda: {
             "claude-opus-5-5": (4.00, 20.00),
             "claude-sonnet-5-5": (2.00, 10.00),
             "claude-haiku-5-5": (0.10, 0.50),
-            "gemini-3.8-flash": (0.0, 0.0),
-            "gemini-3.5-flash-lite": (0.0, 0.0),
-            "gemini-3.5-flash": (0.0, 0.0),
+            "gemini-3.8-flash": (0.75, 3.75),  # promoção até 31/12/2026; depois 1,50 / 7,50
+            "gemini-3.5-flash-lite": (0.30, 2.50),
+            "openai/gpt-oss-120b": (0.15, 0.60),
+            "openai/gpt-oss-20b": (0.075, 0.30),
+            "llama-3.3-70b-versatile": (0.59, 0.79),  # fontes de 2026 indicam fim do self-serve em 16/08/2026
+            "llama-3.1-8b-instant": (0.05, 0.08),
         }
     )
+    # Faixas por chamada: acima de `limite` tokens de entrada, o preço muda (Haiku 5.5 custa 5x acima de 100k)
+    precos_faixa_usd: dict[str, tuple[int, float, float]] = field(
+        default_factory=lambda: {"claude-haiku-5-5": (100_000, 0.50, 2.50)}
+    )
+    cambio_brl: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_CAMBIO_BRL", "5.0377")))  # PTAX 23/10/2026
+    meta_custo_analise_brl: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_META_CUSTO_ANALISE_BRL", "1.0")))  # KPI do BMC
 
     def __post_init__(self) -> None:
         if self.llm_provider and not self.chave(self.llm_provider):

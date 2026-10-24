@@ -327,7 +327,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório, em mo
 | Busca ao vivo no PNCP | 24/10/2026: 9 páginas, ~450 pregões abertos em GO em 44 s; 18 candidatos pelos termos de iluminação; detalhe de uma licitação com 206 itens em 1,4 s | `obranexo abertas --uf GO` |
 | Casos reais congelados | 9 contratações do PNCP (R$ 1,4 mi a R$ 32 mi), 343 itens, 170 anexos | `obranexo casos` |
 
-**Limites honestos desses números.** O benchmark de 100% é **dentro da amostra**: os 2 casos rotulados foram usados no desenvolvimento e o gabarito é da própria equipe. Os 5 casos do teste cego estão rotulados pelo sistema, com **gabarito humano pendente** em [`docs/teste_cego_rotulagem.csv`](docs/teste_cego_rotulagem.csv) — não foram rotulados pela mesma pessoa que corrigiu o código, para o benchmark não virar circular. O custo em dólar aparece como zero porque os modelos usados estão no nível gratuito; o custo estimado por análise com preços de tabela é de R$ 0,02 a R$ 0,48.
+**Limites honestos desses números.** O benchmark de 100% é **dentro da amostra**: os 2 casos rotulados foram usados no desenvolvimento e o gabarito é da própria equipe. Os 5 casos do teste cego estão rotulados pelo sistema, com **gabarito humano pendente** em [`docs/teste_cego_rotulagem.csv`](docs/teste_cego_rotulagem.csv) — não foram rotulados pela mesma pessoa que corrigiu o código, para o benchmark não virar circular. O custo de IA por análise é estimado pelos tokens × preço de tabela dos provedores (métrica interna, em `GET /api/custos`); ainda não há análises com IA medidas a preço pago, e a estimativa da pesquisa é de R$ 0,02 a R$ 0,48 por análise.
 
 **Metodologia planejada (F1–F2).** Gabarito duplo (duas pessoas, divergências resolvidas, concordância medida) para 10 ou mais contratações e 150 a 300 pares; métricas-alvo do roadmap: precisão de COMPATÍVEL ≥ 85%, recall de itens relevantes ≥ 80%, detecção de incompatibilidade obrigatória ≥ 90%, rastreabilidade ≥ 95%, consistência entre execuções ≥ 90%, tempo ≤ 3 min; cronometragem do trabalho manual contra o assistido com 5 a 10 empresas no piloto.
 
@@ -458,7 +458,7 @@ Encontradas em auditoria do código em 24/10/2026; todas têm item no plano de d
 | Categoria do produto precisa ser a chave exata (`luminaria_publica_led`) | planilha com "Luminária pública" não casa com nada, sem aviso | validação e sugestão na importação · F1 |
 | Pesos da prioridade não calibrados | licitação encerrada (SRP) pode ficar acima de uma aberta | prazo aberto pesa mais; feedback recalibra · F1–F2 |
 | Benchmark só com 2 casos internos | precisão fora da amostra ainda desconhecida | gabarito duplo dos 5 casos cegos + 3 novos · F1 |
-| Custo exibido como zero (nível gratuito) | meta de custo não validada | preços reais dos modelos no `config.py` · F1 |
+| Custo de IA calculado a preço de tabela, mas ainda sem análises reais medidas | meta de R$ 1 por análise ainda não validada com dados | rodar o benchmark e o piloto com IA e acompanhar em `GET /api/custos` · F1 |
 | 32 atributos, quase todos de iluminação | número de condutores, comprimento de braço, classe de encordoamento ficam de fora | taxonomia por categoria · F2 |
 | Sem OCR, sem PCA, sem tabelas de PDF | editais digitalizados e demanda planejada não são lidos | F2 |
 | Persistência em JSON; chat e jobs em memória | perde conversas ao reiniciar; não escala horizontalmente | Postgres, fila e workers · F1–F2 |
@@ -508,6 +508,7 @@ O frontend não tem dependências externas nem etapa de build: o próprio FastAP
 | GET | `/api/analises/{id}/evidencias/{ev}` | trecho citado + texto da página de origem |
 | GET | `/api/analises/{id}/documentos/{doc}/arquivo` | PDF original (abre na página com `#page=N`) |
 | GET | `/api/metricas` · `/api/conteudo/fluxo` | agregados + benchmark · documentação do fluxo |
+| GET | `/api/custos?desde&ate&limite` | **interno:** custo de IA por análise e por prospecção (US$ e R$), estatísticas, por modelo, por dia e contra a meta de R$ 1 por análise; não é para o cliente final |
 </details>
 
 <details>
