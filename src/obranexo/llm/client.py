@@ -108,7 +108,10 @@ class LLMClient(ABC):
 
     def _contabilizar_sem_lock(self, modelo: str, entrada: int, saida: int, cache_leitura: int, cache_escrita: int) -> None:
         preco_in, preco_out = self.cfg.precos_usd.get(modelo, (0.0, 0.0))
-        custo = (entrada * preco_in + cache_escrita * preco_in * 1.25 + cache_leitura * preco_in * 0.1 + saida * preco_out) / 1_000_000
+        faixa = self.cfg.precos_faixa_usd.get(modelo)
+        if faixa and entrada + cache_escrita + cache_leitura > faixa[0]:
+            preco_in, preco_out = faixa[1], faixa[2]
+        custo =(entrada * preco_in + cache_escrita * preco_in * 1.25 + cache_leitura * preco_in * 0.1 + saida * preco_out) / 1_000_000
         self.uso.chamadas += 1
         self.uso.tokens_entrada += entrada + cache_escrita
         self.uso.tokens_saida += saida
