@@ -34,7 +34,7 @@ Defeitos encontrados em 24/10 que afetam resultado ou credibilidade. Pequenos, i
 | f | Preços reais dos modelos (tabela oficial out/2026) em `precos_usd`, incluindo Groq; custo por análise aparece na UI e no dossiê | `config.py`, `web/js/views/metricas.js` | `custo_usd > 0` numa análise com Gemini pago; teste unitário do cálculo |
 | g | Logs estruturados: `structlog` em JSON por evento (análise, nó, ferramenta, modelo, tokens, duração, erro); `EventoLog` passa a emitir também para o logger | `agents/contexto.py`, `api/jobs.py`, novo `observability/logging.py` | cada análise gera linhas JSON parseáveis; teste lê o log de uma análise determinística |
 | i | ✅ Pacotes congelados portáveis: `documentos.json` gravado no Windows guardava `arquivos\x.pdf`, e em Linux nenhum anexo era lido (achado pelo CI); leitura aceita os dois formatos e a gravação usa `/` | `connectors/pncp.py`, `tests/test_casos_portaveis.py` | os 3 jobs do CI passam em Linux |
-| h | Limites por licitação: paginar itens (>500) e anexos (>100) do PNCP | `connectors/pncp.py` | SEINFRA lista os 100+ anexos; teste com resposta gravada de 2 páginas |
+| h | ✅ Limites por licitação: paginar itens (>500) e anexos (>100) do PNCP | `connectors/pncp.py`, `tests/test_pncp_paginacao.py` | SEINFRA lista os 107 anexos (antes 100; os 7 perdidos incluíam a ata de contratação e o termo de homologação); teste com 2 páginas |
 
 ### PT-1.2 · Avaliação com gabarito duplo (semanas 1–3, em paralelo)
 
