@@ -17,18 +17,18 @@ elétrica e construção e detecção de demanda indireta em obras. Em números 
 endereçável estimado neste relatório é de R$ 51–96 milhões por ano (7 a 13 mil empresas de material
 elétrico e construção que vendem ou podem vender ao governo, com ticket de R$ 600/mês), e o
 cenário-base de 36 meses chega a 250 clientes e R$ 1,8 milhão de ARR. Como a inferência custa de
-R$ 0,02 a R$ 0,48 por análise em modelos baratos, a margem bruta-alvo de 75–85% é plausível, e o
-custo dominante passa a ser equipe e aquisição de clientes. O impacto público é mensurável pela API
-do PNCP: cada licitante qualificado a mais reduz o preço em cerca de 3,4% do valor estimado (Pavel &
-Sičáková-Beblavá [3]), ganhar um contrato acelera o crescimento da empresa em 2,2 pontos percentuais
-no trimestre (NBER [4]), e a iluminação pública ainda tem cerca de 80% dos 22 milhões de pontos sem
-LED (Expolux/ABCIP [5]). Uma medição própria feita com o conector do ObraNexo em mais de 64 mil
-pregões eletrônicos do PNCP fechou a principal lacuna do dimensionamento: são cerca de R$ 6,1–6,4
-bilhões por ano em itens de material elétrico (valor estimado), em cerca de 2,8–3,2 mil pregões por
-mês, dos quais cerca de 90% não citam material elétrico no objeto e escapam de alertas por
-palavra-chave; a iluminação responde por 83% do valor e 45% dos itens elétricos são exclusivos para
-ME/EPP. A equipe está em estágio de hackathon e não tem receita: todo o modelo de receita é
-proposta, com premissas explícitas.
+R$ 0,02 a R$ 0,48 por análise em modelos baratos (R$ 0,73 medidos no MVP com os modelos atuais), a
+margem bruta-alvo de 75–85% é plausível, e o custo dominante passa a ser equipe e aquisição de
+clientes. O impacto público é mensurável pela API do PNCP: cada licitante qualificado a mais reduz o
+preço em cerca de 3,4% do valor estimado (Pavel & Sičáková-Beblavá [3]), ganhar um contrato acelera
+o crescimento da empresa em 2,2 pontos percentuais no trimestre (NBER [4]), e a iluminação pública
+ainda tem cerca de 80% dos 22 milhões de pontos sem LED (Expolux/ABCIP [5]). Uma medição própria
+feita com o conector do ObraNexo em mais de 64 mil pregões eletrônicos do PNCP fechou a principal
+lacuna do dimensionamento: são cerca de R$ 6,1–6,4 bilhões por ano em itens de material elétrico
+(valor estimado), em cerca de 2,8–3,2 mil pregões por mês, dos quais cerca de 90% não citam material
+elétrico no objeto e escapam de alertas por palavra-chave; a iluminação responde por 83% do valor e
+45% dos itens elétricos são exclusivos para ME/EPP. A equipe está em estágio de hackathon e não tem
+receita: todo o modelo de receita é proposta, com premissas explícitas.
 
 ====================================================================================================
 COMO LER OS NÚMEROS DESTE CANVAS
@@ -72,7 +72,8 @@ O CANVAS EM UMA PÁGINA
   por mês [PREMISSA], ancorado em R$ 101–1.397 dos concorrentes [FATO].
 - Estrutura de custos. Síntese: Equipe e aquisição dominam; IA e infraestrutura são marginais;
   Número-âncora (natureza): R$ 0,02–0,48 por análise em modelos baratos [ESTIMATIVA: equipe de
-  pesquisa sobre preços oficiais]; infra R$ 0–300/mês [ESTIMATIVA].
+  pesquisa sobre preços oficiais]; R$ 0,73 medidos por análise no MVP (Itaberaí, 21 itens) [DADO
+  INTERNO]; infra R$ 0–300/mês [ESTIMATIVA].
 - Atividades-chave. Síntese: Conector PNCP, orquestração de agentes, motor de regras e taxonomia
   elétrica, benchmark com gabaritos, vendas.
 - Recursos-chave. Síntese: Motor de regras, gabaritos rotulados, roteador multi-LLM, casos reais,
@@ -470,6 +471,10 @@ de pesquisa; a faixa de tokens é premissa, não medição do ObraNexo].
 - Gemini 3.x Flash (modelo dos agentes do MVP), preço até 31/12/2026. Preço por milhão de tokens
   (entrada/saída): US$ 0,75 / 3,75; Custo por análise, 30k tokens: R$ 0,18; Custo por análise, 150k
   tokens: R$ 0,91.
+- Gemini 3.x Flash, preço a partir de 01/01/2027. Preço por milhão de tokens (entrada/saída):
+  US$ 1,50 / 7,50; Custo por análise, 30k tokens: R$ 0,36; Custo por análise, 150k tokens: R$ 1,81.
+- Claude Sonnet 5.5. Preço por milhão de tokens (entrada/saída): US$ 2,00 / 10,00; Custo por
+  análise, 30k tokens: R$ 0,48; Custo por análise, 150k tokens: R$ 2,42.
 
 Medição própria em 24/10/2026 [DADO INTERNO]: a análise completa do pregão de Itaberaí/GO (21 itens de
 material elétrico, caso do teste cego) com Gemini 3.8 Flash (agentes) e 3.5 Flash-Lite (extração), sem
@@ -481,10 +486,6 @@ modelo de agente. Os tokens vêm da própria resposta da API (usage) e ficam reg
 trilha do sistema (SQLite). A premissa de 30–150 mil tokens por análise, acima, está confirmada para
 um pregão de 21 itens; pregões maiores (Anápolis, 206 itens) tendem ao teto. Caminho para reduzir:
 modelo barato também no Investigador e cache de contexto do provedor para o histórico repetido.
-- Gemini 3.x Flash, preço a partir de 01/01/2027. Preço por milhão de tokens (entrada/saída):
-  US$ 1,50 / 7,50; Custo por análise, 30k tokens: R$ 0,36; Custo por análise, 150k tokens: R$ 1,81.
-- Claude Sonnet 5.5. Preço por milhão de tokens (entrada/saída): US$ 2,00 / 10,00; Custo por
-  análise, 30k tokens: R$ 0,48; Custo por análise, 150k tokens: R$ 2,42.
 
 Os preços vêm das páginas oficiais do Google (Gemini API [71]) e da Anthropic (Claude API [72]); os
 da Groq vêm de fontes secundárias, porque a página oficial não exibiu a tabela (CloudZero [73]). O
