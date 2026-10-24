@@ -49,6 +49,31 @@
 
 ---
 
+## Sumário
+
+1. [Em 30 segundos](#em-30-segundos) — o que é, para quem, o que já funciona
+2. [O problema em números](#o-problema-em-números) — medição própria no PNCP
+3. [Como funciona](#como-funciona) — do catálogo ao dossiê, com um exemplo real de entrada e saída
+4. [Arquitetura agêntica](#arquitetura-agêntica)
+   - [Os agentes](#os-agentes) — 7 agentes, ferramentas, limites e memória de cada um
+   - [Núcleo verificável](#núcleo-verificável) — validação, citação conferida e motor de regras
+   - [Orquestração, estado e memória](#orquestração-estado-e-memória) — grafo explícito e estado compartilhado
+   - [Guardrails e revisão humana](#guardrails-e-revisão-humana)
+   - [Observabilidade e avaliação](#observabilidade-e-avaliação) — trilha de chamadas, custo real, logs, benchmark, CI
+   - [Decisões de projeto](#decisões-de-projeto) — por que regras decidem e por que não há LangChain
+   - [Uma prospecção real atravessando o sistema](#uma-prospecção-real-atravessando-o-sistema)
+5. [Diferenciais](#diferenciais)
+6. [Validação e resultados](#validação-e-resultados) — benchmark, teste cego, testes, custo medido
+7. [Modelo de negócio e mercado](#modelo-de-negócio-e-mercado)
+8. [Status e roadmap](#status-e-roadmap) — fases F0 a F4
+9. [Quickstart](#quickstart) — instalação, comandos e [provedores de IA](#provedores-de-ia)
+10. [Limitações conhecidas e próximos desafios](#limitações-conhecidas-e-próximos-desafios)
+11. [Referência](#referência) — arquitetura da aplicação, endpoints da API, casos congelados, estrutura do repositório
+12. [Documentação](#documentação) — fluxo do agente (inputs, lógica, outputs), plano de desenvolvimento, BMC, pitch
+13. [Time e contato](#time-e-contato) · [Licença](#licença)
+
+---
+
 ## Em 30 segundos
 
 | | |
