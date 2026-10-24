@@ -8,13 +8,16 @@ export const NOMES_IA = { gemini: 'Gemini', groq: 'Groq', anthropic: 'Claude' };
 function seletorLlm(s) {
   const configurados = (s.llm.provedores || []).filter((p) => p.configurado);
   const atual = s.llm.provedor || '';
-  const dica = atual ? `Agentes: ${s.llm.modelo_agente} · extração: ${s.llm.modelo_extracao}` : 'Sem IA: só as regras determinísticas';
-  if (!configurados.length) return html`<span class="dot"></span><span data-tip="${dica}">Sem IA</span>`;
+  // Modo de contingência: sem IA os agentes não leem os anexos; o veredito sai só do que está na descrição do item
+  const dica = atual
+    ? `Agentes: ${s.llm.modelo_agente} · extração: ${s.llm.modelo_extracao}`
+    : 'Contingência: veredito só pelas regras, sem leitura dos anexos pela IA';
+  if (!configurados.length) return html`<span class="dot"></span><span data-tip="${dica}">Só regras (contingência)</span>`;
   return html`
     <span class="dot ${atual ? 'on' : ''}"></span>
     <select id="seletor-llm" aria-label="Provedor de IA" data-tip="${dica}">
       ${configurados.map((p) => html`<option value="${p.id}" ${p.id === atual ? 'selected' : ''}>IA: ${NOMES_IA[p.id] || p.id}</option>`)}
-      <option value="" ${atual ? '' : 'selected'}>Sem IA</option>
+      <option value="" ${atual ? '' : 'selected'}>Só regras (contingência)</option>
     </select>`;
 }
 
@@ -23,7 +26,7 @@ async function trocar(provedor) {
     const llm = await api.trocarProvedor(provedor || null);
     await atualizarStatus();
     window.dispatchEvent(new CustomEvent('provedor-llm', { detail: llm }));
-    if (!llm.disponivel) { toast('Sem IA: as análises usam só as regras.'); return; }
+    if (!llm.disponivel) { toast('Contingência: as análises usam só as regras, sem leitura dos anexos pela IA.'); return; }
     const nome = NOMES_IA[llm.provedor] || llm.provedor;
     const t = await api.testarProvedor();
     if (t.ok) toast(`${nome} conectado (${t.latencia_s}s)`);
