@@ -28,10 +28,15 @@ extração, a investigação, a verificação e o plano. Provedores suportados (
 | Provedor | Chave no `.env` | Modelos padrão | Observação |
 |---|---|---|---|
 | **Google Gemini** (padrão do MVP) | `GEMINI_API_KEY` | agentes `gemini-3.8-flash` → reserva `gemini-3.5-flash-lite`; extração `gemini-3.5-flash-lite` | nível gratuito da API Gemini Developer; o cliente cai para o reserva em 429/503 e põe o modelo em quarentena por 10 min |
+| **Groq** | `GROQ_API_KEY` | agentes `openai/gpt-oss-120b`; extração `openai/gpt-oss-20b`; reserva `llama-3.3-70b-versatile` | API no formato OpenAI (SDK `groq`). Saída estruturada por `json_schema` quando o modelo suporta, senão `json_object` + validação Pydantic com nova tentativa; lotes de extração menores por causa do limite de tokens por minuto do nível gratuito (413/429 → reserva). 403 "Access denied… network settings" é bloqueio de rede/região do Groq, não da chave |
 | Anthropic | `ANTHROPIC_API_KEY` | `claude-sonnet-5-5` / `claude-haiku-5-5` | `OBRANEXO_LLM_PROVIDER=anthropic` |
 
+Com mais de uma chave no `.env`, o provedor é escolhido no seletor **IA** da barra superior da interface (ou por
+`POST /api/config/llm {"provedor": "groq"}`); ao trocar, a interface faz uma chamada mínima de teste
+(`POST /api/config/llm/testar`) e mostra se o provedor respondeu. O provedor inicial vem de `OBRANEXO_LLM_PROVIDER`.
+
 Os três recursos usados pelos agentes — texto, saída estruturada validada por Pydantic e chamada de ferramentas —
-têm a mesma interface nos dois provedores (`src/obranexo/llm/client.py`). Testes de integração que chamam a API
+têm a mesma interface em todos os provedores (`src/obranexo/llm/client.py`). Testes de integração que chamam a API
 de verdade: `pytest -m integracao -v`.
 
 ## Instalação
@@ -40,7 +45,7 @@ de verdade: `pytest -m integracao -v`.
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-copy .env.example .env     # preencha GEMINI_API_KEY (ou ANTHROPIC_API_KEY)
+copy .env.example .env     # preencha GEMINI_API_KEY e/ou GROQ_API_KEY (ou ANTHROPIC_API_KEY)
 ```
 
 ## Uso
@@ -83,7 +88,12 @@ e a demo funciona offline. Rotas da interface (hash): `#/inicio`, `#/catalogo`, 
 
 | Método | Rota | Para quê |
 |---|---|---|
-| GET | `/api/status` | versão, provedor/modelos de LLM, modo offline, contadores |
+| GET | `/api/status` | versão, provedor/modelos de LLM (e provedores com chave), modo offline, contadores |
+| POST | `/api/chat` | abre uma conversa com o assistente |
+| POST | `/api/chat/{id}/mensagens` | envia uma pergunta; a resposta (texto + cartões) chega no evento `fim` de `/api/jobs/{job}/eventos` |
+| GET | `/api/chat/{id}` | histórico da conversa |
+| POST | `/api/config/llm` | troca o provedor de LLM (`gemini`, `groq`, `anthropic` ou `null`) |
+| POST | `/api/config/llm/testar` | chamada mínima ao provedor ativo (confere chave, rede e modelo) |
 | GET · POST · DELETE | `/api/catalogo` | catálogo ativo · enviar JSON/CSV/XLSX (multipart `arquivo`) · restaurar o demo |
 | POST | `/api/catalogo/importar` | ficha técnica real (multipart `url`, `arquivo` ou `texto`) → produtos propostos pelo LLM, para revisão |
 | POST · DELETE | `/api/catalogo/produtos` · `/api/catalogo/produtos/{sku}` | adicionar produtos revisados · remover (o catálogo fica salvo em disco) |

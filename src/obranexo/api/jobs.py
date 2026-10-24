@@ -14,12 +14,14 @@ from typing import Any
 from obranexo.models import Empresa, EventoLog
 
 _EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="tarefa")
+# Mensagens do assistente não esperam na fila das análises longas
+_EXECUTOR_CHAT = ThreadPoolExecutor(max_workers=4, thread_name_prefix="chat")
 
 
 @dataclass
 class Job:
     id: str
-    tipo: str  # analise | prospeccao
+    tipo: str  # analise | prospeccao | chat
     alvo: str
     status: str = "executando"  # executando | concluida | erro
     eventos: list[dict[str, Any]] = field(default_factory=list)
@@ -27,6 +29,7 @@ class Job:
     erro: str | None = None
     iniciado_em: datetime = field(default_factory=datetime.now)
     finalizado_em: datetime | None = None
+    dados: dict[str, Any] | None = None  # resultado inline (ex.: a resposta do assistente)
 
     def registrar(self, ev: EventoLog) -> None:
         self.eventos.append(ev.model_dump(mode="json"))
@@ -41,6 +44,7 @@ class Job:
             "analise_id": self.resultado_id if self.tipo == "analise" else None,
             "prospeccao_id": self.resultado_id if self.tipo == "prospeccao" else None,
             "erro": self.erro,
+            "dados": self.dados,
             "eventos": len(self.eventos),
             "iniciado_em": self.iniciado_em.isoformat(),
             "finalizado_em": self.finalizado_em.isoformat() if self.finalizado_em else None,
@@ -63,7 +67,7 @@ class GerenciadorJobs:
         job = Job(id=uuid.uuid4().hex[:12], tipo=tipo, alvo=alvo)
         with self._lock:
             self._jobs[job.id] = job
-        _EXECUTOR.submit(self._executar, job, tarefa)
+        (_EXECUTOR_CHAT if tipo == "chat" else _EXECUTOR).submit(self._executar, job, tarefa)
         return job
 
     def iniciar(self, caso: str, diretorio: Path, empresa: Empresa) -> Job:

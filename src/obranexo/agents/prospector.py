@@ -21,7 +21,7 @@ from obranexo.config import Config, config
 from obranexo.connectors.pncp import PNCPClient, PNCPError, carregar_caso
 from obranexo.documents.extract import normalizar_busca
 from obranexo.llm.client import criar_llm_client
-from obranexo.models import CandidatoProspeccao, Contratacao, Empresa, EventoLog, ItemRanking, Prospeccao
+from obranexo.models import Analise, CandidatoProspeccao, Contratacao, Empresa, EventoLog, ItemRanking, Prospeccao
 from obranexo.storage import store
 
 MAX_PASSOS = 16
@@ -104,6 +104,37 @@ def partes_id(contratacao_id: str) -> tuple[str, int, int]:
     if not m:
         raise ValueError(f"id de contratação inválido: {contratacao_id!r}")
     return m.group(1), int(m.group(3)), int(m.group(2))
+
+
+def melhor_por_item(analise: Analise) -> dict[str, str]:
+    """Melhor resultado de cada item entre os produtos do catálogo (itens sem correspondência ficam de fora)."""
+    melhor: dict[str, str] = {}
+    ordem = {"COMPATIVEL": 3, "PARCIAL": 2, "INDETERMINADO": 1, "INCOMPATIVEL": 0}
+    for c in sorted(analise.correspondencias, key=lambda c: (ordem[c.resultado.value], c.score), reverse=True):
+        melhor.setdefault(c.item_id, c.resultado.value)
+    return melhor
+
+
+def resumir_analise(analise: Analise) -> dict[str, Any]:
+    """Números de uma análise concluída, no formato que os agentes recebem como resultado de ferramenta."""
+    melhor = melhor_por_item(analise)
+    contagem = Counter(melhor.values())
+    valor_compat = sum((i.quantidade or 0) * (i.valor_unit_estimado or 0) for i in analise.itens if melhor.get(i.id) in ("COMPATIVEL", "PARCIAL"))
+    q = analise.qualificacao
+    return {
+        "analise_id": analise.id,
+        "itens": len(analise.itens),
+        "compativeis": contagem.get("COMPATIVEL", 0),
+        "parciais": contagem.get("PARCIAL", 0),
+        "indeterminados": contagem.get("INDETERMINADO", 0),
+        "incompativeis": contagem.get("INCOMPATIVEL", 0),
+        "fora_do_portfolio": len(analise.itens) - len(melhor),
+        "valor_compativel": round(valor_compat, 2),
+        "tipo": q.tipo_oportunidade.value if q else None,
+        "prazo": q.prazo_status if q else None,
+        "prioridade": q.prioridade if q else None,
+        "resumo_executivo": (analise.dossie.resumo_executivo[:600] if analise.dossie else ""),
+    }
 
 
 def _resumo_catalogo(empresa: Empresa) -> str:
@@ -235,27 +266,7 @@ class Prospector:
         analise = executar_caso(destino, self.empresa, cfg=self.cfg, on_evento=repassar)
         if analise.status != "concluida":
             return f"ERRO: a análise falhou ({analise.erro})."
-        melhor: dict[str, str] = {}
-        ordem = {"COMPATIVEL": 3, "PARCIAL": 2, "INDETERMINADO": 1, "INCOMPATIVEL": 0}
-        for c in sorted(analise.correspondencias, key=lambda c: (ordem[c.resultado.value], c.score), reverse=True):
-            melhor.setdefault(c.item_id, c.resultado.value)
-        contagem = Counter(melhor.values())
-        valor_compat = sum((i.quantidade or 0) * (i.valor_unit_estimado or 0) for i in analise.itens if melhor.get(i.id) in ("COMPATIVEL", "PARCIAL"))
-        q = analise.qualificacao
-        resumo = {
-            "analise_id": analise.id,
-            "itens": len(analise.itens),
-            "compativeis": contagem.get("COMPATIVEL", 0),
-            "parciais": contagem.get("PARCIAL", 0),
-            "indeterminados": contagem.get("INDETERMINADO", 0),
-            "incompativeis": contagem.get("INCOMPATIVEL", 0),
-            "fora_do_portfolio": len(analise.itens) - len(melhor),
-            "valor_compativel": round(valor_compat, 2),
-            "tipo": q.tipo_oportunidade.value if q else None,
-            "prazo": q.prazo_status if q else None,
-            "prioridade": q.prioridade if q else None,
-            "resumo_executivo": (analise.dossie.resumo_executivo[:600] if analise.dossie else ""),
-        }
+        resumo = resumir_analise(analise)
         if contratacao_id not in self.p.candidatos:
             c, _, _ = carregar_caso(destino)
             self.p.candidatos[contratacao_id] = CandidatoProspeccao(contratacao=_compacto(c))
@@ -318,7 +329,7 @@ class Prospector:
     def executar(self) -> Prospeccao:
         try:
             if not self.llm.disponivel:
-                raise RuntimeError("a prospecção autônoma exige um provedor de LLM configurado (GEMINI_API_KEY ou ANTHROPIC_API_KEY)")
+                raise RuntimeError("a prospecção autônoma exige um provedor de LLM configurado (GEMINI_API_KEY, GROQ_API_KEY ou ANTHROPIC_API_KEY)")
             self.evento("inicio", f"Prospecção para {self.empresa.nome} em {', '.join(self.ufs)} · até {self.max_analises} análise(s) completa(s)")
             tarefa = (
                 f"Fornecedor: {self.empresa.nome}. UFs da prospecção: {', '.join(self.ufs)}. "

@@ -21,7 +21,7 @@ from obranexo import __version__
 from obranexo.api.jobs import jobs
 from obranexo.catalog.atributos import ATRIBUTOS
 from obranexo.catalog.loader import carregar_catalogo_json, carregar_catalogo_tabela
-from obranexo.config import config
+from obranexo.config import MODELOS_PADRAO, PROVEDORES, config
 from obranexo.connectors.pncp import PNCPClient, PNCPError, carregar_caso, listar_casos
 from obranexo.models import Analise, Contratacao, Empresa, Produto, ResultadoItem, StatusRevisao
 from obranexo.storage import store
@@ -53,7 +53,7 @@ def _definir_empresa(empresa: Empresa) -> None:
 
 def _exige_llm(funcionalidade: str) -> None:
     if not config.llm_disponivel:
-        raise HTTPException(409, f"{funcionalidade} exige um provedor de LLM configurado (GEMINI_API_KEY ou ANTHROPIC_API_KEY no .env)")
+        raise HTTPException(409, f"{funcionalidade} exige um provedor de LLM configurado (GEMINI_API_KEY, GROQ_API_KEY ou ANTHROPIC_API_KEY no .env)")
 
 
 # ---------------------------------------------------------------------------
@@ -169,6 +169,7 @@ def status() -> dict[str, Any]:
             "modelo_agente": config.model_agente if config.llm_disponivel else None,
             "modelo_extracao": config.model_extracao if config.llm_disponivel else None,
             "modelos_reserva": config.modelos_reserva if config.llm_disponivel else [],
+            "provedores": _provedores(),
         },
         "pncp_offline": config.offline,
         "llm_cache": config.llm_cache,
@@ -176,6 +177,47 @@ def status() -> dict[str, Any]:
         "analises": len(list(config.dir_analises.glob("*.json"))) if config.dir_analises.exists() else 0,
         "empresa": empresa_atual().nome,
     }
+
+
+def _provedores() -> list[dict[str, Any]]:
+    return [
+        {"id": p, "configurado": bool(config.chave(p)), "ativo": p == config.llm_provider,
+         "modelo_agente": MODELOS_PADRAO[p]["agente"] if p != config.llm_provider else config.model_agente,
+         "modelo_extracao": MODELOS_PADRAO[p]["extracao"] if p != config.llm_provider else config.model_extracao}
+        for p in PROVEDORES
+    ]
+
+
+class TrocaProvedor(BaseModel):
+    provedor: str | None = Field(description="gemini, groq, anthropic ou null (modo determinístico)")
+
+
+@app.post("/api/config/llm", tags=["sistema"])
+def trocar_provedor(corpo: TrocaProvedor) -> dict[str, Any]:
+    """Escolhe o provedor de LLM usado pelas próximas análises e prospecções (a chave precisa estar no .env)."""
+    try:
+        config.usar_provedor(corpo.provedor)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return status()["llm"]
+
+
+@app.post("/api/config/llm/testar", tags=["sistema"])
+def testar_provedor() -> dict[str, Any]:
+    """Faz uma chamada mínima ao provedor ativo (sem cache) para conferir chave, rede e modelo."""
+    _exige_llm("O teste do provedor")
+    from dataclasses import replace
+
+    from obranexo.llm.client import criar_llm_client
+
+    llm = criar_llm_client(replace(config, llm_cache=False))
+    inicio = datetime.now()
+    try:
+        resposta = llm.texto(config.model_extracao, "Responda só com a palavra pedida.", "Diga: ok", max_tokens=200)
+    except Exception as exc:
+        return {"ok": False, "provedor": config.llm_provider, "erro": str(exc)[:400]}
+    return {"ok": True, "provedor": config.llm_provider, "modelos": list(llm.uso.por_modelo), "resposta": resposta[:80],
+            "latencia_s": round((datetime.now() - inicio).total_seconds(), 2)}
 
 
 # ---------------------------------------------------------------------------
@@ -460,6 +502,53 @@ def prospeccao(prospeccao_id: str) -> dict[str, Any]:
     if p is None:
         raise HTTPException(404, "prospecção não encontrada")
     return {"resumo": _resumo_prospeccao(p), "prospeccao": p.model_dump(mode="json")}
+
+
+# ---------------------------------------------------------------------------
+# Assistente (chat)
+# ---------------------------------------------------------------------------
+
+
+def _sessao_ou_404(sessao_id: str):
+    from obranexo.agents.assistente import sessoes
+
+    s = sessoes.obter(sessao_id)
+    if s is None:
+        raise HTTPException(404, "conversa não encontrada (o servidor pode ter reiniciado)")
+    return s
+
+
+@app.post("/api/chat", status_code=201, tags=["assistente"])
+def criar_conversa() -> dict[str, Any]:
+    """Abre uma conversa com o assistente (usa o provedor de IA e o catálogo ativos)."""
+    _exige_llm("O assistente")
+    from obranexo.agents.assistente import sessoes
+
+    s = sessoes.criar(empresa_atual())
+    return {"sessao_id": s.id, "mensagens": s.mensagens}
+
+
+@app.get("/api/chat/{sessao_id}", tags=["assistente"])
+def conversa(sessao_id: str) -> dict[str, Any]:
+    s = _sessao_ou_404(sessao_id)
+    return {"sessao_id": s.id, "mensagens": s.mensagens}
+
+
+class MensagemChat(BaseModel):
+    texto: str = Field(min_length=1, max_length=4000)
+
+
+@app.post("/api/chat/{sessao_id}/mensagens", status_code=202, tags=["assistente"])
+def enviar_mensagem(sessao_id: str, corpo: MensagemChat) -> dict[str, Any]:
+    """Envia uma pergunta. A resposta chega no evento `fim` de /api/jobs/{id}/eventos (campo `dados.mensagem`);
+    os eventos `log` mostram o que o assistente está consultando."""
+    s = _sessao_ou_404(sessao_id)
+
+    def tarefa(job):
+        job.dados = {"mensagem": s.responder(corpo.texto, on_evento=job.registrar)}
+        return s.id, "concluida", None
+
+    return jobs.iniciar_tarefa("chat", s.id, tarefa).resumo()
 
 
 @app.get("/api/jobs/{job_id}", tags=["análises"])
