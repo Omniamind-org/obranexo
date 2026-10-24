@@ -1,0 +1,93 @@
+====================================================================================================
+OBRANEXO - TEXTO DA FALA DO PITCH (3 MINUTOS)
+AKCIT Camp 2026 · ~425 palavras · ritmo-alvo 145 palavras por minuto (~2min55s)
+====================================================================================================
+
+Como usar: cada bloco corresponde a um slide. O tempo entre colchetes é o momento em que o slide
+deve estar na tela. [pausa] indica uma pausa curta, de cerca de 1 segundo.
+
+
+[SLIDE 1 · 0:00-0:10] ABERTURA
+
+Todo dia, mais de mil pregões eletrônicos são publicados no Brasil. Para quem vende material
+elétrico, achar os certos é procurar agulha no palheiro. Nós somos o ObraNexo.
+
+
+[SLIDE 2 · 0:10-0:25] O GANCHO
+
+Nós medimos isso, em mais de sessenta e quatro mil pregões do PNCP: o governo compra mais de seis
+bilhões de reais por ano em itens de material elétrico. E noventa por cento dos pregões que compram
+esses itens nem citam isso no objeto. [pausa] Quem busca por palavra-chave não enxerga.
+
+
+[SLIDE 3 · 0:25-0:50] O PROBLEMA
+
+Cada pregão desses traz, em média, vinte e três itens com especificação técnica: potência, fluxo
+luminoso, grau de proteção, garantia. Errou um detalhe, a proposta é desclassificada. Quase metade
+desses itens é exclusiva para pequenas empresas, e elas não têm analista: ler um único edital pode
+custar setecentos reais. O resultado são itens desertos, fracassados e pouca concorrência.
+
+
+[SLIDE 4 · 0:50-1:10] A SOLUÇÃO
+
+O ObraNexo resolve isso com agentes de inteligência artificial. Eles encontram as licitações
+abertas, leem o edital e os anexos, e comparam cada exigência com cada produto do catálogo da
+empresa. A resposta é clara: compatível, parcial, indeterminado ou incompatível.
+
+
+[SLIDE 5 · 1:10-1:30] O DIFERENCIAL: CONFIANÇA
+
+O nosso diferencial é confiança. A IA interpreta, mas quem decide são regras auditáveis. E cada
+conclusão aponta para o trecho literal do edital, conferido no documento. [pausa] O vendedor clica e
+vê a prova.
+
+
+[SLIDE 6 · 1:30-1:45] A CONCORRÊNCIA
+
+Já existem boas ferramentas para buscar licitações e resumir editais. Mas nenhuma das que pesquisamos
+junta comparação técnica item a item com o catálogo, regras auditáveis, prova em cada resposta e foco
+em material elétrico.
+
+
+[SLIDE 7 · 1:45-2:00] O MERCADO
+
+São um trilhão de reais em compras públicas por ano, seis bilhões só em itens elétricos, e de sete a
+treze mil empresas que vendem ou podem vender ao governo. Nossa meta é chegar a duzentos e cinquenta
+clientes em três anos.
+
+
+[SLIDE 8 · 2:00-2:15] O MODELO DE NEGÓCIO
+
+O modelo é assinatura: um radar gratuito e planos a partir de trezentos e noventa e sete reais por
+mês, na faixa do que o mercado já paga. Cada análise custa centavos de IA, então a margem é alta. E as
+assessorias de licitação são o nosso canal: cada uma atende dezenas de empresas.
+
+
+[SLIDE 9 · 2:15-2:35] JÁ FUNCIONA
+
+E isso já funciona. Sete agentes, um assistente que responde em linguagem natural, testes cegos em
+pregões reais, e cem por cento de acerto no nosso conjunto de teste, com toda conclusão rastreável.
+
+
+[SLIDE 10 · 2:35-3:00] IMPACTO E PEDIDO
+
+Cada fornecedor qualificado a mais numa disputa reduz o preço para o governo em cerca de três por
+cento, e gera emprego nas pequenas empresas. Agora queremos dez distribuidores de Goiás para um
+piloto de sessenta dias. [pausa] ObraNexo: o seu catálogo nas licitações certas, com prova.
+
+
+----------------------------------------------------------------------------------------------------
+VERSÃO DE EMERGÊNCIA (SE O TEMPO APERTAR)
+----------------------------------------------------------------------------------------------------
+Se perceber que está atrasado ao chegar no slide 6, diga só a primeira frase dele ("Já existem boas
+ferramentas para buscar licitações; nenhuma junta tudo isso com prova.") e passe ao mercado. No slide 8,
+corte a frase das assessorias. Isso recupera cerca de 12 segundos.
+
+----------------------------------------------------------------------------------------------------
+NOTAS DE PRONÚNCIA E ÊNFASE
+----------------------------------------------------------------------------------------------------
+- Fale "P-N-C-P" letra a letra.
+- Ênfase em: "seis bilhões", "noventa por cento", "com prova", "já funciona", "dez distribuidores".
+- Os números com fonte própria (seis bilhões, noventa por cento, vinte e três itens) vêm da medição da
+  equipe; se perguntarem, o método está no BMC (seção "Medição própria no PNCP").
+- "Cem por cento de acerto" sempre acompanhado de "no nosso conjunto de teste".

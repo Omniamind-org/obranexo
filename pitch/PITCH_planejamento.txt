@@ -1,0 +1,180 @@
+====================================================================================================
+OBRANEXO - PLANEJAMENTO DO PITCH DE 3 MINUTOS
+AKCIT Camp 2026 · versão de 24/10/2026
+====================================================================================================
+
+1. OBJETIVO
+-----------
+Em 3 minutos, convencer a banca de que:
+- existe um problema grande, medido e mal resolvido (fornecedores de material elétrico não conseguem
+  encontrar e conferir tecnicamente as licitações que poderiam ganhar);
+- o ObraNexo resolve de um jeito diferente e confiável (IA que interpreta + regras que decidem + prova
+  literal em cada conclusão);
+- há mercado e modelo de negócio viáveis, e o produto já funciona.
+
+Pedido final: piloto de 60 dias com 10 distribuidores de Goiás e apoio para levar o MVP a produção.
+
+MENSAGEM QUE A BANCA DEVE LEMBRAR (uma frase):
+"O ObraNexo coloca o catálogo do fornecedor nas licitações certas, item a item, com prova."
+
+2. PÚBLICO
+----------
+Banca de hackathon de IA (AKCIT/Embrapii, Goiás): avaliadores técnicos e de negócio. Valorizam:
+- problema real com números verificáveis;
+- uso de IA que não seja "um ChatGPT colado" (confiabilidade, arquitetura);
+- produto funcionando (demo/telas reais), não só ideia;
+- modelo de negócio coerente e impacto.
+
+3. ESTRUTURA E TEMPO (10 SLIDES, 180 SEGUNDOS)
+---------------------------------------------
+Ritmo-alvo: 140-150 palavras por minuto (texto da fala com ~425 palavras, ~2min50s, 10s de folga).
+
+ #  Tempo         Bloco do pitch            Ideia central do slide
+ 1  0:00-0:10     Abertura                  Mais de mil pregões por dia; agulha no palheiro
+ 2  0:10-0:25     Gancho com dado próprio   R$ 6 bi/ano em itens elétricos; 90% invisíveis por palavra-chave
+ 3  0:25-0:50     Problema                  23 itens técnicos por pregão; erro desclassifica; MPE sem analista
+ 4  0:50-1:10     Solução                   Agentes encontram, leem e comparam item a item (tela real)
+ 5  1:10-1:30     Diferencial (confiança)   A IA interpreta, regras decidem, tudo tem prova (tela da prova)
+ 6  1:30-1:45     Concorrência              Busca e resumo viraram padrão; a combinação é nossa
+ 7  1:45-2:00     Mercado                   R$ 1 tri > R$ 6 bi > 7-13 mil empresas > 250 clientes em 3 anos
+ 8  2:00-2:15     Modelo de negócio         Assinatura de R$ 0 a R$ 1.490+; centavos de IA; canal assessorias
+ 9  2:15-2:35     Tração / produto          Já funciona: 7 agentes, assistente, testes cegos, 100% no teste
+10  2:35-3:00     Impacto + pedido          -3% de preço por concorrente; piloto com 10 distribuidores
+
+Por que essa ordem: é o roteiro clássico de pitch de startup (gancho > problema > solução >
+diferencial > mercado > modelo > tração > pedido). O dado próprio entra logo no slide 2 porque é o que
+nenhum outro time terá: um número medido pela própria ferramenta.
+
+4. CONTEÚDO E VISUAL DE CADA SLIDE
+----------------------------------
+SLIDE 1 - ABERTURA
+- Visual: logo grande, frase-título, rodapé "AKCIT Camp 2026".
+- Título: "O seu catálogo nas licitações certas, com prova."
+- Fala curta. Não explicar ainda: só criar a tensão (mais de mil pregões por dia).
+
+SLIDE 2 - GANCHO (FUNDO ESCURO)
+- Número gigante: "R$ 6 bilhões por ano" em itens de material elétrico nos pregões eletrônicos.
+- Barra 10% x 90%: só 10% dos pregões com itens elétricos citam isso no objeto.
+- Rodapé: "Medição própria: 64.473 pregões do PNCP, jun e set-out/2026".
+
+SLIDE 3 - PROBLEMA
+- Três números lado a lado: ~1.110 pregões eletrônicos por dia; 23 itens elétricos por pregão (média);
+  até R$ 700 para analisar um edital.
+- Faixa de consequência: 6-12% dos itens elétricos terminam desertos ou fracassados; 45% dos itens
+  são exclusivos para pequenas empresas, que não têm analista.
+
+SLIDE 4 - SOLUÇÃO
+- Três passos: Encontra (agente busca no PNCP) > Compara (cada exigência x cada produto) > Decide com
+  prova (compatível / parcial / indeterminado / incompatível).
+- Tela real: tabela "Edital pede x Seu produto" com "Atende" e a coluna Prova.
+
+SLIDE 5 - DIFERENCIAL: CONFIANÇA
+- Frase: "A IA interpreta. As regras decidem. Tudo tem prova."
+- Tela real: modal "Prova no documento" com o trecho destacado no edital.
+- Quatro estados em etiquetas coloridas.
+
+SLIDE 6 - CONCORRÊNCIA
+- Matriz de capacidades: suítes de busca e lances / startups de IA de edital / LiciteCerto / ObraNexo.
+- Mensagem: ler edital com IA já é padrão; ninguém pesquisado combina comparação técnica com o
+  catálogo + regras auditáveis + prova em cada veredito + foco vertical + obras.
+
+SLIDE 7 - MERCADO
+- Funil em barras: R$ 1 trilhão (compras no PNCP, 2025) > R$ 6,1-6,4 bi (itens elétricos, dado próprio)
+  > SAM de software R$ 51-96 mi/ano (7-13 mil empresas) > meta 36 meses: 250 clientes, R$ 1,8 mi/ano.
+
+SLIDE 8 - MODELO DE NEGÓCIO
+- Quatro planos: Radar grátis / R$ 397 / R$ 897 / R$ 1.490+ (assessorias e redes).
+- Três fatos de economia: IA custa R$ 0,02-0,48 por análise; margem bruta-alvo 75-85%; concorrentes
+  cobram R$ 101-1.397/mês.
+- Canal: assessorias de licitação (multi-CNPJ), radar gratuito, fabricantes.
+
+SLIDE 9 - TRAÇÃO / PRODUTO FUNCIONANDO
+- Tela real: ranking da prospecção + assistente de conversa.
+- Lista: 7 agentes de IA; assistente com dados ao vivo do PNCP; testes cegos em pregões reais abertos;
+  100% de acerto e de rastreabilidade no conjunto de teste (interno); 3 provedores de IA com troca
+  automática.
+
+SLIDE 10 - IMPACTO E PEDIDO
+- Impacto: cerca de -3% no preço a cada concorrente a mais; +2,2 p.p. de crescimento para a empresa que
+  ganha contrato; iluminação pública ainda 80% sem LED. ODS 7, 8, 9, 11, 12.7, 16.
+- Pedido: 10 distribuidores de Goiás para piloto de 60 dias + apoio AKCIT/Embrapii para produção.
+- Equipe: nomes e papéis (preencher).
+- Frase final: "O seu catálogo nas licitações certas, com prova."
+
+5. NÚMEROS QUE SERÃO DITOS E A ORIGEM DE CADA UM
+------------------------------------------------
+(Ter isso na ponta da língua para as perguntas.)
+- Mais de mil pregões eletrônicos por dia: 33.406 em 30 dias (24/09-23/10/2026) - medição própria no PNCP.
+- R$ 6 bi/ano em itens elétricos: R$ 510-531 mi/mês em junho/2026 x 12; valor ESTIMADO, só pregão
+  eletrônico, um mês - medição própria.
+- 90% dos pregões com itens elétricos não citam no objeto: amostra de 400 pregões; intervalo de
+  confiança de 95% de ~7-13% com item elétrico entre os "outros" - medição própria.
+- 23 itens elétricos por pregão (média; mediana 8) - medição própria.
+- Até R$ 700 por edital: estimativa sobre salário médio de analista de licitação (R$ 3.748, Glassdoor)
+  e 3-16 h por edital.
+- 45% dos itens elétricos exclusivos para ME/EPP - medição própria.
+- 6-12% dos itens elétricos desertos ou fracassados - medição própria.
+- R$ 1 trilhão em compras no PNCP em 2025 - MGI.
+- 7-13 mil empresas-alvo; R$ 51-96 mi/ano de mercado de software - estimativa (BMC).
+- 250 clientes / R$ 1,8 mi em 36 meses - premissa do cenário-base.
+- R$ 0,02-0,48 por análise - estimativa sobre preços oficiais dos provedores (out/2026).
+- -3,4% de preço por licitante a mais - estudo europeu (Eslováquia); dizer "cerca de 3%".
+- +2,2 p.p. de crescimento e 93% das contratações vindas do desemprego/informalidade - NBER (Ferraz,
+  Finan e Szerman).
+- 100% de acerto no conjunto de teste - dado interno, não auditado; dizer "no nosso conjunto de teste".
+
+6. PERGUNTAS PROVÁVEIS DA BANCA E RESPOSTAS CURTAS
+-------------------------------------------------
+P: Isso não é só um ChatGPT lendo edital?
+R: Não. A IA só extrai e interpreta; a decisão de compatibilidade é de um motor de regras
+   determinístico, e toda conclusão precisa de um trecho literal que conferimos no documento. Se a IA
+   inventar um trecho, ele é descartado.
+
+P: Quem são os concorrentes?
+R: Effecti, ConLicitação e Siga Pregão buscam e resumem editais; a LiciteCerto compara itens com o
+   catálogo, mas sem regras auditáveis e sem foco vertical. A combinação com prova e o foco em material
+   elétrico e obras é nossa. A integração com as suítes de lances é um caminho, não só disputa.
+
+P: Os 100% de acerto são confiáveis?
+R: São no nosso conjunto de teste, com gabarito revisado por nós. O próximo passo é ampliar a amostra
+   com rotulagem independente; o piloto serve para isso.
+
+P: Quanto custa rodar?
+R: Centavos por análise em modelos baratos (R$ 0,02 a R$ 0,48). Usamos três provedores de IA com troca
+   automática, então escolhemos o modelo certo para cada etapa.
+
+P: De onde vêm os dados? Tem problema de LGPD?
+R: Do PNCP, que é público e aberto por lei (Lei 14.133, art. 174). O catálogo é do próprio cliente.
+   Não tratamos dados pessoais sensíveis.
+
+P: Como vocês vão vender?
+R: Por assessorias de licitação, que atendem dezenas de empresas cada, por um radar gratuito que
+   converte para o plano pago e por fabricantes que querem que seus distribuidores vendam mais ao
+   governo.
+
+P: Por que material elétrico?
+R: É onde a especificação técnica decide quem ganha (potência, fluxo, IP, garantia, INMETRO), a
+   iluminação pública tem 80% do parque ainda sem LED, e medimos R$ 6 bi por ano só em pregões.
+
+P: E depois do material elétrico?
+R: O motor de regras é genérico; a taxonomia muda. Construção civil e hidráulica são o próximo passo
+   natural, e as obras já aparecem como demanda indireta.
+
+7. RECOMENDAÇÕES DE APRESENTAÇÃO
+--------------------------------
+- Ensaiar com cronômetro pelo menos 5 vezes; cortar palavras, não velocidade.
+- Um orador principal; se houver troca, no máximo uma (por exemplo, no slide 4, para quem fará a demo).
+- Olhar para a banca nos números grandes (slides 2, 7 e 10); não ler o slide.
+- Pausa de 1 segundo depois do "90% não citam isso no objeto" (é o momento-surpresa do pitch).
+- Se houver demo ao vivo nas perguntas: abrir a análise de Goianira (6 itens, 4 compatíveis) e clicar
+  numa prova; não depender da internet para o pitch em si (os slides têm as telas).
+- Levar o canvas visual e o BMC_ObraNexo.txt como apoio para perguntas sobre números.
+
+8. CHECKLIST ANTES DE SUBIR
+---------------------------
+[ ] Preencher nomes e papéis da equipe no slide 10
+[ ] Conferir se a fonte Segoe UI está no computador da apresentação (padrão no Windows)
+[ ] Testar o PPTX no computador da banca (16:9)
+[ ] Cronometrar a fala: 2min45s a 2min55s
+[ ] Ter o MVP aberto em uma aba, com IA: Gemini, para a demo nas perguntas
+[ ] Ter respostas da seção 6 ensaiadas em até 20 segundos cada
