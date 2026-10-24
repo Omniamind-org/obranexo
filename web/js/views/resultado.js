@@ -2,11 +2,11 @@
 
 import { api } from '../api.js';
 import { barras, COR_RESULTADO, gauge, legendaResultados, medidor, prazo, RESULTADOS, ROTULO_RESULTADO, waffle } from '../charts.js';
-import { hora, local, moeda, moedaCompacta, numero, OPERADOR, pct, valorTecnico, nomeProprio } from '../format.js';
+import { dolar, hora, latencia, local, moeda, moedaCompacta, numero, OPERADOR, pct, valorTecnico, nomeProprio } from '../format.js';
 import { renderMarkdown } from '../markdown.js';
 import {
   abrirModal, aviso, badgeConfianca, badgePrazo, badgeRequisito, badgeResultado, badgeRevisao, badgeTipo,
-  esc, html, icon, raw, render, toast, vazio,
+  carregando, esc, html, icon, raw, render, rotuloAgente, rotuloOperacao, toast, vazio,
 } from '../ui.js';
 import { rotuloCategoria } from './catalogo.js';
 
@@ -334,7 +334,89 @@ function telaTrilha(alvo, a) {
     ${passos.length ? html`<details class="mais" style="margin-top:24px"><summary>Passos do Investigador (${passos.length})</summary>
       <ul class="feed">${passos.map((p) => (p.tipo === 'ferramenta'
         ? html`<li><span class="ts">passo ${p.passo}</span><span class="no">${p.ferramenta}</span><span><span class="small">${JSON.stringify(p.entrada)}</span><div class="muted small" style="margin-top:3px">→ ${String(p.saida).slice(0, 320)}</div></span></li>`
-        : html`<li><span class="ts">passo ${p.passo}</span><span class="no">raciocínio</span><span>${p.texto}</span></li>`))}</ul></details>` : ''}`);
+        : html`<li><span class="ts">passo ${p.passo}</span><span class="no">raciocínio</span><span>${p.texto}</span></li>`))}</ul></details>` : ''}
+    <section class="secao">
+      <div class="secao-head"><h2>Chamadas de IA</h2><span class="sub">modelo, tokens, custo estimado e latência de cada chamada</span></div>
+      <div id="chamadas-ia">${carregando('Carregando chamadas…')}</div>
+    </section>`);
+  telaChamadas(alvo.querySelector('#chamadas-ia'), a.id);
+}
+
+// ---------------------------------------------------------------------------- chamadas de IA
+
+async function telaChamadas(alvo, analiseId) {
+  let dados;
+  try {
+    dados = await api.chamadas(analiseId);
+  } catch (err) {
+    render(alvo, aviso(html`<strong>Não foi possível carregar as chamadas.</strong> ${err.message}`, 'bad', 'alert'));
+    return;
+  }
+  if (!alvo.isConnected) return; // a aba já foi trocada
+  const chamadas = dados.chamadas || [];
+  const r = dados.resumo || {};
+  if (!chamadas.length) {
+    render(alvo, html`<p class="muted small">Nenhuma chamada de modelo: análise em modo determinístico.</p>`);
+    return;
+  }
+
+  const tokens = r.tokens || {};
+  const lat = r.latencia_ms || {};
+  const dicaChamadas = r.chamadas_api !== undefined && r.chamadas_api !== r.chamadas
+    ? `${numero(r.chamadas_api)} foram à API; as demais vieram do cache` : '';
+  render(alvo, html`
+    <div class="numeros" style="margin-bottom:24px">
+      <div class="numero" data-tip="${dicaChamadas}"><b>${numero(r.chamadas)}</b><span>chamadas</span></div>
+      <div class="numero" data-tip="${numero(tokens.entrada)} tokens de entrada · ${numero(tokens.saida)} de saída · ${numero(tokens.raciocinio)} de raciocínio"><b>${dolar(r.custo_usd)}</b><span>custo estimado</span></div>
+      <div class="numero" data-tip="Máxima: ${latencia(lat.maxima)}"><b>${latencia(lat.media)}</b><span>latência média · p95 ${latencia(lat.p95)}</span></div>
+      <div class="numero ${r.taxa_cache > 0 ? 'ok' : ''}"><b>${pct(r.taxa_cache)}</b><span>respondidas pelo cache</span></div>
+    </div>
+    <div class="table-wrap"><table class="table chamadas">
+      <thead><tr>
+        <th>Quando</th><th>Agente</th><th>Operação</th><th>Modelo</th>
+        <th class="num" data-tip="entrada / saída / raciocínio">Tokens</th><th class="num">Custo</th><th class="num">Latência</th><th></th>
+      </tr></thead>
+      <tbody>${chamadas.map((c) => html`
+        <tr class="clicavel chamada" data-chamada="${c.id}">
+          <td class="nowrap mono small">${hora(c.quando)}</td>
+          <td class="nowrap">${rotuloAgente(c.agente)}${c.versao_prompt ? html` <span class="muted small">${c.versao_prompt}</span>` : ''}</td>
+          <td class="nowrap">${rotuloOperacao(c.operacao)}</td>
+          <td><div class="fatos">
+            <span class="mono small" data-tip="Provedor: ${c.provedor || '—'}">${c.modelo_usado || c.modelo_pedido || '—'}</span>
+            ${c.reserva ? html`<span class="tag warn" data-tip="Modelo pedido: ${c.modelo_pedido}" title="Modelo pedido: ${c.modelo_pedido}">reserva</span>` : ''}
+            ${c.cache_hit ? html`<span class="tag ok" data-tip="Resposta reaproveitada do cache local">cache</span>` : ''}
+            ${c.status === 'erro' ? html`<span class="tag bad">erro</span>` : ''}
+          </div></td>
+          <td class="num">${numero(c.tokens_entrada)} / ${numero(c.tokens_saida)} / ${numero(c.tokens_raciocinio)}</td>
+          <td class="num">${dolar(c.custo_usd)}</td>
+          <td class="num">${latencia(c.latencia_ms)}</td>
+          <td class="num"><button type="button" class="chamada-abrir" aria-expanded="false" aria-label="Detalhes da chamada">${icon('arrow')}</button></td>
+        </tr>
+        <tr class="chamada-detalhe" hidden>
+          <td colspan="8">
+            <div class="fatos small" style="margin-bottom:12px">
+              <span>${icon('bolt')}${c.provedor || '—'} · pedido <span class="mono">${c.modelo_pedido || '—'}</span>${c.reserva ? ' → respondeu ' : ''}${c.reserva ? html`<span class="mono">${c.modelo_usado}</span>` : ''}</span>
+              ${c.tokens_cache_leitura || c.tokens_cache_escrita ? html`<span>${icon('layers')}cache do provedor: ${numero(c.tokens_cache_leitura || 0)} lidos · ${numero(c.tokens_cache_escrita || 0)} gravados</span>` : ''}
+              ${c.origem_tipo ? html`<span>${icon('file')}${c.origem_tipo}${c.origem_id ? html` <span class="mono">${c.origem_id}</span>` : ''}</span>` : ''}
+            </div>
+            <div class="chamada-painel">
+              ${c.erro ? html`<div class="erro"><div class="rotulo">Erro</div><pre class="quebra">${c.erro}</pre></div>` : ''}
+              <div><div class="rotulo">Entrada</div><pre class="quebra">${c.entrada_resumo || '—'}</pre></div>
+              <div><div class="rotulo">Saída</div><pre class="quebra">${c.saida_resumo || '—'}</pre></div>
+            </div>
+          </td>
+        </tr>`)}</tbody>
+    </table></div>`);
+
+  alvo.querySelector('tbody').addEventListener('click', (e) => {
+    const linha = e.target.closest('tr.chamada');
+    if (!linha) return;
+    const detalhe = linha.nextElementSibling;
+    const aberto = detalhe.hidden;
+    detalhe.hidden = !aberto;
+    linha.classList.toggle('aberta', aberto);
+    linha.querySelector('.chamada-abrir').setAttribute('aria-expanded', String(aberto));
+  });
 }
 
 // ---------------------------------------------------------------------------- pendências

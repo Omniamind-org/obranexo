@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { renderMarkdown } from '../markdown.js';
-import { html, icon, raw, render } from '../ui.js';
+import { aviso, html, icon, raw, render, rotuloAgente } from '../ui.js';
 
 const ETAPAS = [
   ['box', 'Catálogo', 'Seus produtos e características técnicas — por planilha ou lendo a ficha do fabricante.'],
@@ -15,8 +15,19 @@ const AGENTES = [
   ['Qualificação', false], ['Planejador', true], ['Dossiê', false],
 ];
 
+const MODELO_LLM = { agente: 'agente', extracao: 'extração' };
+
 export async function render_(el) {
-  const md = await api.fluxo();
+  // A documentação é o conteúdo principal; grafo e status enriquecem a tela e falham de forma isolada.
+  const [md, grafo, status] = await Promise.allSettled([api.fluxo(), api.grafo(), api.status()])
+    .then((rs) => rs.map((r) => (r.status === 'fulfilled' ? r.value : r.reason)));
+  if (md instanceof Error) throw md;
+  const versaoPrompt = status instanceof Error ? null : status?.versao_prompt;
+  const subFluxo = [
+    grafo instanceof Error || !grafo?.nos?.length ? null : html`${grafo.nos.length} etapas`,
+    versaoPrompt ? html`prompts <span class="mono">${versaoPrompt}</span>` : null,
+  ].filter(Boolean);
+
   render(el, html`
     <div class="page-head">
       <div><h1>Como funciona</h1><p class="sub">A IA interpreta e investiga; regras fixas decidem a compatibilidade; toda conclusão aponta para um trecho do documento.</p></div>
@@ -49,10 +60,44 @@ export async function render_(el) {
       </div>
     </section>
 
+    <section class="secao">
+      <div class="secao-head"><h2>Fluxo da análise</h2>
+        ${subFluxo.length ? html`<span class="sub">${subFluxo.map((p, i) => html`${i ? ' · ' : ''}${p}`)}</span>` : ''}</div>
+      ${fluxoDaAnalise(grafo)}
+    </section>
+
     <details class="mais secao">
       <summary>Documentação técnica completa</summary>
       <div class="markdown">${raw(renderMarkdown(md.replace(/^# .*\n/, '')))}</div>
     </details>`);
+}
+
+// ---------------------------------------------------------------------------- grafo da análise
+
+function fluxoDaAnalise(grafo) {
+  if (grafo instanceof Error) return aviso(html`<strong>Não foi possível carregar o fluxo.</strong> ${grafo.message}`, 'bad', 'alert');
+  const nos = [...(grafo?.nos || [])].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+  if (!nos.length) return aviso('O fluxo ainda não foi descrito.');
+  const campos = (lista) => (lista?.length ? lista.map((c) => html`<code>${c}</code>`) : html`<span class="muted">—</span>`);
+  return html`
+    ${grafo.estado?.descricao ? html`<p class="ink-2" style="margin-bottom:20px;max-width:760px">${grafo.estado.descricao}</p>` : ''}
+    <ol class="etapas">${nos.map((n) => html`
+      <li>
+        <span class="etapa-num">${n.ordem}</span>
+        <div>
+          <div class="etapa-titulo">
+            <strong data-tip="${n.arquivo || ''}">${n.titulo}</strong>
+            ${n.agente ? html`<span class="tag teal">${rotuloAgente(n.agente)}</span>` : html`<span class="tag plain">regras</span>`}
+            ${n.usa_llm ? html`<span class="tag" data-tip="Esta etapa chama um modelo de linguagem${n.modelo ? ` (modelo de ${MODELO_LLM[n.modelo] || n.modelo})` : ''}">LLM · ${MODELO_LLM[n.modelo] || n.modelo || 'modelo'}</span>` : ''}
+            ${n.condicao ? html`<em class="etapa-cond">${n.condicao}</em>` : ''}
+          </div>
+          ${n.descricao ? html`<p class="ink-2 small" style="margin-top:4px">${n.descricao}</p>` : ''}
+          <div class="etapa-campos">
+            <span class="muted">lê</span>${campos(n.le)}
+            <span class="muted sep">escreve</span>${campos(n.escreve)}
+          </div>
+        </div>
+      </li>`)}</ol>`;
 }
 
 export { render_ as render };

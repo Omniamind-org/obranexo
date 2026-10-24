@@ -12,9 +12,11 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from obranexo.agents.prompts import VERSAO
 from obranexo.catalog.atributos import ATRIBUTOS
 from obranexo.llm.client import LLMClient
 from obranexo.models import Atributo, Produto
+from obranexo.observability.trilha import escopo
 from obranexo.rules.validar import normalizar_valor
 
 CATEGORIAS = (
@@ -92,7 +94,8 @@ def importar_ficha(texto: str, llm: LLMClient, modelo: str) -> tuple[list[Produt
     if len(texto) > MAX_CHARS:
         avisos.append(f"Ficha com {len(texto)} caracteres: apenas os primeiros {MAX_CHARS} foram lidos.")
         texto = texto[:MAX_CHARS]
-    ficha = llm.extrair(modelo, SYSTEM_IMPORTADOR, f"<documento>\n{texto}\n</documento>\nExtraia os produtos desta ficha técnica.", FichaExtraida, max_tokens=24000)
+    with escopo(agente="curador_catalogo", versao_prompt=VERSAO, origem_tipo="importacao"):
+        ficha = llm.extrair(modelo, SYSTEM_IMPORTADOR, f"<documento>\n{texto}\n</documento>\nExtraia os produtos desta ficha técnica.", FichaExtraida, max_tokens=24000)
     produtos: list[Produto] = []
     skus: set[str] = set()
     for pf in ficha.produtos:

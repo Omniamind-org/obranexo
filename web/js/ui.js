@@ -201,6 +201,17 @@ export const badgeRevisao = (v) => tagDe(REVISAO, v);
 export const badgeConfianca = (v) => tagDe(CONFIANCA, v);
 export const rotuloResultado = (v) => (RESULTADO[v] || [v])[0];
 
+// Agentes que chamam modelos (nome interno → rótulo). Nomes desconhecidos viram texto legível.
+const AGENTE = {
+  analista_tecnico: 'Analista Técnico', especificador: 'Especificador', investigador: 'Investigador',
+  verificador: 'Verificador', planejador: 'Planejador', prospector: 'Prospecção', assistente: 'Assistente',
+  curador_catalogo: 'Curador do catálogo',
+};
+export const rotuloAgente = (v) => AGENTE[v] || (v ? String(v).replace(/_/g, ' ') : '—');
+
+const OPERACAO = { extrair: 'extração', texto: 'texto', conversa: 'conversa' };
+export const rotuloOperacao = (v) => OPERACAO[v] || v || '—';
+
 const REQUISITO = { ATENDE: ['Atende', 'ok', 'check'], NAO_ATENDE: ['Não atende', 'bad', 'x'], INDETERMINADO: ['Sem dado', 'indet', 'help'] };
 export function badgeRequisito(v) {
   const [rotulo, cls, ico] = REQUISITO[v] || [v, 'indet', 'help'];

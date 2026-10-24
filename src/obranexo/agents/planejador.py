@@ -9,8 +9,9 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from obranexo.agents.contexto import Contexto
-from obranexo.agents.prompts import SYSTEM_PLANEJADOR
+from obranexo.agents.prompts import SYSTEM_PLANEJADOR, VERSAO
 from obranexo.models import Qualificacao, ResultadoItem, TipoOportunidade
+from obranexo.observability.trilha import escopo
 
 _PALAVRAS_OBRA = r"\b(obra|obras|execu[cç][aã]o|constru[cç][aã]o|reforma|amplia[cç][aã]o|engenharia|empreitada|remanescente)\b"
 _PALAVRAS_SERVICO = r"\b(presta[cç][aã]o de servi[cç]os?|loca[cç][aã]o|manuten[cç][aã]o)\b"
@@ -206,12 +207,13 @@ def planejar(ctx: Contexto) -> tuple[str, list[str], list[str]]:
             "empresa": {"nome": ctx.empresa.nome, "ufs_atendidas": ctx.empresa.ufs_atendidas},
             "data_hoje": datetime.now().strftime("%d/%m/%Y"),
         }
-        plano = ctx.llm.extrair(
-            ctx.cfg.model_agente,
-            SYSTEM_PLANEJADOR,
-            "Fatos verificados da análise (JSON):\n" + json.dumps(fatos, ensure_ascii=False, indent=1, default=str),
-            PlanoComercial,
-        )
+        with escopo(agente="planejador", versao_prompt=VERSAO):
+            plano = ctx.llm.extrair(
+                ctx.cfg.model_agente,
+                SYSTEM_PLANEJADOR,
+                "Fatos verificados da análise (JSON):\n" + json.dumps(fatos, ensure_ascii=False, indent=1, default=str),
+                PlanoComercial,
+            )
         ctx.evento("planejador", "Plano comercial gerado pelo Agente Planejador", modelo=ctx.cfg.model_agente)
         passos = plano.proximos_passos or q.proximos_passos
         riscos = list(dict.fromkeys(plano.riscos + q.riscos))

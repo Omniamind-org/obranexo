@@ -60,6 +60,7 @@ export const api = {
   dossieMd: (id) => req('GET', `/api/analises/${encodeURIComponent(id)}/dossie.md`),
   revisar: (id, status, comentario) => req('PATCH', `/api/analises/${encodeURIComponent(id)}/revisao`, { status, comentario }),
   evidencia: (id, evId) => req('GET', `/api/analises/${encodeURIComponent(id)}/evidencias/${encodeURIComponent(evId)}`),
+  chamadas: (id) => req('GET', `/api/analises/${encodeURIComponent(id)}/chamadas`),
   arquivoUrl: (id, docId, pagina) => `/api/analises/${encodeURIComponent(id)}/documentos/${encodeURIComponent(docId)}/arquivo${pagina ? `#page=${pagina}` : ''}`,
   dossieDownloadUrl: (id) => `/api/analises/${encodeURIComponent(id)}/dossie.md?download=true`,
 
@@ -68,7 +69,9 @@ export const api = {
   enviarMensagem: (id, texto) => req('POST', `/api/chat/${encodeURIComponent(id)}/mensagens`, { texto }),
 
   metricas: () => req('GET', '/api/metricas'),
+  metricasLlm: () => req('GET', '/api/metricas/llm'),
   fluxo: () => req('GET', '/api/conteudo/fluxo'),
+  grafo: () => req('GET', '/api/conteudo/grafo'),
 };
 
 /**

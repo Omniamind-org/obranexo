@@ -15,12 +15,32 @@ PROVEDORES = ("gemini", "groq", "anthropic")
 
 # Modelos padrão por provedor (cada um pode ser trocado no .env: OBRANEXO_<PROVEDOR>_MODEL_AGENTE etc.).
 # - Gemini: família 3.x para contas novas (gemini-2.5-flash já não é oferecido).
-# - Groq: gpt-oss tem saída estruturada por json_schema e bom uso de ferramentas; o reserva é Llama 3.3.
+# - Groq: gpt-oss tem saída estruturada por json_schema e bom uso de ferramentas.
 #   No nível gratuito o limite de tokens por minuto é baixo, por isso lotes menores de extração.
+#   O reserva do Groq é o gpt-oss-20b: o Llama 3.3 70B saiu do nível gratuito em 16/08/2026 (console.groq.com/docs/deprecations).
 MODELOS_PADRAO: dict[str, dict] = {
     "gemini": {"agente": "gemini-3.8-flash", "extracao": "gemini-3.5-flash-lite", "reserva": ["gemini-3.5-flash-lite"], "lote": (10, 9000)},
-    "groq": {"agente": "openai/gpt-oss-120b", "extracao": "openai/gpt-oss-20b", "reserva": ["llama-3.3-70b-versatile"], "lote": (5, 4500)},
+    "groq": {"agente": "openai/gpt-oss-120b", "extracao": "openai/gpt-oss-20b", "reserva": ["openai/gpt-oss-20b"], "lote": (5, 4500)},
     "anthropic": {"agente": "claude-sonnet-5-5", "extracao": "claude-haiku-5-5", "reserva": [], "lote": (10, 9000)},
+}
+
+# Tabela oficial de preços (US$ por 1M tokens: entrada, saída, leitura de cache), consultada em 24/10/2026 nas páginas
+# dos provedores (ai.google.dev/gemini-api/docs/pricing · console.groq.com/docs/models · platform.claude.com/docs/en/about-claude/pricing).
+# Tokens de raciocínio ("thinking") são cobrados como saída nos três provedores. Gemini 3.8 Flash está em preço
+# introdutório até 31/12/2026 (depois 1,50 / 7,50 / 0,15). O custo estimado por aqui é o que a análise custaria no
+# nível pago; no nível gratuito do Gemini e do Groq a cobrança real é zero.
+PRECOS_USD: dict[str, tuple[float, float, float]] = {
+    "gemini-3.8-flash": (0.75, 3.75, 0.075),
+    "gemini-3.6-flash": (0.75, 3.75, 0.075),
+    "gemini-3.5-flash": (0.75, 3.75, 0.075),  # descontinuado em 08/10/2026: a API roteia para o 3.6 Flash
+    "gemini-3.5-flash-lite": (0.30, 2.50, 0.03),
+    "openai/gpt-oss-120b": (0.15, 0.60, 0.075),
+    "openai/gpt-oss-20b": (0.075, 0.30, 0.037),
+    "llama-3.3-70b-versatile": (0.59, 0.79, 0.295),  # fora do nível gratuito desde 16/08/2026; preço de referência
+    "llama-3.1-8b-instant": (0.05, 0.08, 0.025),
+    "claude-opus-5-5": (4.00, 20.00, 0.20),
+    "claude-sonnet-5-5": (2.00, 10.00, 0.10),
+    "claude-haiku-5-5": (0.10, 0.50, 0.01),
 }
 
 _VAR_CHAVE = {"gemini": ("GEMINI_API_KEY", "GOOGLE_API_KEY"), "groq": ("GROQ_API_KEY",), "anthropic": ("ANTHROPIC_API_KEY",)}
@@ -80,19 +100,18 @@ class Config:
     llm_pausa_s: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_LLM_PAUSA_S", "0")))
     llm_timeout_s: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_LLM_TIMEOUT_S", "45")))
     llm_paralelo: int = field(default_factory=lambda: _env_int("OBRANEXO_LLM_PARALELO", 4))
+    # Logs estruturados em JSON por linha (observability/logs.py); sem a variável, linhas legíveis no terminal
+    log_json: bool = field(default_factory=lambda: _env_bool("OBRANEXO_LOG_JSON", False))
 
-    # Preço (US$ por 1M tokens: entrada, saída) para estimar custo por análise.
-    # Gemini e Groq no nível gratuito custam 0; preencha com a tabela paga quando migrar.
-    precos_usd: dict[str, tuple[float, float]] = field(
-        default_factory=lambda: {
-            "claude-opus-5-5": (4.00, 20.00),
-            "claude-sonnet-5-5": (2.00, 10.00),
-            "claude-haiku-5-5": (0.10, 0.50),
-            "gemini-3.8-flash": (0.0, 0.0),
-            "gemini-3.5-flash-lite": (0.0, 0.0),
-            "gemini-3.5-flash": (0.0, 0.0),
-        }
+    # Preço de tabela (US$ por 1M tokens: entrada, saída, leitura de cache) para estimar o custo de cada chamada — métrica
+    # interna de margem, não a fatura (nível gratuito custa 0; lote e cache dão desconto). Tabela e fontes em PRECOS_USD.
+    precos_usd: dict[str, tuple[float, float, float]] = field(default_factory=lambda: dict(PRECOS_USD))
+    # Faixas por chamada: acima de `limite` tokens de entrada, o preço muda (Haiku 5.5 custa 5x acima de 100k)
+    precos_faixa_usd: dict[str, tuple[int, float, float]] = field(
+        default_factory=lambda: {"claude-haiku-5-5": (100_000, 0.50, 2.50)}
     )
+    cambio_brl: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_CAMBIO_BRL", "5.0377")))  # PTAX 23/10/2026
+    meta_custo_analise_brl: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_META_CUSTO_ANALISE_BRL", "1.0")))  # KPI do BMC
 
     def __post_init__(self) -> None:
         if self.llm_provider and not self.chave(self.llm_provider):
@@ -133,6 +152,11 @@ class Config:
     @property
     def llm_disponivel(self) -> bool:
         return self.llm_provider is not None
+
+    @property
+    def caminho_db(self) -> Path:
+        """SQLite da trilha de chamadas de modelo (observability/trilha.py); acompanha dir_dados."""
+        return self.dir_dados / "obranexo.db"
 
     def garantir_diretorios(self) -> None:
         for d in (self.dir_cache, self.dir_llm_cache, self.dir_analises):

@@ -3,11 +3,23 @@
 const moedaFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 });
 const moedaCurta = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 });
 const numFmt = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
+const dolarFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'USD', minimumFractionDigits: 4, maximumFractionDigits: 4 });
+const segFmt = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 export const moeda = (v) => (v === null || v === undefined ? '—' : moedaFmt.format(v));
 export const moedaCompacta = (v) => (v === null || v === undefined ? '—' : moedaCurta.format(v));
 export const numero = (v) => (v === null || v === undefined || v === '' ? '—' : typeof v === 'number' ? numFmt.format(v) : String(v));
 export const pct = (v, casas = 0) => (v === null || v === undefined ? '—' : `${(v * 100).toFixed(casas)}%`);
+
+/** Custo estimado de uso de modelos: "US$ 0,0123" (4 casas). */
+export const dolar = (v) => (v === null || v === undefined ? '—' : dolarFmt.format(v));
+
+/** Latência: segundos com 1 casa a partir de 1 s; abaixo disso, milissegundos inteiros. */
+export function latencia(ms) {
+  if (ms === null || ms === undefined || Number.isNaN(Number(ms))) return '—';
+  const n = Number(ms);
+  return n >= 1000 ? `${segFmt.format(n / 1000)} s` : `${Math.round(n)} ms`;
+}
 
 export function data(iso, comHora = false) {
   if (!iso) return '—';
