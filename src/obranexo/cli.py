@@ -119,6 +119,9 @@ def cmd_servidor(args) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from obranexo.observability import logs
+
+    logs.configurar()
     parser = argparse.ArgumentParser(prog="obranexo", description="ObraNexo — inteligência comercial agêntica")
     sub = parser.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("servidor", help="sobe a API e a interface web")

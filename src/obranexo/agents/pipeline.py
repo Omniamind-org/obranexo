@@ -27,6 +27,7 @@ from obranexo.documents.extract import IndiceDocumentos
 from obranexo.dossier.render import renderizar
 from obranexo.llm.client import criar_llm_client
 from obranexo.models import Analise, Contratacao, Correspondencia, Documento, Dossie, Empresa, ItemDemanda, Requisito, ResultadoItem
+from obranexo.observability.trilha import escopo
 from obranexo.rules.compare import comparar_item
 from obranexo.rules.extrair import inferir_categoria
 from obranexo.storage import store
@@ -264,36 +265,41 @@ def executar_analise(
     llm.orcamento = cfg.orcamento_tokens + 4000 * len(itens)
     analise.modo = f"llm:{llm.provedor}" if llm.disponivel else "deterministico"
     ctx = Contexto(analise=analise, empresa=empresa, indice=IndiceDocumentos(), llm=llm, cfg=cfg, on_evento=on_evento)
-    try:
-        ctx.evento("carregar_contexto", f"Empresa {empresa.nome} ({len(empresa.produtos)} produtos) × contratação {contratacao.id} ({len(itens)} itens) · modo {analise.modo}")
-        _no_coletar_documentos(ctx, [d.model_copy() for d in documentos])
-        _no_extrair_itens(ctx)
-        relevantes = _no_filtrar_relevantes(ctx)
-        _no_especificador(ctx, relevantes)
-        _casar(ctx, relevantes)
-        afetados = _no_investigador(ctx, relevantes)
-        if afetados:
-            _casar(ctx, afetados)
-        if not relevantes:
-            _no_varrer_insumos_indiretos(ctx)
-        verificar(ctx)
-        analise.qualificacao = qualificar(ctx)
-        ctx.evento("qualificar", f"{analise.qualificacao.tipo_oportunidade.value} · prazo {analise.qualificacao.prazo_status} · prioridade {analise.qualificacao.prioridade}")
-        resumo, passos, riscos = planejar(ctx)
-        analise.qualificacao.proximos_passos = passos
-        analise.qualificacao.riscos = riscos
-        analise.finalizada_em = datetime.now()
-        analise.status = "concluida"
-        md = renderizar(analise, empresa, resumo, passos, riscos)
-        analise.dossie = Dossie(analise_id=analise.id, titulo=f"Dossiê — {contratacao.orgao_nome} — {contratacao.id}", resumo_executivo=resumo, conteudo_md=md)
-        ctx.evento("gerar_dossie", f"Dossiê gerado ({len(md)} caracteres) · custo US$ {analise.uso_llm.custo_usd:.4f}")
-    except Exception as exc:  # registra o erro na análise em vez de perder tudo
-        analise.status = "erro"
-        analise.erro = f"{type(exc).__name__}: {exc}"
-        analise.finalizada_em = datetime.now()
-        ctx.evento("erro", analise.erro)
-        if not salvar:
-            raise
+    # Toda chamada de modelo feita daqui para dentro fica ligada a esta análise na trilha (observability/trilha.py)
+    with escopo(origem_tipo="analise", origem_id=analise.id):
+        try:
+            ctx.evento("carregar_contexto", f"Empresa {empresa.nome} ({len(empresa.produtos)} produtos) × contratação {contratacao.id} ({len(itens)} itens) · modo {analise.modo}")
+            _no_coletar_documentos(ctx, [d.model_copy() for d in documentos])
+            _no_extrair_itens(ctx)
+            relevantes = _no_filtrar_relevantes(ctx)
+            _no_especificador(ctx, relevantes)
+            _casar(ctx, relevantes)
+            afetados = _no_investigador(ctx, relevantes)
+            if afetados:
+                _casar(ctx, afetados)
+            if not relevantes:
+                _no_varrer_insumos_indiretos(ctx)
+            verificar(ctx)
+            analise.qualificacao = qualificar(ctx)
+            ctx.evento("qualificar", f"{analise.qualificacao.tipo_oportunidade.value} · prazo {analise.qualificacao.prazo_status} · prioridade {analise.qualificacao.prioridade}")
+            resumo, passos, riscos = planejar(ctx)
+            analise.qualificacao.proximos_passos = passos
+            analise.qualificacao.riscos = riscos
+            analise.finalizada_em = datetime.now()
+            analise.status = "concluida"
+            md = renderizar(analise, empresa, resumo, passos, riscos)
+            analise.dossie = Dossie(analise_id=analise.id, titulo=f"Dossiê — {contratacao.orgao_nome} — {contratacao.id}", resumo_executivo=resumo, conteudo_md=md)
+            ctx.evento(
+                "gerar_dossie",
+                f"Dossiê gerado ({len(md)} caracteres) · {analise.uso_llm.chamadas} chamada(s) de modelo · custo estimado US$ {analise.uso_llm.custo_usd:.4f}",
+            )
+        except Exception as exc:  # registra o erro na análise em vez de perder tudo
+            analise.status = "erro"
+            analise.erro = f"{type(exc).__name__}: {exc}"
+            analise.finalizada_em = datetime.now()
+            ctx.evento("erro", analise.erro)
+            if not salvar:
+                raise
     if salvar:
         store.salvar(analise)
     return analise

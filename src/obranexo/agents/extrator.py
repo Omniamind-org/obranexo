@@ -12,9 +12,10 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from obranexo.agents.contexto import Contexto
-from obranexo.agents.prompts import SYSTEM_EXTRATOR
+from obranexo.agents.prompts import SYSTEM_EXTRATOR, VERSAO
 from obranexo.catalog.atributos import ATRIBUTOS
 from obranexo.models import Conflito, ItemDemanda, Operador, Requisito, TipoAtributo
+from obranexo.observability.trilha import escopo
 from obranexo.rules.extrair import eh_acessorio, extrair_requisitos, inferir_categoria
 from obranexo.rules.validar import normalizar_valor
 
@@ -64,7 +65,8 @@ def prompt_item(item: ItemDemanda) -> str:
 
 def chamar_extrator(ctx: Contexto, item: ItemDemanda) -> ExtracaoItem:
     """Extração de um item só (fallback quando o lote falha ou não traz o item)."""
-    return ctx.llm.extrair(ctx.cfg.model_extracao, SYSTEM_EXTRATOR, prompt_item(item), ExtracaoItem)
+    with escopo(agente="analista_tecnico", versao_prompt=VERSAO):
+        return ctx.llm.extrair(ctx.cfg.model_extracao, SYSTEM_EXTRATOR, prompt_item(item), ExtracaoItem)
 
 
 # Limites de um lote: mantêm a saída bem abaixo do teto do modelo e o erro de um lote não custa muito
@@ -93,6 +95,7 @@ def extrair_lotes(ctx: Contexto, itens: list[ItemDemanda]) -> dict[int, Extracao
     é o que torna viável rodar os agentes no nível gratuito, que limita requisições por minuto."""
     if not ctx.usar_llm or not itens:
         return {}
+    import contextvars
     from concurrent.futures import ThreadPoolExecutor
 
     # Tamanho do lote por provedor: o Groq gratuito tem limite baixo de tokens por minuto (413 em pedidos grandes)
@@ -109,8 +112,12 @@ def extrair_lotes(ctx: Contexto, itens: list[ItemDemanda]) -> dict[int, Extracao
         except Exception:
             return None
 
-    with ThreadPoolExecutor(max_workers=max(1, min(ctx.cfg.llm_paralelo, len(lotes)))) as pool:
-        respostas = list(pool.map(chamar, lotes))
+    with escopo(agente="analista_tecnico", versao_prompt=VERSAO), ThreadPoolExecutor(max_workers=max(1, min(ctx.cfg.llm_paralelo, len(lotes)))) as pool:
+        # Cada lote roda numa cópia do contexto desta thread (feita aqui, antes de entrar no pool): assim a trilha
+        # sabe que a chamada é do Analista Técnico desta análise. Uma cópia por lote, porque um contexto não pode
+        # ser executado por duas threads ao mesmo tempo.
+        copias = [contextvars.copy_context() for _ in lotes]
+        respostas = list(pool.map(lambda par: par[0].run(chamar, par[1]), zip(copias, lotes, strict=True)))
     resultado: dict[int, ExtracaoItem] = {}
     validos = {i.numero_item for i in itens}
     for resp in respostas:

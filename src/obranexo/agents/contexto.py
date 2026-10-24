@@ -10,6 +10,7 @@ from obranexo.config import Config, config
 from obranexo.documents.extract import IndiceDocumentos
 from obranexo.llm.client import LLMClient
 from obranexo.models import Analise, Empresa, EventoLog, Evidencia
+from obranexo.observability import logs
 
 OnEvento = Callable[[EventoLog], None]
 
@@ -27,6 +28,8 @@ class Contexto:
     def evento(self, no: str, mensagem: str, **dados) -> None:
         ev = EventoLog(no=no, mensagem=mensagem, dados=dados)
         self.analise.log.append(ev)
+        # O mesmo evento vai para o log estruturado: a trilha da análise também existe fora do JSON dela
+        logs.registrar("etapa", **{"analise_id": self.analise.id, "no": no, "mensagem": mensagem, **dados})
         if self.on_evento:
             self.on_evento(ev)
 

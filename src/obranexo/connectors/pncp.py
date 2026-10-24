@@ -307,7 +307,7 @@ class PNCPClient:
             caminho = self.baixar_arquivo(url, destino / "arquivos", nome)
             doc.nome = caminho.name
             doc.sha256 = hashlib.sha256(caminho.read_bytes()).hexdigest()
-            doc.caminho_local = str(caminho.relative_to(destino))
+            doc.caminho_local = caminho.relative_to(destino).as_posix()  # mesmo separador em qualquer sistema
             doc.extraivel = caminho.suffix.lower() in {".pdf", ".docx", ".xlsx", ".zip"}
             documentos.append(doc)
         salvar_caso(destino, contratacao, itens, documentos)
@@ -346,7 +346,9 @@ def carregar_caso(diretorio: Path) -> tuple[Contratacao, list[ItemDemanda], list
     ]
     for doc in documentos:
         if doc.caminho_local:
-            doc.caminho_local = str(diretorio / doc.caminho_local)
+            # Pacotes congelados no Windows guardaram "arquivos\\edital.pdf"; no macOS/Linux isso seria um nome
+            # de arquivo com barra invertida e o documento ficaria "sem texto extraível"
+            doc.caminho_local = str(diretorio / Path(doc.caminho_local.replace("\\", "/")))
     return contratacao, itens, documentos
 
 

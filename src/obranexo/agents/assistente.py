@@ -15,13 +15,14 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from obranexo.agents.prompts import SYSTEM_ASSISTENTE
+from obranexo.agents.prompts import SYSTEM_ASSISTENTE, VERSAO
 from obranexo.agents.prospector import _compacto, _resumo_catalogo, melhor_por_item, partes_id, resumir_analise
 from obranexo.config import Config, config
 from obranexo.connectors.pncp import PNCPClient, PNCPError, carregar_caso, listar_casos
 from obranexo.documents.extract import normalizar_busca
 from obranexo.llm.client import LLMIndisponivel, criar_llm_client
 from obranexo.models import Analise, Contratacao, Empresa, EventoLog, UsoLLM
+from obranexo.observability.trilha import escopo
 from obranexo.rules.extrair import eh_acessorio, inferir_categoria
 from obranexo.storage import store
 
@@ -373,6 +374,10 @@ class Assistente:
                 self._on_evento = None
 
     def _responder(self, texto: str) -> dict[str, Any]:
+        with escopo(agente="assistente", versao_prompt=VERSAO, origem_tipo="chat", origem_id=self.id):
+            return self._responder_no_escopo(texto)
+
+    def _responder_no_escopo(self, texto: str) -> dict[str, Any]:
         if not self.llm.disponivel:
             raise RuntimeError("o assistente precisa de um provedor de IA configurado")
         entrada = texto

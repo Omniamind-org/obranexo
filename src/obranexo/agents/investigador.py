@@ -12,10 +12,11 @@ import re
 from typing import Any
 
 from obranexo.agents.contexto import Contexto
-from obranexo.agents.prompts import SYSTEM_INVESTIGADOR
+from obranexo.agents.prompts import SYSTEM_INVESTIGADOR, VERSAO
 from obranexo.catalog.atributos import ATRIBUTOS, ATRIBUTOS_INVESTIGAVEIS, natureza, rotulo
 from obranexo.evidence.verify import verificar_evidencia
 from obranexo.models import Evidencia, ItemDemanda, Operador, Requisito
+from obranexo.observability.trilha import escopo
 from obranexo.rules.extrair import extrair_requisitos, numero_br
 from obranexo.rules.validar import normalizar_valor
 
@@ -172,6 +173,11 @@ def _tarefa(ctx: Contexto, faltantes: list[str], itens_sem_spec: list[ItemDemand
 
 def investigar_llm(ctx: Contexto, faltantes: list[str], itens_sem_spec: list[ItemDemanda] | None = None) -> list[Requisito]:
     """Loop de uso de ferramentas, independente do provedor (ver llm.client.Conversa)."""
+    with escopo(agente="investigador", versao_prompt=VERSAO):
+        return _investigar_llm(ctx, faltantes, itens_sem_spec)
+
+
+def _investigar_llm(ctx: Contexto, faltantes: list[str], itens_sem_spec: list[ItemDemanda] | None = None) -> list[Requisito]:
     itens_sem_spec = itens_sem_spec or []
     achados: list[Requisito] = []
     # Cada item a especificar costuma exigir uma busca e um ou dois registros

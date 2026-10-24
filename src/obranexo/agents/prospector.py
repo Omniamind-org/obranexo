@@ -16,12 +16,13 @@ from collections import Counter
 from datetime import datetime
 from typing import Any
 
-from obranexo.agents.prompts import SYSTEM_PROSPECTOR
+from obranexo.agents.prompts import SYSTEM_PROSPECTOR, VERSAO
 from obranexo.config import Config, config
 from obranexo.connectors.pncp import PNCPClient, PNCPError, carregar_caso
 from obranexo.documents.extract import normalizar_busca
 from obranexo.llm.client import criar_llm_client
 from obranexo.models import Analise, CandidatoProspeccao, Contratacao, Empresa, EventoLog, ItemRanking, Prospeccao
+from obranexo.observability.trilha import escopo
 from obranexo.storage import store
 
 MAX_PASSOS = 16
@@ -327,6 +328,11 @@ class Prospector:
     # ------------------------------------------------------------------ loop
 
     def executar(self) -> Prospeccao:
+        # As chamadas de modelo da prospecção (e das análises que ela dispara) ficam ligadas a ela na trilha
+        with escopo(agente="prospector", versao_prompt=VERSAO, origem_tipo="prospeccao", origem_id=self.p.id):
+            return self._loop()
+
+    def _loop(self) -> Prospeccao:
         try:
             if not self.llm.disponivel:
                 raise RuntimeError("a prospecção autônoma exige um provedor de LLM configurado (GEMINI_API_KEY, GROQ_API_KEY ou ANTHROPIC_API_KEY)")

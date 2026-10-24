@@ -238,11 +238,18 @@ class EventoLog(BaseModel):
 
 
 class UsoLLM(BaseModel):
-    chamadas: int = 0
+    """Consumo de modelos numa análise. Os tokens vêm da resposta de cada API (usage); o custo é estimado
+    pela tabela oficial de preços em config.precos_usd — no nível gratuito a cobrança real é zero."""
+
+    chamadas: int = 0  # chamadas que chegaram ao provedor (cache não conta)
+    chamadas_cache: int = 0  # respostas reaproveitadas do cache em disco
+    chamadas_reserva: int = 0  # respondidas pelo modelo reserva, não pelo pedido
     tokens_entrada: int = 0
     tokens_saida: int = 0
+    tokens_raciocinio: int = 0  # "thinking": cobrados como saída, mas não aparecem na resposta
     tokens_cache_leitura: int = 0
     custo_usd: float = 0.0
+    latencia_ms: int = 0  # soma do tempo de espera pelo provedor
     por_modelo: dict[str, dict[str, int]] = Field(default_factory=dict)
 
 
