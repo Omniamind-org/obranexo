@@ -20,7 +20,7 @@
 <p align="center">
   <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-0b2a3c?style=flat-square&logo=python&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-API%20%2B%20SSE-00ab9f?style=flat-square">
-  <img alt="Testes" src="https://img.shields.io/badge/testes-143%20passando-0ca30c?style=flat-square">
+  <img alt="Testes" src="https://img.shields.io/badge/testes-157%20passando-0ca30c?style=flat-square">
   <a href="https://github.com/kauandivino/obranexo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/kauandivino/obranexo/ci.yml?branch=main&style=flat-square&label=CI"></a>
   <img alt="Rastreabilidade" src="https://img.shields.io/badge/cita%C3%A7%C3%B5es%20conferidas-100%25-0ca30c?style=flat-square">
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.1%20%C2%B7%20MVP-7d8b96?style=flat-square">
@@ -80,7 +80,7 @@
 
 | | |
 |---|---|
-| **O que é** | Uma plataforma de inteligência comercial agêntica para contratações públicas. O fornecedor carrega o catálogo; os agentes buscam no PNCP, leem edital, termo de referência e anexos, e dizem, **item a item**, se cada produto atende, não atende, atende em parte ou se falta informação. Todo veredito vem com a prova. Quando o fornecedor decide disputar, o ObraNexo também ajuda a montar a proposta que ele entrega ao órgão: cada item com o produto, a marca e o modelo ofertados, já conferidos contra as exigências do edital, e a lista de documentos de habilitação pedidos. Quem revisa e envia é sempre o fornecedor. *(em construção)* |
+| **O que é** | Uma plataforma de inteligência comercial agêntica para contratações públicas. O fornecedor carrega o catálogo; os agentes buscam no PNCP, leem edital, termo de referência e anexos, e dizem, **item a item**, se cada produto atende, não atende, atende em parte ou se falta informação. Todo veredito vem com a prova. Quando o fornecedor decide disputar, o ObraNexo monta o kit da proposta que ele entrega ao órgão: cada item com o produto, a marca e o modelo ofertados, já conferidos contra as exigências do edital, os prazos com prova, os documentos técnicos e a **proposta de preços em Word**, pronta para precificar e assinar. Quem revisa, precifica e envia é sempre o fornecedor. A lista de habilitação e declarações do edital está *em construção*. |
 | **Para quem** | Distribuidores e atacadistas de material elétrico e iluminação, em geral micro e pequenas empresas sem analista de licitação. Depois: varejo elétrico, fabricantes, assessorias de licitação e construtoras. |
 | **Por que importa** | O PNCP publica cerca de **1.100 pregões eletrônicos por dia**. Cerca de **90% dos pregões com itens elétricos não dizem isso no objeto**, então escapam de qualquer alerta por palavra-chave. Quem lê tudo, acha a licitação certa e acerta a especificação disputa contra poucos; quem erra uma especificação é desclassificado. |
 | **O que já funciona** | Prospecção autônoma no PNCP ao vivo, análise completa de 9 licitações reais congeladas, 7 agentes (a análise roda num grafo explícito, declarado como dado), assistente em linguagem natural, catálogo por ficha técnica do fabricante, dossiê com prova, 3 provedores de IA com reserva automática, trilha de cada chamada de IA com agente, modelo, tokens, custo e latência. Roda em modo determinístico sem chave de API. |
@@ -132,6 +132,7 @@ flowchart LR
 3. **Leitura.** Edital, termo de referência e anexos (PDF, DOCX, XLSX, ZIPs expandidos). Itens publicados só com o nome ("cabo elétrico flexível") ganham a especificação lida no TR.
 4. **Veredito.** Cada exigência é comparada com cada atributo do produto. Quatro estados por item: **compatível**, **parcial**, **indeterminado**, **incompatível**. Nunca "atende" sem prova.
 5. **Dossiê e decisão.** Classificação da oportunidade (publicada, planejada, indireta em obra), comprador provável, prioridade 0–100, riscos, próximos passos — e a decisão humana de seguir ou descartar.
+6. **Proposta.** Para seguir, o kit da proposta: o que ofertar em cada item (produto incompatível nunca entra), marca, modelo e fabricante, descrição só com atributos confirmados, prazos e documentos técnicos — e a proposta de preços em Word, com os preços em branco e uma página de conferência interna (por exemplo: "o relé tem garantia de 2 anos; o edital pede 5").
 
 <details>
 <summary><b>Exemplo real de entrada e saída</b> — Goianira/GO, PE 038/2026, item 1 (modo determinístico, 2,8 s)</summary>
@@ -357,7 +358,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as li
 
 | O quê | Resultado | Como conferir |
 |---|---|---|
-| Testes automatizados | **143 passando** (unitários + API, incluindo observabilidade, grafo, custos e paginação do PNCP), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/kauandivino/obranexo/actions/workflows/ci.yml) |
+| Testes automatizados | **157 passando** (unitários + API, incluindo observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/kauandivino/obranexo/actions/workflows/ci.yml) |
 | Custo e latência medidos (24/10, Gemini) | Itaberaí, 21 itens, sem cache: 17 chamadas, 0 erros, 165 mil tokens (4,8 mil de raciocínio), **US$ 0,145 ≈ R$ 0,73** pela tabela paga, 78 s, latência média 4,9 s e p95 9,9 s por chamada, 73/73 evidências; o Investigador respondeu por 68% do custo | trilha em `data/obranexo.db` · `GET /api/analises/{id}/chamadas` · `GET /api/custos` · tela **Qualidade → Uso de modelos** |
 | Benchmark contra gabaritos revisados | 2 contratações, 9 itens e 8 pares item × produto: **100% de acerto por item, 100% nos pares, 100% de rastreabilidade** | `python eval/run_benchmark.py` · [`docs/benchmark_resultado.json`](docs/benchmark_resultado.json) |
 | Tempo | 5 s para os 2 casos em modo determinístico; 55 s com Gemini (2 chamadas) | idem |
@@ -476,7 +477,7 @@ obranexo analisar goianira_pe038_2026     # análise completa pela linha de coma
 obranexo abertas --uf GO                  # pregões com propostas abertas, ao vivo no PNCP
 obranexo coletar 01291707000167 2026 75 meu_caso   # baixa e congela uma contratação
 
-pytest -m "not integracao"                # 143 testes, sem chamar o LLM
+pytest -m "not integracao"                # 157 testes, sem chamar o LLM (inclui o retrato da demo)
 pytest -m integracao -v                   # chama o provedor configurado (usa cota)
 python eval/run_benchmark.py              # benchmark contra os gabaritos
 python eval/run_benchmark.py --limiares eval/limiares.json   # a mesma trava de qualidade do CI
@@ -553,6 +554,7 @@ O frontend não tem dependências externas nem etapa de build: o próprio FastAP
 | GET | `/api/jobs/{id}` · `/api/jobs/{id}/eventos` | estado do job · stream SSE (`log` a cada passo, `fim` com `analise_id`) |
 | GET | `/api/analises` · `/api/analises/{id}` | histórico resumido · análise completa + rótulos + produtos |
 | GET | `/api/analises/{id}/dossie.md[?download=true]` | dossiê em Markdown |
+| GET | `/api/analises/{id}/proposta` · `.md` · `.xlsx` · `.docx` | kit da proposta (JSON), guia com as provas, planilha para o portal de compras e proposta de preços em Word (sem preço; quem envia é o fornecedor) |
 | PATCH | `/api/analises/{id}/revisao` | `{status: PENDENTE\|APROVADO\|REJEITADO, comentario}` |
 | GET | `/api/analises/{id}/evidencias/{ev}` | trecho citado + texto da página de origem |
 | GET | `/api/analises/{id}/documentos/{doc}/arquivo` | PDF original (abre na página com `#page=N`) |
@@ -605,6 +607,7 @@ src/obranexo/
     trilha.py            Trilha de chamadas de IA em SQLite (data/obranexo.db) e escopo por agente
     logs.py              Logs estruturados (biblioteca padrão; JSON com OBRANEXO_LOG_JSON=1)
   dossier/render.py      Dossiê em Markdown
+  proposta.py            Kit da proposta e proposta de preços (.docx, .xlsx, .md), sem IA, a partir da análise e do catálogo
   storage/store.py       Persistência JSON (v0.1 → PostgreSQL em F1)
   api/main.py            API FastAPI + servidor estático do frontend
   api/jobs.py            Execução em segundo plano com eventos SSE
@@ -631,7 +634,7 @@ docs/
   benchmark_resultado.json
 eval/run_benchmark.py    benchmark contra gabaritos (com --limiares, trava de qualidade)
 eval/limiares.json       mínimos por métrica usados pela trava
-tests/                   143 testes (regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, regressão do teste cego, integração com LLM)
+tests/                   157 testes (regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
 .github/workflows/ci.yml lint, testes e benchmark como trava em todo PR (Linux, modo determinístico e offline)
 pitch/                   planejamento, fala e slides do pitch
 BMC_ObraNexo.txt · reports/ · research_notes/   modelo de negócio e pesquisa
