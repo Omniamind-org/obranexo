@@ -1,0 +1,100 @@
+# CI do ObraNexo: lint, testes e benchmark como trava de qualidade.
+# Tudo roda em modo determinístico e offline: nenhum job chama LLM nem o PNCP,
+# então o resultado não depende de cota de terceiros nem de rede.
+
+name: CI
+
+# Mudanças só de documentação não disparam o CI: o workflow é pulado quando TODOS os arquivos alterados
+# casam com a lista abaixo (README e outros .md, docs/, pitch, pesquisa, relatórios, roadmap, BMC e o PDF
+# norteador). Basta um arquivo fora dela — código, testes, dados dos casos, este workflow — para rodar.
+# Arquivos de teste como tests/dados/*.txt e os PDFs de data/casos continuam disparando.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "pitch/**"
+      - "research_notes/**"
+      - "reports/**"
+      - "ROADMAP_MVP.txt"
+      - "BMC_ObraNexo.txt"
+      - "*.pdf"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "pitch/**"
+      - "research_notes/**"
+      - "reports/**"
+      - "ROADMAP_MVP.txt"
+      - "BMC_ObraNexo.txt"
+      - "*.pdf"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+  PYTHONUTF8: "1"
+  OBRANEXO_LLM_PROVIDER: none
+  OBRANEXO_OFFLINE: "1"
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Instalar ruff
+        run: pip install "ruff==0.17.2"
+      - name: ruff check
+        run: ruff check src tests eval --output-format=github
+
+  testes:
+    name: Testes (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Instalar dependências
+        run: pip install -e ".[dev]"
+      - name: pytest (sem os testes de integração com LLM)
+        run: pytest -m "not integracao" -q
+
+  benchmark:
+    name: Benchmark (trava de qualidade)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Instalar dependências
+        run: pip install -e .
+      - name: Benchmark contra os gabaritos
+        run: python eval/run_benchmark.py --saida benchmark.json --limiares eval/limiares.json
+      - name: Guardar o relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark
+          path: benchmark.json
+          if-no-files-found: ignore

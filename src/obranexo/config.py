@@ -36,6 +36,8 @@ PRECOS_USD: dict[str, tuple[float, float, float]] = {
     "gemini-3.5-flash-lite": (0.30, 2.50, 0.03),
     "openai/gpt-oss-120b": (0.15, 0.60, 0.075),
     "openai/gpt-oss-20b": (0.075, 0.30, 0.037),
+    "llama-3.3-70b-versatile": (0.59, 0.79, 0.295),  # fora do nível gratuito desde 16/08/2026; preço de referência
+    "llama-3.1-8b-instant": (0.05, 0.08, 0.025),
     "claude-opus-5-5": (4.00, 20.00, 0.20),
     "claude-sonnet-5-5": (2.00, 10.00, 0.10),
     "claude-haiku-5-5": (0.10, 0.50, 0.01),
@@ -101,8 +103,15 @@ class Config:
     # Logs estruturados em JSON por linha (observability/logs.py); sem a variável, linhas legíveis no terminal
     log_json: bool = field(default_factory=lambda: _env_bool("OBRANEXO_LOG_JSON", False))
 
-    # Preço (US$ por 1M tokens: entrada, saída, leitura de cache) para estimar o custo de cada chamada; ver PRECOS_USD
+    # Preço de tabela (US$ por 1M tokens: entrada, saída, leitura de cache) para estimar o custo de cada chamada — métrica
+    # interna de margem, não a fatura (nível gratuito custa 0; lote e cache dão desconto). Tabela e fontes em PRECOS_USD.
     precos_usd: dict[str, tuple[float, float, float]] = field(default_factory=lambda: dict(PRECOS_USD))
+    # Faixas por chamada: acima de `limite` tokens de entrada, o preço muda (Haiku 5.5 custa 5x acima de 100k)
+    precos_faixa_usd: dict[str, tuple[int, float, float]] = field(
+        default_factory=lambda: {"claude-haiku-5-5": (100_000, 0.50, 2.50)}
+    )
+    cambio_brl: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_CAMBIO_BRL", "5.0377")))  # PTAX 23/10/2026
+    meta_custo_analise_brl: float = field(default_factory=lambda: float(os.getenv("OBRANEXO_META_CUSTO_ANALISE_BRL", "1.0")))  # KPI do BMC
 
     def __post_init__(self) -> None:
         if self.llm_provider and not self.chave(self.llm_provider):

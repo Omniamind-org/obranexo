@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -721,6 +721,23 @@ def metricas_llm() -> dict[str, Any]:
         "com o raciocínio cobrado como saída; no nível gratuito do Gemini e do Groq a cobrança real é zero."
     )
     return resumo
+
+
+@app.get("/api/custos", tags=["interno"])
+def custos(
+    desde: Annotated[date | None, Query(description="primeiro dia (AAAA-MM-DD), pela data de início da análise")] = None,
+    ate: Annotated[date | None, Query(description="último dia (AAAA-MM-DD), inclusive")] = None,
+    limite: Annotated[int, Query(ge=0, le=500, description="quantas análises recentes listar")] = 50,
+) -> dict[str, Any]:
+    """Custo de IA por análise e por prospecção, em US$ e R$, contra a meta do BMC (R$ 1 por análise).
+
+    Métrica INTERNA de margem e de cotas: estimativa pelos tokens × preço de tabela, não a fatura do provedor.
+    Não deve ser exibida ao cliente final, que vê cota de análises."""
+    from obranexo.custos import resumo_custos
+
+    if desde and ate and desde > ate:
+        raise HTTPException(400, "'desde' é posterior a 'ate'")
+    return resumo_custos(store.listar(), store.listar_prospeccoes(), config, desde=desde, ate=ate, limite=limite)
 
 
 @app.get("/api/analises/{analise_id}/chamadas", tags=["análises"])

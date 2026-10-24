@@ -152,6 +152,9 @@ class LLMClient(ABC):
     def _contabilizar_sem_lock(self, modelo: str, entrada: int, saida: int, cache_leitura: int, cache_escrita: int, raciocinio: int = 0) -> None:
         # Raciocínio é cobrado como saída nos três provedores; escrita de cache (só Anthropic) custa 1,25× a entrada
         preco_in, preco_out, preco_cache = self.cfg.precos_usd.get(modelo, (0.0, 0.0, 0.0))
+        faixa = self.cfg.precos_faixa_usd.get(modelo)
+        if faixa and entrada + cache_escrita + cache_leitura > faixa[0]:  # prompt longo muda de faixa (Haiku acima de 100k)
+            preco_in, preco_out, preco_cache = faixa[1], faixa[2], faixa[1] * 0.1
         custo = (entrada * preco_in + cache_escrita * preco_in * 1.25 + cache_leitura * preco_cache + (saida + raciocinio) * preco_out) / 1_000_000
         self.uso.chamadas += 1
         self.uso.tokens_entrada += entrada + cache_escrita

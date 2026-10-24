@@ -5,17 +5,23 @@
   </picture>
 </p>
 
-<h3 align="center">O seu catálogo nas licitações certas, item a item, com prova.</h3>
+<h3 align="center">Todo dia, o governo publica mais de mil pedidos de compra.<br>Quem entende primeiro, vende primeiro.</h3>
 
 <p align="center">
-  Agentes de IA que encontram, leem e comparam licitações públicas com o catálogo de um fornecedor —<br>
-  e um núcleo verificável que garante que cada veredito aponte para o trecho literal do edital.
+  O ObraNexo é uma plataforma de agentes de IA que lê essas licitações no PNCP, item por item, cruza cada exigência<br>
+  com o catálogo de um fornecedor e mostra o que ele atende, apontando a linha exata do edital.<br>
+  Começamos por material elétrico e iluminação, onde 9 em cada 10 pregões não citam esses itens no título.
+</p>
+
+<p align="center">
+  <a href="https://kauandivino.github.io/obranexo/"><img alt="Business Model Canvas: ver o canvas" src="https://img.shields.io/badge/Business%20Model%20Canvas-ver%20o%20canvas%20%E2%86%92-00ab9f?style=for-the-badge&labelColor=0b2a3c"></a>
 </p>
 
 <p align="center">
   <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-0b2a3c?style=flat-square&logo=python&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-API%20%2B%20SSE-00ab9f?style=flat-square">
-  <img alt="Testes" src="https://img.shields.io/badge/testes-122%20passando-0ca30c?style=flat-square">
+  <img alt="Testes" src="https://img.shields.io/badge/testes-143%20passando-0ca30c?style=flat-square">
+  <a href="https://github.com/kauandivino/obranexo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/kauandivino/obranexo/ci.yml?branch=main&style=flat-square&label=CI"></a>
   <img alt="Rastreabilidade" src="https://img.shields.io/badge/cita%C3%A7%C3%B5es%20conferidas-100%25-0ca30c?style=flat-square">
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.1%20%C2%B7%20MVP-7d8b96?style=flat-square">
   <img alt="AKCIT Camp 2026" src="https://img.shields.io/badge/AKCIT%20Camp-2026-fab219?style=flat-square">
@@ -47,7 +53,7 @@
 
 | | |
 |---|---|
-| **O que é** | Uma plataforma de inteligência comercial agêntica para contratações públicas. O fornecedor carrega o catálogo; os agentes buscam no PNCP, leem edital, termo de referência e anexos, e dizem, **item a item**, se cada produto atende, não atende, atende em parte ou se falta informação. Todo veredito vem com a prova. |
+| **O que é** | Uma plataforma de inteligência comercial agêntica para contratações públicas. O fornecedor carrega o catálogo; os agentes buscam no PNCP, leem edital, termo de referência e anexos, e dizem, **item a item**, se cada produto atende, não atende, atende em parte ou se falta informação. Todo veredito vem com a prova. Quando o fornecedor decide disputar, o ObraNexo também ajuda a montar a proposta que ele entrega ao órgão: cada item com o produto, a marca e o modelo ofertados, já conferidos contra as exigências do edital, e a lista de documentos de habilitação pedidos. Quem revisa e envia é sempre o fornecedor. *(em construção)* |
 | **Para quem** | Distribuidores e atacadistas de material elétrico e iluminação, em geral micro e pequenas empresas sem analista de licitação. Depois: varejo elétrico, fabricantes, assessorias de licitação e construtoras. |
 | **Por que importa** | O PNCP publica cerca de **1.100 pregões eletrônicos por dia**. Cerca de **90% dos pregões com itens elétricos não dizem isso no objeto**, então escapam de qualquer alerta por palavra-chave. Quem lê tudo, acha a licitação certa e acerta a especificação disputa contra poucos; quem erra uma especificação é desclassificado. |
 | **O que já funciona** | Prospecção autônoma no PNCP ao vivo, análise completa de 9 licitações reais congeladas, 7 agentes (a análise roda num grafo explícito, declarado como dado), assistente em linguagem natural, catálogo por ficha técnica do fabricante, dossiê com prova, 3 provedores de IA com reserva automática, trilha de cada chamada de IA com agente, modelo, tokens, custo e latência. Roda em modo determinístico sem chave de API. |
@@ -168,7 +174,7 @@ flowchart TB
     direction LR
     TR[🧰 Ferramentas<br/>por agente ✅ → registro único MCP ⬜]:::inf
     GW[🔀 Gateway de modelos<br/>3 provedores com reserva ✅ · temperatura 0 ✅<br/>roteamento por tarefa e lote ⬜]:::inf
-    OB[📈 Observabilidade e avaliação<br/>trilha por análise e por chamada de IA ✅ · custo real ✅<br/>logs estruturados ✅ · benchmark ✅<br/>OTel + Langfuse · trava no CI ⬜]:::inf
+    OB[📈 Observabilidade e avaliação<br/>trilha por análise e por chamada de IA ✅ · custo real ✅<br/>logs estruturados ✅ · benchmark com trava no CI ✅<br/>OTel + Langfuse ⬜]:::inf
   end
   PR -- analisar_a_fundo --> AN
   AS -- analisar_a_fundo --> AN
@@ -235,8 +241,8 @@ Agregação por item: qualquer obrigatório não atendido → **INCOMPATÍVEL**;
 
 ### Observabilidade e avaliação
 
-- **Hoje ✅:** trilha completa de cada análise (nó, mensagem, modelo, item, documento), visível na interface e via SSE. **Trilha por chamada de IA** em SQLite (`observability/trilha.py`, tabela `chamadas_llm` em `data/obranexo.db`): toda chamada lógica a um provedor vira uma linha com agente, origem (análise, prospecção, chat, importação), versão do prompt, operação, provedor, modelo pedido × modelo usado, tokens de entrada, saída, raciocínio e cache, custo em US$, latência, cache, reserva, status/erro e resumo da entrada e da saída; o agente é identificado por escopo (`escopo(agente=...)`, um contextvar), inclusive nos lotes em paralelo do Analista Técnico; exposta em `GET /api/analises/{id}/chamadas` e `GET /api/metricas/llm` e na interface (aba **Trilha do agente → Chamadas de IA**; tela **Qualidade → Uso de modelos**). **Logs estruturados** com a biblioteca padrão (`observability/logs.py`): uma linha por etapa e por chamada de modelo; JSON por linha com `OBRANEXO_LOG_JSON=1`. **Custo real** pela tabela oficial de preços consultada em 24/10/2026 (`PRECOS_USD` em `config.py`), com os tokens de raciocínio lidos da resposta de cada API e cobrados como saída; no nível gratuito a cobrança real é zero. Temperatura 0 em todos os provedores; versão dos prompts registrada na análise e em cada chamada. Nada disso derruba uma análise se falhar. Benchmark contra gabaritos revisados (`eval/run_benchmark.py`); testes de regressão gerados a partir de cada defeito encontrado em dados reais.
-- **Produção ⬜:** OpenTelemetry + Langfuse por agente e por cliente; benchmark como **trava de release no CI** (F1); conjunto rotulado por duas pessoas com concordância medida (F1); amostragem revisada em produção e monitor de deriva da qualidade (F3).
+- **Hoje ✅:** trilha completa de cada análise (nó, mensagem, modelo, item, documento), visível na interface e via SSE. **Trilha por chamada de IA** em SQLite (`observability/trilha.py`, tabela `chamadas_llm` em `data/obranexo.db`): toda chamada lógica a um provedor vira uma linha com agente, origem (análise, prospecção, chat, importação), versão do prompt, operação, provedor, modelo pedido × modelo usado, tokens de entrada, saída, raciocínio e cache, custo em US$, latência, cache, reserva, status/erro e resumo da entrada e da saída; o agente é identificado por escopo (`escopo(agente=...)`, um contextvar), inclusive nos lotes em paralelo do Analista Técnico; exposta em `GET /api/analises/{id}/chamadas` e `GET /api/metricas/llm` e na interface (aba **Trilha do agente → Chamadas de IA**; tela **Qualidade → Uso de modelos**). **Logs estruturados** com a biblioteca padrão (`observability/logs.py`): uma linha por etapa e por chamada de modelo; JSON por linha com `OBRANEXO_LOG_JSON=1`. **Custo real** pela tabela oficial de preços consultada em 24/10/2026 (`PRECOS_USD` em `config.py`), com os tokens de raciocínio lidos da resposta de cada API e cobrados como saída; por análise e por período em `GET /api/custos` (métrica interna, em US$ e R$, contra a meta de R$ 1 por análise); no nível gratuito a cobrança real é zero. Temperatura 0 em todos os provedores; versão dos prompts registrada na análise e em cada chamada. Nada disso derruba uma análise se falhar. Benchmark contra gabaritos revisados (`eval/run_benchmark.py`); testes de regressão gerados a partir de cada defeito encontrado em dados reais; **CI em todo PR** (lint, testes e o benchmark como trava: se uma métrica cair abaixo do mínimo em `eval/limiares.json`, o PR fica vermelho).
+- **Produção ⬜:** OpenTelemetry + Langfuse por agente e por cliente; conjunto rotulado por duas pessoas com concordância medida (F1); amostragem revisada em produção e monitor de deriva da qualidade (F3).
 
 ### Decisões de projeto
 
@@ -315,21 +321,21 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as li
 
 | O quê | Resultado | Como conferir |
 |---|---|---|
-| Testes automatizados | **122 passando** (unitários + API, incluindo observabilidade e grafo), lint limpo (ruff) | `pytest -m "not integracao"` |
-| Custo e latência medidos (24/10, Gemini) | Itaberaí, 21 itens, sem cache: 17 chamadas, 0 erros, 165 mil tokens (4,8 mil de raciocínio), **US$ 0,145 ≈ R$ 0,73** pela tabela paga, 78 s, latência média 4,9 s e p95 9,9 s por chamada, 73/73 evidências; o Investigador respondeu por 68% do custo | trilha em `data/obranexo.db` · `GET /api/analises/{id}/chamadas` · tela **Qualidade → Uso de modelos** |
+| Testes automatizados | **143 passando** (unitários + API, incluindo observabilidade, grafo, custos e paginação do PNCP), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/kauandivino/obranexo/actions/workflows/ci.yml) |
+| Custo e latência medidos (24/10, Gemini) | Itaberaí, 21 itens, sem cache: 17 chamadas, 0 erros, 165 mil tokens (4,8 mil de raciocínio), **US$ 0,145 ≈ R$ 0,73** pela tabela paga, 78 s, latência média 4,9 s e p95 9,9 s por chamada, 73/73 evidências; o Investigador respondeu por 68% do custo | trilha em `data/obranexo.db` · `GET /api/analises/{id}/chamadas` · `GET /api/custos` · tela **Qualidade → Uso de modelos** |
 | Benchmark contra gabaritos revisados | 2 contratações, 9 itens e 8 pares item × produto: **100% de acerto por item, 100% nos pares, 100% de rastreabilidade** | `python eval/run_benchmark.py` · [`docs/benchmark_resultado.json`](docs/benchmark_resultado.json) |
 | Tempo | 5 s para os 2 casos em modo determinístico; 55 s com Gemini (2 chamadas) | idem |
 | Teste cego | **5 pregões abertos nunca vistos**, 133 itens, rodados sem ajuste prévio; 10 defeitos encontrados e corrigidos, cada um virou teste de regressão; rastreabilidade 100% nas duas rodadas | [`docs/teste_cego_2026-10-23.md`](docs/teste_cego_2026-10-23.md) · `tests/test_regressao_teste_cego.py` |
 | Busca ao vivo no PNCP | 24/10/2026: 9 páginas, ~450 pregões abertos em GO em 44 s; 18 candidatos pelos termos de iluminação; detalhe de uma licitação com 206 itens em 1,4 s | `obranexo abertas --uf GO` |
 | Casos reais congelados | 9 contratações do PNCP (R$ 1,4 mi a R$ 32 mi), 343 itens, 170 anexos | `obranexo casos` |
 
-**Limites honestos desses números.** O benchmark de 100% é **dentro da amostra**: os 2 casos rotulados foram usados no desenvolvimento e o gabarito é da própria equipe. Os 5 casos do teste cego estão rotulados pelo sistema, com **gabarito humano pendente** em [`docs/teste_cego_rotulagem.csv`](docs/teste_cego_rotulagem.csv) — não foram rotulados pela mesma pessoa que corrigiu o código, para o benchmark não virar circular. O custo em US$ é **estimado pela tabela oficial de preços** a partir dos tokens que cada API devolve (raciocínio incluído); no nível gratuito do Gemini e do Groq a cobrança real é zero. A estimativa do modelo de negócio é de R$ 0,02 a R$ 0,48 por análise.
+**Limites honestos desses números.** O benchmark de 100% é **dentro da amostra**: os 2 casos rotulados foram usados no desenvolvimento e o gabarito é da própria equipe. Os 5 casos do teste cego estão rotulados pelo sistema, com **gabarito humano pendente** em [`docs/teste_cego_rotulagem.csv`](docs/teste_cego_rotulagem.csv) — não foram rotulados pela mesma pessoa que corrigiu o código, para o benchmark não virar circular. O custo em US$ é **estimado pela tabela oficial de preços** a partir dos tokens que cada API devolve (raciocínio incluído), por chamada na trilha e por análise em `GET /api/custos` (métrica interna); no nível gratuito do Gemini e do Groq a cobrança real é zero, e a única análise medida até agora é a de Itaberaí acima. A estimativa da pesquisa é de R$ 0,02 a R$ 0,48 por análise.
 
-**Metodologia planejada (F1–F2).** Gabarito duplo (duas pessoas, divergências resolvidas, concordância medida) para 10 ou mais contratações e 150 a 300 pares; métricas-alvo do roadmap: precisão de COMPATÍVEL ≥ 85%, recall de itens relevantes ≥ 80%, detecção de incompatibilidade obrigatória ≥ 90%, rastreabilidade ≥ 95%, consistência entre execuções ≥ 90%, tempo ≤ 3 min; benchmark como trava no CI; cronometragem do trabalho manual contra o assistido com 5 a 10 empresas no piloto.
+**Metodologia planejada (F1–F2).** Gabarito duplo (duas pessoas, divergências resolvidas, concordância medida) para 10 ou mais contratações e 150 a 300 pares; métricas-alvo do roadmap: precisão de COMPATÍVEL ≥ 85%, recall de itens relevantes ≥ 80%, detecção de incompatibilidade obrigatória ≥ 90%, rastreabilidade ≥ 95%, consistência entre execuções ≥ 90%, tempo ≤ 3 min; cronometragem do trabalho manual contra o assistido com 5 a 10 empresas no piloto.
 
 ## Modelo de negócio e mercado
 
-Resumo do [Business Model Canvas](BMC_ObraNexo.txt) e do [relatório de modelo de negócio](reports/Modelo%20de%20negócio%20ObraNexo.md). Natureza de cada número: **[FATO]** publicado com fonte · **[DADO PRÓPRIO]** medido pela equipe no PNCP · **[ESTIMATIVA]** cálculo da equipe · **[PREMISSA]** hipótese a validar.
+Resumo do [Business Model Canvas](https://kauandivino.github.io/obranexo/) (versão interativa; texto completo com fontes em [`BMC_ObraNexo.txt`](BMC_ObraNexo.txt)) e do [relatório de modelo de negócio](reports/Modelo%20de%20negócio%20ObraNexo.md). Natureza de cada número: **[FATO]** publicado com fonte · **[DADO PRÓPRIO]** medido pela equipe no PNCP · **[ESTIMATIVA]** cálculo da equipe · **[PREMISSA]** hipótese a validar.
 
 | | |
 |---|---|
@@ -349,8 +355,8 @@ A visão é ampla; a execução começa pequena, verificável e orientada por re
 
 | Fase | Período | Objetivo | Entregas principais | Critério de saída |
 |---|---|---|---|---|
-| **F0 · v0.1** Prova de conceito | 22–24/10/2026 | demo de ponta a ponta com dados reais | 7 agentes, PNCP ao vivo, 9 casos reais, catálogo por ficha, assistente, 3 provedores, benchmark, teste cego, grafo explícito, trilha de chamadas de IA em SQLite com custo real e logs estruturados | os 7 critérios da demo rodam offline sem intervenção — **atingido ✅** |
-| **F1 · v0.2** MVP robusto | 25/10–28/11/2026 | confiabilidade e primeira prova de valor | gabarito duplo em 10+ contratações; PostgreSQL + Alembic; login e isolamento por empresa; Docker + CI com benchmark como trava; busca em todas as modalidades; recalibração da prioridade; 5 entrevistas e 1–2 pilotos | roda na nuvem com Postgres; benchmark ≥ 10 contratações; ≥ 1 piloto com fornecedor real |
+| **F0 · v0.1** Prova de conceito | 22–24/10/2026 | demo de ponta a ponta com dados reais | 7 agentes, PNCP ao vivo, 9 casos reais, catálogo por ficha, assistente, 3 provedores, benchmark, teste cego, grafo explícito, trilha de chamadas de IA em SQLite com custo real e logs estruturados, CI com benchmark como trava | os 7 critérios da demo rodam offline sem intervenção — **atingido ✅** |
+| **F1 · v0.2** MVP robusto | 25/10–28/11/2026 | confiabilidade e primeira prova de valor | gabarito duplo em 10+ contratações; PostgreSQL + Alembic; login e isolamento por empresa; Docker; CI com benchmark como trava ✅; busca em todas as modalidades; recalibração da prioridade; 5 entrevistas e 1–2 pilotos | roda na nuvem com Postgres; benchmark ≥ 10 contratações; ≥ 1 piloto com fornecedor real |
 | **F2 · v0.3** Beta fechado | dez/2026–fev/2027 | plataforma agêntica e piloto em escala | grafo durável com checkpoints e pausas para revisão; registro MCP de ferramentas; Monitor (ingestão contínua, índice híbrido com pgvector, alertas); Habilitação; feedback que recalibra; fila com workers; OTel + Langfuse; PCA, OCR e tabelas; **piloto de 60 dias com 10 distribuidores** | precisão ≥ 95% fora da amostra; rastreabilidade 100%; custo medido < R$ 1/análise; 95% das análises em < 3 min |
 | **F3 · v1.0** Produção | mar–jun/2027 | operar com clientes pagantes | AWS como código (ECS, RDS + pgvector, S3, Bedrock); gateway de modelos com roteamento, lote e orçamento por cliente; RLS e anexos versionados; Rastreador de obras; planos e cobrança; LGPD documentada, pentest, trilha de auditoria; avaliação contínua em produção | 30 dias cumprindo as metas de serviço (99,5%, p95 < 90 s); margem 75–85% |
 | **F4 · v1.x** Escala | 2º sem/2027 → | novas fontes, segmentos e agentes | Obrasgov e portais estaduais; Precificação com histórico de preços; grafo órgão–objeto–item–fornecedor; API pública e servidor MCP para CRM e assessorias; novos segmentos (hidráulica, climatização, incêndio) | churn < 3%/mês; LTV/CAC ≥ 3 |
@@ -384,7 +390,7 @@ flowchart LR
   subgraph OBS[" Qualidade "]
     direction TB
     OT[📈 OpenTelemetry + Langfuse ⬜ F2<br/>hoje: trilha por análise e por chamada de IA ✅ · logs estruturados ✅]:::plan
-    EV[🧪 Avaliação contínua<br/>benchmark ✅ · trava no CI ⬜ F1<br/>amostragem em produção ⬜ F3]:::plan
+    EV[🧪 Avaliação contínua<br/>benchmark com trava no CI ✅<br/>amostragem em produção ⬜ F3]:::plan
   end
   LLM{{Gemini · Groq · Anthropic ✅<br/>Bedrock ⬜ F3}}:::inf
   W --> G
@@ -434,9 +440,10 @@ obranexo analisar goianira_pe038_2026     # análise completa pela linha de coma
 obranexo abertas --uf GO                  # pregões com propostas abertas, ao vivo no PNCP
 obranexo coletar 01291707000167 2026 75 meu_caso   # baixa e congela uma contratação
 
-pytest -m "not integracao"                # 122 testes, sem chamar o LLM
+pytest -m "not integracao"                # 143 testes, sem chamar o LLM
 pytest -m integracao -v                   # chama o provedor configurado (usa cota)
 python eval/run_benchmark.py              # benchmark contra os gabaritos
+python eval/run_benchmark.py --limiares eval/limiares.json   # a mesma trava de qualidade do CI
 obranexo grafo --formato md               # o grafo da análise (etapas, lê/escreve, condições), gerado do código
 ```
 
@@ -463,7 +470,7 @@ Encontradas em auditoria do código em 24/10/2026; todas têm item no plano de d
 | Categoria do produto precisa ser a chave exata (`luminaria_publica_led`) | planilha com "Luminária pública" não casa com nada, sem aviso | validação e sugestão na importação · F1 |
 | Pesos da prioridade não calibrados | licitação encerrada (SRP) pode ficar acima de uma aberta | prazo aberto pesa mais; feedback recalibra · F1–F2 |
 | Benchmark só com 2 casos internos | precisão fora da amostra ainda desconhecida | gabarito duplo dos 5 casos cegos + 3 novos · F1 |
-| Custo é estimativa pela tabela paga | no nível gratuito do Gemini e do Groq a cobrança real é zero; a meta de custo (< R$ 1/análise) só se valida com chave paga | medir com modelo pago no piloto · F1–F2 |
+| Custo de IA é estimativa a preço de tabela, com uma única análise medida (Itaberaí) | no nível gratuito do Gemini e do Groq a cobrança real é zero; a meta de R$ 1 por análise só se valida com volume e chave paga | acompanhar em `GET /api/custos` e na tela Qualidade; medir no piloto · F1–F2 |
 | 32 atributos, quase todos de iluminação | número de condutores, comprimento de braço, classe de encordoamento ficam de fora | taxonomia por categoria · F2 |
 | Sem OCR, sem PCA, sem tabelas de PDF | editais digitalizados e demanda planejada não são lidos | F2 |
 | Persistência em JSON; o SQLite guarda a trilha de chamadas de IA e as mensagens do chat; jobs em memória | análises, prospecções e catálogo continuam em JSON; um job em andamento se perde ao reiniciar; não escala horizontalmente | Postgres (análises, trilha e chat no mesmo banco), fila e workers · F1–F2 |
@@ -517,6 +524,7 @@ O frontend não tem dependências externas nem etapa de build: o próprio FastAP
 | GET | `/api/metricas/llm` | agregados de todas as chamadas de IA (análises, prospecções, chat): custo, latência média/p95, taxas de cache, reserva e erro, por agente e por modelo, mais a tabela de preços |
 | GET | `/api/conteudo/grafo` | o grafo da análise como dado: etapas em ordem, agente, modelo, condição, o que cada uma lê e escreve, descrição do estado e Mermaid |
 | GET | `/api/metricas` · `/api/conteudo/fluxo` | agregados + benchmark · documentação do fluxo |
+| GET | `/api/custos?desde&ate&limite` | **interno:** custo de IA por análise e por prospecção (US$ e R$), estatísticas, por modelo, por dia e contra a meta de R$ 1 por análise; não é para o cliente final |
 </details>
 
 <details>
@@ -585,13 +593,15 @@ docs/
   images/                capturas da interface
   teste_cego_*.{md,csv}  teste cego e planilha de rotulagem
   benchmark_resultado.json
-eval/run_benchmark.py    benchmark contra gabaritos
-tests/                   122 testes (regras, agentes sem LLM, API, observabilidade, grafo, regressão do teste cego, integração com LLM)
+eval/run_benchmark.py    benchmark contra gabaritos (com --limiares, trava de qualidade)
+eval/limiares.json       mínimos por métrica usados pela trava
+tests/                   143 testes (regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, regressão do teste cego, integração com LLM)
+.github/workflows/ci.yml lint, testes e benchmark como trava em todo PR (Linux, modo determinístico e offline)
 pitch/                   planejamento, fala e slides do pitch
 BMC_ObraNexo.txt · reports/ · research_notes/   modelo de negócio e pesquisa
 ```
 
-**Estrutura-alvo** (F1–F3, incremental sobre a atual): checkpoints duráveis e interrupções sobre `agents/grafo.py` · `tools/` (registro MCP) · `gateway/` (roteamento de modelos) · `ingest/` (coleta agendada, índice de itens) · `db/` (SQLModel + Alembic; a trilha migra do SQLite para o mesmo banco) · `observability/` ganha OpenTelemetry · `infra/` (Docker, Terraform) · `.github/workflows/` (lint, testes, benchmark como trava).
+**Estrutura-alvo** (F1–F3, incremental sobre a atual): checkpoints duráveis e interrupções sobre `agents/grafo.py` · `tools/` (registro MCP) · `gateway/` (roteamento de modelos) · `ingest/` (coleta agendada, índice de itens) · `db/` (SQLModel + Alembic; a trilha migra do SQLite para o mesmo banco) · `observability/` ganha OpenTelemetry · `infra/` (Docker, Terraform).
 </details>
 
 ## Documentação

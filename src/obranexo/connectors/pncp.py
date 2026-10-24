@@ -32,6 +32,8 @@ BASE_CONSULTA = "https://pncp.gov.br/api/consulta/v1"
 BASE_PNCP = "https://pncp.gov.br/api/pncp/v1"
 USER_AGENT = "ObraNexo/0.1 (AKCIT Camp 2026; contato: equipe ObraNexo)"
 MODALIDADE_PREGAO_ELETRONICO = 6
+# Itens e anexos paginam; o teto evita laço infinito se o portal ignorar a página (40 x 500 = 20 mil itens)
+MAX_PAGINAS_LISTA = 40
 MODALIDADES = {
     1: "Leilão - Eletrônico",
     2: "Diálogo Competitivo",
@@ -235,17 +237,31 @@ class PNCPClient:
         dados = self.get_json(f"{BASE_CONSULTA}/orgaos/{cnpj}/compras/{ano}/{seq}")
         return contratacao_de_api(dados)
 
+    def _todas_as_paginas(self, url: str, tamanho: int, chave: str) -> list[dict[str, Any]]:
+        """Lê um endpoint de lista (itens, arquivos) até a página vir incompleta, vazia ou 204.
+
+        Antes só a 1ª página era lida: licitações com mais de 500 itens ou 100 anexos chegavam cortadas,
+        sem aviso (a obra da SEINFRA tem 107 anexos). `chave` identifica o registro para não repetir
+        uma página caso o portal ignore o parâmetro `pagina`."""
+        registros: list[dict[str, Any]] = []
+        vistos: set[Any] = set()
+        for pagina in range(1, MAX_PAGINAS_LISTA + 1):
+            lote = list(self.get_json(url, {"pagina": pagina, "tamanhoPagina": tamanho}) or [])
+            novos = [r for r in lote if r.get(chave) is None or r.get(chave) not in vistos]
+            if not novos:
+                break
+            vistos.update(r.get(chave) for r in novos if r.get(chave) is not None)
+            registros.extend(novos)
+            if len(lote) < tamanho:
+                break
+        return registros
+
     def itens(self, cnpj: str, ano: int, seq: int, contratacao_id: str) -> list[ItemDemanda]:
-        dados = self.get_json(
-            f"{BASE_PNCP}/orgaos/{cnpj}/compras/{ano}/{seq}/itens", {"pagina": 1, "tamanhoPagina": 500}
-        )
-        return [item_de_api(d, contratacao_id) for d in (dados or [])]
+        dados = self._todas_as_paginas(f"{BASE_PNCP}/orgaos/{cnpj}/compras/{ano}/{seq}/itens", 500, "numeroItem")
+        return [item_de_api(d, contratacao_id) for d in dados]
 
     def arquivos(self, cnpj: str, ano: int, seq: int) -> list[dict[str, Any]]:
-        dados = self.get_json(
-            f"{BASE_PNCP}/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos", {"pagina": 1, "tamanhoPagina": 100}
-        )
-        return list(dados or [])
+        return self._todas_as_paginas(f"{BASE_PNCP}/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos", 100, "sequencialDocumento")
 
     def baixar_arquivo(self, url: str, destino_dir: Path, nome_sugerido: str) -> Path:
         destino_dir.mkdir(parents=True, exist_ok=True)
@@ -307,7 +323,7 @@ class PNCPClient:
             caminho = self.baixar_arquivo(url, destino / "arquivos", nome)
             doc.nome = caminho.name
             doc.sha256 = hashlib.sha256(caminho.read_bytes()).hexdigest()
-            doc.caminho_local = caminho.relative_to(destino).as_posix()  # mesmo separador em qualquer sistema
+            doc.caminho_local = caminho.relative_to(destino).as_posix()  # "/" funciona em Windows e Linux
             doc.extraivel = caminho.suffix.lower() in {".pdf", ".docx", ".xlsx", ".zip"}
             documentos.append(doc)
         salvar_caso(destino, contratacao, itens, documentos)
@@ -346,9 +362,8 @@ def carregar_caso(diretorio: Path) -> tuple[Contratacao, list[ItemDemanda], list
     ]
     for doc in documentos:
         if doc.caminho_local:
-            # Pacotes congelados no Windows guardaram "arquivos\\edital.pdf"; no macOS/Linux isso seria um nome
-            # de arquivo com barra invertida e o documento ficaria "sem texto extraível"
-            doc.caminho_local = str(diretorio / Path(doc.caminho_local.replace("\\", "/")))
+            # Pacotes gravados no Windows têm "arquivos\\x.pdf": em Linux a barra invertida faria parte do nome
+            doc.caminho_local = str(diretorio / doc.caminho_local.replace("\\", "/"))
     return contratacao, itens, documentos
 
 
