@@ -1,0 +1,31 @@
+%%{init: {'theme':'base','themeVariables':{'actorBkg':'#0b2a3c','actorTextColor':'#ffffff','actorBorder':'#0b2a3c','actorLineColor':'#7d8b96','signalColor':'#7d8b96','signalTextColor':'#7d8b96','noteBkgColor':'#e2f4f2','noteTextColor':'#10222f','noteBorderColor':'#00ab9f','labelBoxBkgColor':'#f1f3f3','labelBoxBorderColor':'#7d8b96','labelTextColor':'#10222f','loopTextColor':'#7d8b96','activationBkgColor':'#00ab9f','activationBorderColor':'#00756c','sequenceNumberColor':'#ffffff','fontFamily':'Plus Jakarta Sans, Segoe UI, sans-serif','fontSize':'14px'}}}%%
+sequenceDiagram
+  autonumber
+  actor U as Fornecedor
+  participant P as Prospector (agente)
+  participant T as Ferramentas · PNCP
+  participant A as Análise (Analista · Especificador · Investigador)
+  participant N as Núcleo verificável (validação · citação · regras)
+  participant V as Verificador · Planejador
+  U->>P: "Prospecte em GO nos próximos 30 dias"
+  P->>P: lê o catálogo e escolhe os termos de busca
+  P->>T: buscar_licitacoes_abertas(uf, termos)
+  T-->>P: ~450 pregões abertos → 18 candidatos
+  P->>T: ver_itens(contratação)
+  T-->>P: 206 itens
+  P->>A: analisar_a_fundo(contratação, motivo)
+  A->>A: baixa edital, TR e anexos (PDF, DOCX, XLSX, ZIP)
+  A->>N: requisitos propostos pela IA, cada um com trecho literal
+  N-->>A: valor fora do tipo ou da faixa → descartado
+  loop Investigador · até N passos, orçamento próprio de tokens
+    A->>N: registrar_requisito(item, atributo, valor, trecho)
+    N-->>A: trecho não existe no documento → erro devolvido ao agente
+  end
+  N->>N: motor de regras: ATENDE · NÃO ATENDE · INDETERMINADO
+  N->>V: correspondências + evidências verificadas
+  V-->>P: resultado por item, confiança, prioridade
+  P->>P: concluir(ranking)
+  Note over P,N: ranking que contradiz a análise volta ao agente com os fatos
+  P-->>U: ranking justificado + dossiês com prova
+  U->>V: seguir · descartar · comentar (revisão humana)
+  Note over U,V: decisão que recalibra a prioridade ⬜ F2
