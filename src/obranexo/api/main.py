@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
+from fastapi.responses import FileResponse, PlainTextResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -608,6 +608,59 @@ def dossie_md(analise_id: str, download: bool = False) -> PlainTextResponse:
         raise HTTPException(409, "análise sem dossiê")
     headers = {"Content-Disposition": f'attachment; filename="dossie_{a.id}.md"'} if download else {}
     return PlainTextResponse(a.dossie.conteudo_md, media_type="text/markdown; charset=utf-8", headers=headers)
+
+
+# ---------------------------------------------------------------------------
+# Kit da proposta (PT-1.8, fase B1: a partir da análise, sem IA nova)
+# ---------------------------------------------------------------------------
+
+
+def _kit(analise_id: str):
+    from obranexo.proposta import montar_kit
+
+    a = _analise_ou_404(analise_id)
+    if a.status != "concluida":
+        raise HTTPException(409, "o kit da proposta precisa de uma análise concluída")
+    return a, montar_kit(a, empresa_atual())
+
+
+@app.get("/api/analises/{analise_id}/proposta", tags=["proposta"])
+def proposta(analise_id: str) -> dict[str, Any]:
+    """Kit da proposta montado a partir da análise e do catálogo do fornecedor ativo: situação de cada item
+    (ofertar, ofertar com ressalva, resolver antes, não ofertar), produto com fabricante, marca e modelo, descrição
+    para a proposta, exigências com prova, documentos técnicos, prazos e condições. Sem preço e sem envio."""
+    _, kit = _kit(analise_id)
+    return kit.model_dump(mode="json")
+
+
+@app.get("/api/analises/{analise_id}/proposta.md", tags=["proposta"], response_class=PlainTextResponse)
+def proposta_md(analise_id: str, download: bool = False) -> PlainTextResponse:
+    from obranexo.proposta import kit_markdown
+
+    a, kit = _kit(analise_id)
+    headers = {"Content-Disposition": f'attachment; filename="proposta_{a.id}.md"'} if download else {}
+    return PlainTextResponse(kit_markdown(kit, a), media_type="text/markdown; charset=utf-8", headers=headers)
+
+
+@app.get("/api/analises/{analise_id}/proposta.docx", tags=["proposta"])
+def proposta_docx(analise_id: str) -> Response:
+    """Proposta de preços em Word para revisar, precificar e assinar: itens ofertáveis com especificação, marca, modelo e
+    fabricante, condições do edital, declarações e assinatura. Preços e campos desconhecidos saem como "[preencher]"."""
+    from obranexo.proposta import proposta_docx as gerar
+
+    a, kit = _kit(analise_id)
+    return Response(gerar(kit, empresa_atual()), media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    headers={"Content-Disposition": f'attachment; filename="proposta_de_precos_{a.id}.docx"'})
+
+
+@app.get("/api/analises/{analise_id}/proposta.xlsx", tags=["proposta"])
+def proposta_xlsx(analise_id: str) -> Response:
+    """Planilha para preencher a proposta no portal de compras (uma linha por item; prazos em outra aba)."""
+    from obranexo.proposta import kit_planilha
+
+    a, kit = _kit(analise_id)
+    return Response(kit_planilha(kit), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": f'attachment; filename="proposta_{a.id}.xlsx"'})
 
 
 class PedidoRevisao(BaseModel):

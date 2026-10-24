@@ -83,6 +83,10 @@ class Produto(BaseModel):
     nome: str
     categoria: str
     subcategoria: str | None = None
+    # Identificação comercial exigida nas propostas (os editais pedem marca e modelo de cada item)
+    fabricante: str | None = None
+    marca: str | None = None
+    modelo: str | None = None
     descricao: str = ""
     atributos: dict[str, Atributo] = Field(default_factory=dict)
     normas: list[str] = Field(default_factory=list)
@@ -96,6 +100,14 @@ class Empresa(BaseModel):
     id: str
     nome: str
     cnpj: str | None = None
+    # Dados do cabeçalho e da assinatura da proposta de preços (vazios viram "[preencher]" no documento)
+    razao_social: str | None = None
+    endereco: str | None = None
+    telefone: str | None = None
+    email: str | None = None
+    representante: str | None = None
+    representante_cargo: str | None = None
+    dados_bancarios: str | None = None
     ufs_atendidas: list[str] = Field(default_factory=list)
     raio_km: int | None = None
     observacoes: str = ""

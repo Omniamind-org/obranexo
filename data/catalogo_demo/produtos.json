@@ -2,7 +2,14 @@
   "empresa": {
     "id": "demo-eletrica",
     "nome": "Distribuidora Demo Elétrica Ltda. (fictícia)",
-    "cnpj": null,
+    "razao_social": "Distribuidora Demo Elétrica Ltda. (fictícia)",
+    "cnpj": "00.000.000/0001-00",
+    "endereco": "Rua Demonstração, 100, Setor Fictício, Goiânia/GO, CEP 00000-000",
+    "telefone": "(62) 0000-0000",
+    "email": "propostas@demo.invalid",
+    "representante": "Representante Demonstração",
+    "representante_cargo": "Sócio-administrador",
+    "dados_bancarios": "Banco 000 (fictício) · agência 0000 · conta 00000-0",
     "ufs_atendidas": [
       "GO",
       "DF",
@@ -10,13 +17,16 @@
       "MT"
     ],
     "raio_km": 600,
-    "observacoes": "Catálogo DEMONSTRATIVO construído para o MVP. Produtos e valores são fictícios, inspirados em fichas técnicas públicas típicas do mercado. Inclui de propósito produtos que atendem, que não atendem e produtos com ficha incompleta."
+    "observacoes": "Catálogo DEMONSTRATIVO construído para o MVP. Produtos e valores são fictícios, inspirados em fichas técnicas públicas típicas do mercado. Inclui de propósito produtos que atendem, que não atendem e produtos com ficha incompleta. Fabricantes, marcas e modelos também são fictícios."
   },
   "produtos": [
     {
       "sku": "LPL-100-50K",
       "nome": "Luminária pública LED 100 W 5000 K",
       "categoria": "luminaria_publica_led",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "LUMIDEMO",
+      "modelo": "VIA 100 50K",
       "subcategoria": "via pública",
       "descricao": "Luminária viária LED 100 W, corpo em alumínio injetado, lente PMMA, driver dimerizável 0-10 V, tomada NEMA 7 pinos.",
       "atributos": {
@@ -69,6 +79,9 @@
       "sku": "LPL-100-50K-PRO",
       "nome": "Luminária pública LED 100 W 5000 K PRO (alta eficiência)",
       "categoria": "luminaria_publica_led",
+      "fabricante": "Fotodemo Tecnologia em Iluminação Ltda. (fictício)",
+      "marca": "FOTODEMO PRO",
+      "modelo": "AVENIDA 100 175",
       "subcategoria": "via pública",
       "descricao": "Linha PRO: 175 lm/W, lente policarbonato com refrator de vidro plano temperado, IK10. Ficha técnica incompleta no catálogo (garantia a confirmar com o fabricante).",
       "atributos": {
@@ -118,6 +131,9 @@
       "sku": "LPL-150-50K-PRO",
       "nome": "Luminária pública LED 150 W 5000 K PRO",
       "categoria": "luminaria_publica_led",
+      "fabricante": "Fotodemo Tecnologia em Iluminação Ltda. (fictício)",
+      "marca": "FOTODEMO PRO",
+      "modelo": "AVENIDA 150 173",
       "subcategoria": "via pública",
       "descricao": "Linha PRO 150 W para avenidas: 173 lm/W, 26.000 lm, IK10, DPS 10 kA integrado, fixação ajustável 0-15° para braço 33-60,3 mm.",
       "atributos": {
@@ -170,6 +186,9 @@
       "sku": "LPL-50-60K",
       "nome": "Luminária pública LED 50 W 6000 K",
       "categoria": "luminaria_publica_led",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "LUMIDEMO",
+      "modelo": "VIA 50 60K",
       "subcategoria": "via pública",
       "descricao": "Luminária viária LED 50 W para ruas residenciais, corpo em alumínio, lente PMMA, driver dimerizável, tomada para relé.",
       "atributos": {
@@ -220,6 +239,9 @@
       "sku": "LPL-50-50K-ECO",
       "nome": "Luminária pública LED 50 W 5000 K ECO",
       "categoria": "luminaria_publica_led",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "ECODEMO",
+      "modelo": "ECOVIA 50 50K",
       "subcategoria": "via pública",
       "descricao": "Linha econômica: 130 lm/W, IP65, sem dimerização, garantia 3 anos.",
       "atributos": {
@@ -265,6 +287,9 @@
       "sku": "LPL-80-57K",
       "nome": "Luminária pública LED 80 W 5700 K",
       "categoria": "luminaria_publica_led",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "LUMIDEMO",
+      "modelo": "VIA 80 57K",
       "subcategoria": "via pública",
       "atributos": {
         "potencia_w": 80,
@@ -310,6 +335,9 @@
       "sku": "LPL-200-40K",
       "nome": "Luminária pública LED 200 W 4000 K",
       "categoria": "luminaria_publica_led",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "LUMIDEMO",
+      "modelo": "VIA 200 40K",
       "subcategoria": "via pública",
       "atributos": {
         "potencia_w": 200,
@@ -355,6 +383,9 @@
       "sku": "RF-MULTI",
       "nome": "Relé fotoelétrico térmico multitensão 105-305 V",
       "categoria": "rele_fotoeletrico",
+      "fabricante": "Sensodemo Controles Ltda. (fictício)",
+      "marca": "SENSODEMO",
+      "modelo": "RFT-MULTI 105-305V",
       "descricao": "Relé fotocontrolador térmico, base NEMA 3 pinos, 105-305 V, 1000 W, com DPS.",
       "atributos": {
         "tensao_v": [
@@ -384,6 +415,9 @@
       "sku": "RF-127",
       "nome": "Relé fotoelétrico térmico 127 V",
       "categoria": "rele_fotoeletrico",
+      "fabricante": "Sensodemo Controles Ltda. (fictício)",
+      "marca": "SENSODEMO",
+      "modelo": "RFT-127",
       "atributos": {
         "tensao_v": 127,
         "frequencia_hz": "60",
@@ -407,6 +441,9 @@
       "sku": "RFL-30",
       "nome": "Refletor LED 30 W 6500 K",
       "categoria": "refletor_led",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "LUMIDEMO",
+      "modelo": "ARENA 30 65K",
       "atributos": {
         "potencia_w": 30,
         "tensao_v": [
@@ -433,6 +470,9 @@
       "sku": "RFL-50",
       "nome": "Refletor LED 50 W 6500 K",
       "categoria": "refletor_led",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "LUMIDEMO",
+      "modelo": "ARENA 50 65K",
       "atributos": {
         "potencia_w": 50,
         "tensao_v": [
@@ -459,6 +499,9 @@
       "sku": "RFL-100",
       "nome": "Refletor LED 100 W 6500 K",
       "categoria": "refletor_led",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "LUMIDEMO",
+      "modelo": "ARENA 100 65K",
       "atributos": {
         "potencia_w": 100,
         "tensao_v": [
@@ -485,6 +528,9 @@
       "sku": "RFL-200",
       "nome": "Refletor LED 200 W 5000 K (quadras e pátios)",
       "categoria": "refletor_led",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "LUMIDEMO",
+      "modelo": "ARENA 200 50K",
       "atributos": {
         "potencia_w": 200,
         "tensao_v": [
@@ -512,6 +558,9 @@
       "sku": "LMP-BULBO-9",
       "nome": "Lâmpada LED bulbo 9 W 6500 K E27",
       "categoria": "lampada",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "ECODEMO",
+      "modelo": "BULBO 9W E27 65K",
       "atributos": {
         "potencia_w": 9,
         "tensao_v": [
@@ -536,6 +585,9 @@
       "sku": "LMP-BULBO-12",
       "nome": "Lâmpada LED bulbo 12 W 6500 K E27",
       "categoria": "lampada",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "ECODEMO",
+      "modelo": "BULBO 12W E27 65K",
       "atributos": {
         "potencia_w": 12,
         "tensao_v": [
@@ -560,6 +612,9 @@
       "sku": "LMP-TUB-18",
       "nome": "Lâmpada LED tubular T8 18 W 120 cm 6500 K",
       "categoria": "lampada",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "ECODEMO",
+      "modelo": "TUBO T8 18W 120",
       "atributos": {
         "potencia_w": 18,
         "tensao_v": [
@@ -584,6 +639,9 @@
       "sku": "LMP-HO-40",
       "nome": "Lâmpada LED tubular HO 40 W 240 cm 6500 K",
       "categoria": "lampada",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "ECODEMO",
+      "modelo": "TUBO HO 40W 240",
       "atributos": {
         "potencia_w": 40,
         "tensao_v": [
@@ -608,6 +666,9 @@
       "sku": "PNL-40-6060",
       "nome": "Painel LED embutir 60x60 40 W 6500 K",
       "categoria": "luminaria_interna",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "LUMIDEMO",
+      "modelo": "PAINEL 60X60 40W",
       "atributos": {
         "potencia_w": 40,
         "tensao_v": [
@@ -633,6 +694,9 @@
       "sku": "PLF-18",
       "nome": "Plafon LED sobrepor 18 W 6500 K",
       "categoria": "luminaria_interna",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "LUMIDEMO",
+      "modelo": "PLAFON 18W",
       "atributos": {
         "potencia_w": 18,
         "tensao_v": [
@@ -658,6 +722,9 @@
       "sku": "LHB-150",
       "nome": "Luminária industrial high bay LED 150 W 5000 K",
       "categoria": "luminaria_interna",
+      "fabricante": "Lumidemo Iluminação Ltda. (fictício)",
+      "marca": "LUMIDEMO",
+      "modelo": "HIGH BAY 150W 50K",
       "atributos": {
         "potencia_w": 150,
         "tensao_v": [
@@ -686,6 +753,9 @@
       "sku": "BR-1M",
       "nome": "Braço para luminária 1 m aço galvanizado a fogo",
       "categoria": "braco_luminaria",
+      "fabricante": "Metaldemo Estruturas Ltda. (fictício)",
+      "marca": "METALDEMO",
+      "modelo": "BRAÇO 1M GF",
       "atributos": {
         "material_corpo": "aço galvanizado a fogo",
         "fixacao": "ponta 60,3 mm, fixação em poste por cinta"
@@ -700,6 +770,9 @@
       "sku": "BR-2M",
       "nome": "Braço para luminária 2 m aço galvanizado a fogo",
       "categoria": "braco_luminaria",
+      "fabricante": "Metaldemo Estruturas Ltda. (fictício)",
+      "marca": "METALDEMO",
+      "modelo": "BRAÇO 2M GF",
       "atributos": {
         "material_corpo": "aço galvanizado a fogo",
         "fixacao": "ponta 60,3 mm, fixação em poste por cinta"
@@ -714,6 +787,9 @@
       "sku": "CB-1.5",
       "nome": "Cabo flexível 1,5 mm² 750 V antichama",
       "categoria": "cabo",
+      "fabricante": "Condudemo Fios e Cabos Ltda. (fictício)",
+      "marca": "CONDUDEMO",
+      "modelo": "FLEX 750V 1,5MM²",
       "atributos": {
         "secao_mm2": 1.5,
         "tensao_v": 750,
@@ -733,6 +809,9 @@
       "sku": "CB-2.5",
       "nome": "Cabo flexível 2,5 mm² 750 V antichama",
       "categoria": "cabo",
+      "fabricante": "Condudemo Fios e Cabos Ltda. (fictício)",
+      "marca": "CONDUDEMO",
+      "modelo": "FLEX 750V 2,5MM²",
       "atributos": {
         "secao_mm2": 2.5,
         "tensao_v": 750,
@@ -752,6 +831,9 @@
       "sku": "CB-4",
       "nome": "Cabo flexível 4 mm² 750 V antichama",
       "categoria": "cabo",
+      "fabricante": "Condudemo Fios e Cabos Ltda. (fictício)",
+      "marca": "CONDUDEMO",
+      "modelo": "FLEX 750V 4MM²",
       "atributos": {
         "secao_mm2": 4,
         "tensao_v": 750,
@@ -771,6 +853,9 @@
       "sku": "CB-6",
       "nome": "Cabo flexível 6 mm² 750 V antichama",
       "categoria": "cabo",
+      "fabricante": "Condudemo Fios e Cabos Ltda. (fictício)",
+      "marca": "CONDUDEMO",
+      "modelo": "FLEX 750V 6MM²",
       "atributos": {
         "secao_mm2": 6,
         "tensao_v": 750,
@@ -790,6 +875,9 @@
       "sku": "CB-10",
       "nome": "Cabo flexível 10 mm² 750 V antichama",
       "categoria": "cabo",
+      "fabricante": "Condudemo Fios e Cabos Ltda. (fictício)",
+      "marca": "CONDUDEMO",
+      "modelo": "FLEX 750V 10MM²",
       "atributos": {
         "secao_mm2": 10,
         "tensao_v": 750,
@@ -809,6 +897,9 @@
       "sku": "CB-PP-3x2.5",
       "nome": "Cabo PP 3 x 2,5 mm² 500 V",
       "categoria": "cabo",
+      "fabricante": "Condudemo Fios e Cabos Ltda. (fictício)",
+      "marca": "CONDUDEMO",
+      "modelo": "PP 500V 3X2,5MM²",
       "atributos": {
         "secao_mm2": 2.5,
         "tensao_v": 500,
@@ -828,6 +919,9 @@
       "sku": "DJ-10",
       "nome": "Disjuntor monopolar 10 A curva C",
       "categoria": "disjuntor",
+      "fabricante": "Protedemo Componentes Elétricos Ltda. (fictício)",
+      "marca": "PROTEDEMO",
+      "modelo": "DM-C10",
       "atributos": {
         "corrente_a": 10,
         "tensao_v": [
@@ -848,6 +942,9 @@
       "sku": "DJ-16",
       "nome": "Disjuntor monopolar 16 A curva C",
       "categoria": "disjuntor",
+      "fabricante": "Protedemo Componentes Elétricos Ltda. (fictício)",
+      "marca": "PROTEDEMO",
+      "modelo": "DM-C16",
       "atributos": {
         "corrente_a": 16,
         "tensao_v": [
@@ -868,6 +965,9 @@
       "sku": "DJ-20",
       "nome": "Disjuntor monopolar 20 A curva C",
       "categoria": "disjuntor",
+      "fabricante": "Protedemo Componentes Elétricos Ltda. (fictício)",
+      "marca": "PROTEDEMO",
+      "modelo": "DM-C20",
       "atributos": {
         "corrente_a": 20,
         "tensao_v": [
@@ -888,6 +988,9 @@
       "sku": "DJ-25",
       "nome": "Disjuntor monopolar 25 A curva C",
       "categoria": "disjuntor",
+      "fabricante": "Protedemo Componentes Elétricos Ltda. (fictício)",
+      "marca": "PROTEDEMO",
+      "modelo": "DM-C25",
       "atributos": {
         "corrente_a": 25,
         "tensao_v": [
@@ -908,6 +1011,9 @@
       "sku": "DJ-32-3P",
       "nome": "Disjuntor tripolar 32 A curva C",
       "categoria": "disjuntor",
+      "fabricante": "Protedemo Componentes Elétricos Ltda. (fictício)",
+      "marca": "PROTEDEMO",
+      "modelo": "DT-C32",
       "atributos": {
         "corrente_a": 32,
         "tensao_v": [
@@ -928,6 +1034,9 @@
       "sku": "DJ-63-3P",
       "nome": "Disjuntor tripolar 63 A curva C",
       "categoria": "disjuntor",
+      "fabricante": "Protedemo Componentes Elétricos Ltda. (fictício)",
+      "marca": "PROTEDEMO",
+      "modelo": "DT-C63",
       "atributos": {
         "corrente_a": 63,
         "tensao_v": [
@@ -948,6 +1057,9 @@
       "sku": "ELT-25",
       "nome": "Eletroduto PVC rígido 25 mm (3/4\") barra 3 m",
       "categoria": "eletroduto",
+      "fabricante": "Tubodemo Plásticos Ltda. (fictício)",
+      "marca": "TUBODEMO",
+      "modelo": "ER-25 3M",
       "atributos": {
         "material_corpo": "PVC rígido"
       },
@@ -961,6 +1073,9 @@
       "sku": "ELT-32",
       "nome": "Eletroduto PVC rígido 32 mm (1\") barra 3 m",
       "categoria": "eletroduto",
+      "fabricante": "Tubodemo Plásticos Ltda. (fictício)",
+      "marca": "TUBODEMO",
+      "modelo": "ER-32 3M",
       "atributos": {
         "material_corpo": "PVC rígido"
       },
@@ -974,6 +1089,9 @@
       "sku": "QD-12",
       "nome": "Quadro de distribuição embutir 12 disjuntores com barramento",
       "categoria": "quadro",
+      "fabricante": "Protedemo Componentes Elétricos Ltda. (fictício)",
+      "marca": "PROTEDEMO",
+      "modelo": "QDE-12",
       "atributos": {
         "material_corpo": "aço",
         "ip": "IP40"
@@ -988,6 +1106,9 @@
       "sku": "QD-24",
       "nome": "Quadro de distribuição embutir 24 disjuntores com barramento",
       "categoria": "quadro",
+      "fabricante": "Protedemo Componentes Elétricos Ltda. (fictício)",
+      "marca": "PROTEDEMO",
+      "modelo": "QDE-24",
       "atributos": {
         "material_corpo": "aço",
         "ip": "IP40"
@@ -1002,6 +1123,9 @@
       "sku": "TM-2PT-10",
       "nome": "Tomada 2P+T 10 A padrão NBR 14136",
       "categoria": "dispositivos",
+      "fabricante": "Protedemo Componentes Elétricos Ltda. (fictício)",
+      "marca": "PROTEDEMO",
+      "modelo": "TOM 2P+T 10A",
       "atributos": {
         "corrente_a": 10,
         "tensao_v": 250
@@ -1019,6 +1143,9 @@
       "sku": "TM-2PT-20",
       "nome": "Tomada 2P+T 20 A padrão NBR 14136",
       "categoria": "dispositivos",
+      "fabricante": "Protedemo Componentes Elétricos Ltda. (fictício)",
+      "marca": "PROTEDEMO",
+      "modelo": "TOM 2P+T 20A",
       "atributos": {
         "corrente_a": 20,
         "tensao_v": 250
@@ -1036,6 +1163,9 @@
       "sku": "INT-1S",
       "nome": "Interruptor simples 10 A",
       "categoria": "dispositivos",
+      "fabricante": "Protedemo Componentes Elétricos Ltda. (fictício)",
+      "marca": "PROTEDEMO",
+      "modelo": "INT 1S 10A",
       "atributos": {
         "corrente_a": 10,
         "tensao_v": 250

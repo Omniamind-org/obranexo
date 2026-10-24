@@ -25,6 +25,7 @@ dependencies = [
   "python-multipart>=0.0.9",
   "pandas>=2.2",
   "openpyxl>=3.1",
+  "python-docx>=1.1",
   "python-dotenv>=1.0",
 ]
 
@@ -53,4 +54,7 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-markers = ["integracao: chama a API do provedor de LLM configurado (lento, usa cota)"]
+markers = [
+  "integracao: chama a API do provedor de LLM configurado (lento, usa cota)",
+  "retrato: roda os 9 casos congelados e compara com o retrato da demo (lento; pule com -m \"not retrato\")",
+]

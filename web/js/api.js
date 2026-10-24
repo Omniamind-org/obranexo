@@ -62,6 +62,10 @@ export const api = {
   evidencia: (id, evId) => req('GET', `/api/analises/${encodeURIComponent(id)}/evidencias/${encodeURIComponent(evId)}`),
   arquivoUrl: (id, docId, pagina) => `/api/analises/${encodeURIComponent(id)}/documentos/${encodeURIComponent(docId)}/arquivo${pagina ? `#page=${pagina}` : ''}`,
   dossieDownloadUrl: (id) => `/api/analises/${encodeURIComponent(id)}/dossie.md?download=true`,
+  proposta: (id) => req('GET', `/api/analises/${encodeURIComponent(id)}/proposta`),
+  propostaWordUrl: (id) => `/api/analises/${encodeURIComponent(id)}/proposta.docx`,
+  propostaPlanilhaUrl: (id) => `/api/analises/${encodeURIComponent(id)}/proposta.xlsx`,
+  propostaDocumentoUrl: (id) => `/api/analises/${encodeURIComponent(id)}/proposta.md?download=true`,
 
   criarConversa: () => req('POST', '/api/chat'),
   conversa: (id) => req('GET', `/api/chat/${encodeURIComponent(id)}`),

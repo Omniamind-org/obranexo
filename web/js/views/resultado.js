@@ -1,4 +1,4 @@
-// Resultado de uma análise: resumo visual, itens × catálogo, provas, pendências, dossiê e trilha do agente.
+// Resultado de uma análise: resumo visual, itens × catálogo, provas, pendências, dossiê, kit da proposta e trilha do agente.
 
 import { api } from '../api.js';
 import { barras, COR_RESULTADO, gauge, legendaResultados, medidor, prazo, RESULTADOS, ROTULO_RESULTADO, waffle } from '../charts.js';
@@ -6,7 +6,7 @@ import { hora, local, moeda, moedaCompacta, numero, OPERADOR, pct, valorTecnico,
 import { renderMarkdown } from '../markdown.js';
 import {
   abrirModal, aviso, badgeConfianca, badgePrazo, badgeRequisito, badgeResultado, badgeRevisao, badgeTipo,
-  esc, html, icon, raw, render, toast, vazio,
+  carregando, erroBox, esc, html, icon, raw, render, toast, vazio,
 } from '../ui.js';
 import { rotuloCategoria } from './catalogo.js';
 
@@ -25,12 +25,14 @@ export async function render_(el, id) {
   }
 
   const pendencias = a.lacunas.length + a.conflitos.length + a.revisao_humana.filter((x) => !x.startsWith('Parecer')).length;
+  const ofertaveis = a.itens.filter((i) => ['COMPATIVEL', 'PARCIAL'].includes(ctx.resultadoItem(i))).length;
   const abas = [
     ['resumo', 'Resumo', null],
     ['itens', 'Itens', a.itens.length],
     ['provas', 'Provas', a.evidencias.length],
     ['pendencias', 'Pendências', pendencias || null],
     ['dossie', 'Dossiê e decisão', null],
+    ['proposta', 'Proposta', ofertaveis || null],
     ['trilha', 'Trilha do agente', null],
   ];
 
@@ -51,6 +53,7 @@ export async function render_(el, id) {
       <div class="actions">
         ${resumo.caso ? html`<a class="btn btn-ghost" href="#/casos/${resumo.caso}" data-tip="Analisar de novo esta licitação">${icon('refresh')} Reexecutar</a>` : ''}
         <a class="btn" href="${c.link_oficial}" target="_blank" rel="noopener">${icon('external')} PNCP</a>
+        <button class="btn" id="abrir-proposta" data-tip="Rascunho do que entregar ao órgão: itens, marca e modelo, documentos e prazos">${icon('file')} Proposta</button>
         <a class="btn btn-primary" href="${api.dossieDownloadUrl(a.id)}">${icon('download')} Dossiê</a>
       </div>
     </div>
@@ -66,13 +69,16 @@ export async function render_(el, id) {
     provas: () => telaProvas(conteudo, a, ctx),
     pendencias: () => telaPendencias(conteudo, a),
     dossie: () => telaDossie(conteudo, a),
+    proposta: () => telaProposta(conteudo, a, ctx),
     trilha: () => telaTrilha(conteudo, a),
   };
   const abrir = (k, arg) => {
     el.querySelectorAll('.tab').forEach((t) => t.classList.toggle('ativo', t.dataset.aba === k));
+    conteudo.dataset.tela = k; // telas assíncronas só desenham se ainda forem a aba aberta
     telas[k](arg);
   };
   el.querySelector('.tabs').addEventListener('click', (e) => { const b = e.target.closest('.tab'); if (b) abrir(b.dataset.aba); });
+  el.querySelector('#abrir-proposta').addEventListener('click', () => abrir('proposta'));
   conteudo.addEventListener('click', (e) => {
     const ev = e.target.closest('[data-ev]');
     if (ev) { abrirEvidencia(a, ctx, ev.dataset.ev); return; }
@@ -415,6 +421,174 @@ function telaDossie(alvo, a) {
       <body><div class="markdown">${renderMarkdown(d.conteudo_md)}</div><script>setTimeout(()=>print(),300)<\/script></body></html>`);
     w.document.close();
   });
+}
+
+// ---------------------------------------------------------------------------- kit da proposta
+
+const SITUACAO = {
+  OFERTAR: ['ok', 'Ofertar'],
+  OFERTAR_COM_RESSALVA: ['warn', 'Ofertar com ressalva'],
+  RESOLVER_ANTES: ['teal', 'Resolver antes'],
+  NAO_OFERTAR: ['bad', 'Não ofertar'],
+  FORA_DO_CATALOGO: ['plain', 'Fora do catálogo'],
+};
+const badgeSituacao = (s) => { const [cls, rot] = SITUACAO[s] || ['plain', s]; return html`<span class="tag ${cls}">${rot}</span>`; };
+const DOC_SITUACAO = {
+  declarado: ['ok', 'check', 'Declarado'],
+  falta: ['bad', 'x', 'Falta'],
+  operacional: ['indet', 'clock', 'Operacional'],
+  a_confirmar: ['indet', 'help', 'A confirmar'],
+  recomendado: ['indet', 'info', 'Recomendado'],
+};
+const preencher = (v) => (v ? html`${v}` : html`<span class="preencher" data-tip="O catálogo não informa: preencha antes de enviar">[preencher]</span>`);
+
+async function telaProposta(alvo, a, ctx) {
+  render(alvo, carregando('Montando o kit da proposta…'));
+  let kit;
+  try {
+    kit = await api.proposta(a.id);
+  } catch (err) {
+    if (alvo.dataset.tela === 'proposta') render(alvo, erroBox(err.message));
+    return;
+  }
+  if (alvo.dataset.tela !== 'proposta') return; // o usuário trocou de aba enquanto carregava
+
+  const r = kit.resumo;
+  const naoEntram = r.por_situacao.NAO_OFERTAR + r.por_situacao.FORA_DO_CATALOGO;
+  const [geral, ...alertas] = [kit.avisos.slice(0, 2).join(' '), ...kit.avisos.slice(2)];
+  let filtro = null;
+
+  const blocoItem = (i) => {
+    const p = i.produto;
+    const ofertavel = ['OFERTAR', 'OFERTAR_COM_RESSALVA', 'RESOLVER_ANTES'].includes(i.situacao);
+    const corpo = !ofertavel || !p ? html`<p class="ink-2">${i.motivo}.</p>` : html`
+      <dl class="ficha">
+        <div><dt>Produto do catálogo</dt><dd><span class="mono muted">${p.sku}</span> ${p.nome}</dd></div>
+        <div><dt>Fabricante</dt><dd>${preencher(p.fabricante)}</dd></div>
+        <div><dt>Marca</dt><dd>${preencher(p.marca)}</dd></div>
+        <div><dt>Modelo</dt><dd>${preencher(p.modelo)}</dd></div>
+      </dl>
+      ${i.descricao_ofertada ? html`
+        <div class="descricao-proposta">
+          <div class="citacao">${i.descricao_ofertada}</div>
+          <button class="btn btn-ghost btn-sm" data-copiar="${i.item_id}" data-tip="Copiar para colar no portal de compras">${icon('doc')} Copiar</button>
+        </div>` : ''}
+      ${i.pendencias.length ? html`
+        <h4 class="subtitulo-kit">Resolver antes de enviar</h4>
+        <ul class="riscos">${i.pendencias.map((x) => html`<li>${icon('alert')}<span>${x}</span></li>`)}</ul>` : ''}
+      <h4 class="subtitulo-kit">Exigências do edital × produto ofertado</h4>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Exigência</th><th>Edital pede</th><th>Ofertado</th><th>Resultado</th><th>Prova</th></tr></thead>
+        <tbody>${i.exigencias.map((e) => html`<tr>
+          <td>${e.rotulo}${e.obrigatorio ? '' : html` <span class="muted small" data-tip="Requisito desejável: não reprova o item sozinho">(desejável)</span>`}</td>
+          <td class="nowrap">${e.exigido}</td>
+          <td>${e.ofertado}</td>
+          <td><span data-tip="${e.justificativa}">${badgeRequisito(e.resultado)}</span></td>
+          <td>${evBotao(ctx, e.evidencia_id)}</td>
+        </tr>`)}</tbody>
+      </table></div>
+      ${i.documentos.length ? html`
+        <h4 class="subtitulo-kit">Documentos técnicos</h4>
+        <div class="table-wrap"><table class="table">
+          <thead><tr><th>Documento</th><th>Situação</th><th>Detalhe</th><th>Prova</th></tr></thead>
+          <tbody>${i.documentos.map((d) => {
+            const [cls, ico, rot] = DOC_SITUACAO[d.situacao] || ['indet', 'info', d.situacao];
+            return html`<tr>
+              <td>${d.nome}${d.exigido ? '' : html` <span class="muted small">(não obrigatório)</span>`}</td>
+              <td><span class="res ${cls}">${icon(ico)}${rot}</span></td>
+              <td class="small ink-2">${d.detalhe}</td>
+              <td>${d.evidencia_id ? evBotao(ctx, d.evidencia_id) : html`<span class="muted small">—</span>`}</td>
+            </tr>`;
+          })}</tbody>
+        </table></div>` : ''}`;
+    return html`
+      <details class="item">
+        <summary>
+          <span class="item-num">${i.numero}</span>
+          <span class="item-desc" style="min-width:0">
+            <span class="t clamp-2">${i.descricao_orgao}</span>
+            <span class="muted small">${numero(i.quantidade)} ${i.unidade || ''} · ${moeda(i.valor_unit_estimado)} cada (estimativa do órgão)</span>
+          </span>
+          <span style="text-align:right">${badgeSituacao(i.situacao)}${p && ofertavel ? html`<div class="small muted" style="margin-top:4px">${p.marca || '[marca]'} · ${p.modelo || '[modelo]'}</div>` : ''}</span>
+        </summary>
+        <div class="item-body">${corpo}</div>
+      </details>`;
+  };
+
+  const desenhar = () => {
+    const lista = kit.itens.filter((i) => !filtro || i.situacao === filtro);
+    render(alvo.querySelector('#kit-itens'), lista.length ? html`${lista.map(blocoItem)}` : vazio('Nenhum item nesta situação'));
+  };
+
+  render(alvo, html`
+    <div id="kit">
+      <div class="actions" style="justify-content:space-between;align-items:flex-start;margin-bottom:28px">
+        <p class="ink-2" style="max-width:620px">O que entregar ao órgão para disputar esta licitação, montado a partir da análise e do catálogo de
+          <b style="color:var(--ink)">${kit.fornecedor.nome}</b>. Baixe a proposta de preços, preencha os campos em amarelo, defina os preços,
+          assine e envie pelo portal de compras.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="${api.propostaWordUrl(a.id)}" data-tip="Proposta de preços em Word, com os itens ofertáveis, marca e modelo, condições e declarações. Preencha os campos em amarelo, defina os preços e assine.">${icon('file')} Proposta de preços (.docx)</a>
+          <a class="btn" href="${api.propostaPlanilhaUrl(a.id)}" data-tip="Uma linha por item, para preencher a proposta no portal de compras">${icon('download')} Planilha (.xlsx)</a>
+          <a class="btn btn-ghost" href="${api.propostaDocumentoUrl(a.id)}" data-tip="Guia completo do kit, com as provas de cada exigência">${icon('download')} Guia (.md)</a>
+        </div>
+      </div>
+
+      <div class="numeros">
+        <div class="numero ${r.ofertaveis ? 'ok' : ''}"><b>${r.ofertaveis}</b><span>itens para ofertar</span></div>
+        <div class="numero"><b>${r.por_situacao.RESOLVER_ANTES}</b><span>para resolver antes</span></div>
+        <div class="numero"><b>${naoEntram}</b><span>não entram na proposta</span></div>
+        <div class="numero" data-tip="Soma do valor estimado pelo órgão nos itens ofertáveis. Referência: o preço é decisão sua."><b>${moedaCompacta(r.valor_estimado_ofertavel)}</b><span>estimado pelo órgão nesses itens</span></div>
+      </div>
+      <div style="margin-top:24px;display:grid;gap:10px">
+        ${aviso(geral, '', 'info')}
+        ${alertas.map((x) => aviso(x, 'warn', 'alert'))}
+      </div>
+
+      <section class="secao">
+        <div class="secao-head"><h2>Prazos e condições</h2><span class="sub">do PNCP e do edital</span></div>
+        <div class="table-wrap"><table class="table">
+          <thead><tr><th>Condição</th><th>Valor</th><th>Prova</th></tr></thead>
+          <tbody>${kit.condicoes.map((cd) => html`<tr>
+            <td>${cd.rotulo}</td><td>${cd.valor}</td>
+            <td>${cd.evidencia_id ? evBotao(ctx, cd.evidencia_id) : html`<span class="muted small">dados do PNCP</span>`}</td>
+          </tr>`)}</tbody>
+        </table></div>
+      </section>
+
+      <section class="secao">
+        <div class="secao-head"><h2>Itens da proposta</h2><span class="sub">abra um item para ver marca, modelo, descrição e provas</span></div>
+        <div class="pilulas" id="kit-filtro" style="margin-bottom:12px">
+          <button class="pilula ativo" data-s="">Todos <span class="cnt">${kit.itens.length}</span></button>
+          ${Object.entries(SITUACAO).filter(([k]) => r.por_situacao[k]).map(([k, [, n]]) => html`<button class="pilula" data-s="${k}">${n} <span class="cnt">${r.por_situacao[k]}</span></button>`)}
+        </div>
+        <div id="kit-itens"></div>
+      </section>
+
+      <section class="secao">
+        <div class="secao-head"><h2>Habilitação e declarações</h2><span class="tag teal">em construção</span></div>
+        <p class="ink-2" style="max-width:760px;margin-bottom:14px">${kit.habilitacao.texto}</p>
+        ${kit.habilitacao.documentos_do_edital.length ? html`<div class="actions">${kit.habilitacao.documentos_do_edital.map((d) => html`
+          <a class="btn btn-ghost btn-sm" href="${api.arquivoUrl(a.id, d.id)}" target="_blank" rel="noopener">${icon('doc')} ${d.nome.replace(/\.pdf$/i, '')}</a>`)}</div>` : ''}
+      </section>
+    </div>`);
+
+  alvo.querySelector('#kit-filtro').addEventListener('click', (e) => {
+    const b = e.target.closest('.pilula');
+    if (!b) return;
+    filtro = b.dataset.s || null;
+    alvo.querySelectorAll('#kit-filtro .pilula').forEach((x) => x.classList.toggle('ativo', x === b));
+    desenhar();
+  });
+  alvo.querySelector('#kit').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-copiar]');
+    if (!b) return;
+    const item = kit.itens.find((i) => i.item_id === b.dataset.copiar);
+    try {
+      await navigator.clipboard.writeText(item.descricao_ofertada);
+      toast('Descrição copiada');
+    } catch { toast('Não foi possível copiar: selecione o texto e copie manualmente', 'erro'); }
+  });
+  desenhar();
 }
 
 // ---------------------------------------------------------------------------- modal de evidência
