@@ -4,10 +4,32 @@
 
 name: CI
 
+# Mudanças só de documentação não disparam o CI: o workflow é pulado quando TODOS os arquivos alterados
+# casam com a lista abaixo (README e outros .md, docs/, pitch, pesquisa, relatórios, roadmap, BMC e o PDF
+# norteador). Basta um arquivo fora dela — código, testes, dados dos casos, este workflow — para rodar.
+# Arquivos de teste como tests/dados/*.txt e os PDFs de data/casos continuam disparando.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "pitch/**"
+      - "research_notes/**"
+      - "reports/**"
+      - "ROADMAP_MVP.txt"
+      - "BMC_ObraNexo.txt"
+      - "*.pdf"
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "pitch/**"
+      - "research_notes/**"
+      - "reports/**"
+      - "ROADMAP_MVP.txt"
+      - "BMC_ObraNexo.txt"
+      - "*.pdf"
   workflow_dispatch:
 
 concurrency:
