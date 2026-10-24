@@ -185,7 +185,7 @@ const T = {
 const BLOCOS = [
   {
     titulo: 'Parcerias-chave',
-    resumo: 'O PNCP fornece o dado, as assessorias de licitação revendem para vários clientes e os fabricantes abrem o canal com suas redes de distribuidores.',
+    resumo: 'Integração com a API aberta do PNCP (Lei 14.133, art. 174), assessorias de licitação como canal de revenda multi-CNPJ e fabricantes como porta de entrada nas redes de distribuição.',
     destaque: ['3–20 mil clientes', 'nas suítes de lances, parceiras de integração em vez de concorrentes'],
     itens: [
       ['PNCP / MGI', 'dados abertos que viabilizam o modelo (Lei 14.133, art. 174)'],
@@ -203,7 +203,7 @@ const BLOCOS = [
   },
   {
     titulo: 'Atividades-chave',
-    resumo: 'Ler todos os pregões do PNCP, extrair as exigências de cada item e decidir, a partir de IA neuro-simbólica, se o produto do cliente atende.',
+    resumo: 'Ingestão contínua dos pregões eletrônicos do PNCP, extração estruturada das exigências por item e decisão de compatibilidade por IA neuro-simbólica: LLM para a leitura, motor de regras para o veredito.',
     destaque: ['64 mil', 'pregões eletrônicos lidos pelo conector em um mês'],
     itens: [
       ['Conector PNCP e observatório do nicho', 'prospecção diária de pregões e itens'],
@@ -216,7 +216,7 @@ const BLOCOS = [
   },
   {
     titulo: 'Recursos-chave',
-    resumo: 'Sistema multiagente com motor de regras que entrega vereditos em quatro estados, gabaritos revisados por pessoas e arquitetura independente de provedor de IA.',
+    resumo: 'Pipeline multiagente orquestrado, motor de regras determinístico com vereditos em quatro estados, gabaritos rotulados por humanos para benchmark e roteador multi-LLM independente de provedor.',
     destaque: ['4 estados', 'por veredito: compatível, parcial, indeterminado, incompatível'],
     itens: [
       ['Sistema multiagente', 'sete agentes especializados: prospecção, extração, catálogo, compatibilidade, evidência, riscos e dossiê'],
@@ -230,7 +230,7 @@ const BLOCOS = [
   },
   {
     titulo: 'Proposta de valor',
-    resumo: '“Posso atender este item?” respondido antes do concorrente, com veredito por regra e o trecho do edital como prova.',
+    resumo: 'Matching atributo a atributo entre os requisitos do termo de referência e o catálogo do fornecedor, com veredito determinístico e citação literal verificada no edital, dentro do prazo de 8 dias úteis.',
     destaque: ['90%', 'dos pregões com material elétrico não citam isso no objeto: alerta por palavra-chave não vê'],
     itens: [
       ['Descobre os 90% de pregões que a busca por objeto não vê', 'leitura item a item, não só do objeto'],
@@ -254,7 +254,7 @@ const BLOCOS = [
   },
   {
     titulo: 'Relacionamento com clientes',
-    resumo: 'A pessoa decide: a IA recomenda, o fornecedor escolhe seguir ou descartar. Autosserviço com implantação assistida e assistente de conversa no produto.',
+    resumo: 'Human-in-the-loop: o sistema recomenda, o fornecedor decide. Onboarding assistido com catálogo gerado a partir de datasheets e assistente conversacional sobre licitações, catálogo e análises.',
     destaque: ['< 3% ao mês', 'meta de churn (referência para PMEs: 3–7%)'],
     itens: [
       ['A pessoa decide: seguir ou descartar', 'a IA recomenda, o fornecedor decide'],
@@ -266,7 +266,7 @@ const BLOCOS = [
   },
   {
     titulo: 'Canais',
-    resumo: 'Assessorias de licitação que atendem vários CNPJs, radar gratuito que leva ao plano pago, fabricantes, Sebrae e feiras do setor.',
+    resumo: 'Revenda via assessorias multi-CNPJ, freemium product-led (radar gratuito → plano pago), parcerias com fabricantes e redes de distribuição, Sebrae, feiras do setor e SEO.',
     destaque: ['≤ R$ 5 mil', 'custo máximo de aquisição por cliente (LTV/CAC ≥ 3)'],
     itens: [
       ['Assessorias de licitação', 'revenda para vários CNPJs'],
@@ -278,7 +278,7 @@ const BLOCOS = [
   },
   {
     titulo: 'Segmentos de clientes',
-    resumo: 'Atacadistas de material elétrico e iluminação no núcleo; varejo elétrico, lojas de construção, fabricantes e assessorias na expansão.',
+    resumo: 'Núcleo em atacadistas de material elétrico e iluminação (CNAE 4673-7); expansão para varejo elétrico (CNAE 4742-3), lojas de material de construção, fabricantes de luminárias e assessorias.',
     destaque: ['R$ 6,1–6,4 bi', 'por ano em itens de material elétrico nos pregões eletrônicos'],
     itens: [
       ['Núcleo: atacadistas de material elétrico e iluminação', '3,4–4,2 mil empresas ativas'],
@@ -305,7 +305,7 @@ const BLOCOS = [
   },
   {
     titulo: 'Estrutura de custos',
-    resumo: 'Equipe e aquisição de clientes dominam. A IA custa centavos por análise e a infraestrutura é quase nula no início.',
+    resumo: 'Estrutura dominada por folha e CAC; inferência de LLM na casa dos centavos por análise, com roteamento de modelo por etapa; infraestrutura serverless e API do PNCP gratuita.',
     destaque: ['R$ 0,02–0,48', 'por análise de edital · margem bruta-alvo de 75–85%'],
     itens: [
       ['Equipe e aquisição de clientes', 'o custo dominante'],
@@ -319,7 +319,7 @@ const BLOCOS = [
   },
   {
     titulo: 'Fontes de receita',
-    resumo: 'Assinatura mensal em degraus, de R$ 0 a R$ 1.490+, com cota de análises e taxa de êxito opcional. Preços são premissa, ainda sem cliente pagante.',
+    resumo: 'SaaS por assinatura em degraus (R$ 0 a 1.490+/mês) com cota de análises, créditos avulsos, multi-CNPJ e enterprise, mais taxa de êxito opcional. Pricing é premissa, sem cliente pagante.',
     destaque: ['250 clientes', 'R$ 1,8 mi/ano no cenário-base em 36 meses'],
     planos: [['R$ 0', 'Radar grátis'], ['R$ 397', 'Essencial'], ['R$ 897', 'Profissional'], ['R$ 1.490+', 'Assessorias e redes']],
     itens: [
