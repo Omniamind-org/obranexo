@@ -15,7 +15,7 @@
 <p align="center">
   <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-0b2a3c?style=flat-square&logo=python&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-API%20%2B%20SSE-00ab9f?style=flat-square">
-  <img alt="Testes" src="https://img.shields.io/badge/testes-121%20passando-0ca30c?style=flat-square">
+  <img alt="Testes" src="https://img.shields.io/badge/testes-122%20passando-0ca30c?style=flat-square">
   <img alt="Rastreabilidade" src="https://img.shields.io/badge/cita%C3%A7%C3%B5es%20conferidas-100%25-0ca30c?style=flat-square">
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.1%20%C2%B7%20MVP-7d8b96?style=flat-square">
   <img alt="AKCIT Camp 2026" src="https://img.shields.io/badge/AKCIT%20Camp-2026-fab219?style=flat-square">
@@ -154,7 +154,7 @@ flowchart TB
   end
   subgraph NUC[" Núcleo verificável · o que torna o veredito auditável "]
     direction LR
-    N1[Validação por tipo e faixa<br/>de todo valor proposto por IA ✅]:::core
+    N1[Validação por tipo, faixa e categoria<br/>de todo valor proposto por IA ✅]:::core
     N2[Motor de regras determinístico<br/>ATENDE · NÃO ATENDE · INDETERMINADO ✅]:::core
     N3[Citação conferida no documento<br/>no ato do registro, similaridade ≥ 90 ✅]:::core
   end
@@ -192,7 +192,7 @@ Três agentes conduzem loops de ferramentas (decidem a ordem e a profundidade do
 | 🕵️ **Investigador** | Procura nos anexos a especificação que falta e as exigências gerais do edital (garantia, prazo, amostra, INMETRO, ensaios) | `listar_documentos` · `buscar_trechos` · `ler_pagina` · `registrar_requisito` · `concluir_investigacao` | 12 passos (+2 por item sem spec, máx. 24); orçamento próprio de tokens; **citação conferida no ato do registro**: trecho inexistente volta como erro para o agente corrigir | ✅ |
 | 💬 **Assistente** | Conversa em linguagem natural com dados ao vivo: busca licitações, consulta o catálogo e as análises salvas, dispara análises | `buscar_licitacoes_abertas` · `ver_itens` · `consultar_catalogo` · `analises_salvas` · `detalhar_analise` · `analisar_a_fundo` | 8 chamadas de ferramenta por mensagem; histórico por sessão | ✅ |
 | 📑 **Analista Técnico** | Extrai requisitos canônicos dos itens, em lotes de até 10, cada um com o trecho literal | saída estruturada (Pydantic) | regras pt-BR sempre rodam; o que só a IA achou entra como desejável | ✅ |
-| 🔍 **Especificador** | Localiza as páginas do TR que tratam dos itens publicados só com o nome e lê todas de uma vez | saída estruturada | trecho precisa existir no documento e no bloco daquele item | ✅ |
+| 🔍 **Especificador** | Localiza as páginas do TR que tratam dos itens publicados só com o nome e lê todas de uma vez; roda no modelo de agente, porque decidir a qual item pertence um trecho é julgamento | saída estruturada | trecho precisa existir no documento e no bloco daquele item; atributo de luminária não entra em relé, cabo ou disjuntor | ✅ |
 | 🛡️ **Verificador** | Reconfere todas as citações, detecta conflitos entre fontes, atribui confiança e escreve o parecer para revisão humana | regras + parecer em texto | confiança baixa → fila de revisão | ✅ |
 | 🧠 **Planejador** | Resumo executivo, riscos e próximos passos, só a partir dos fatos já verificados | saída estruturada | qualificação (tipo, comprador, prazo, prioridade) vem de regras | ✅ |
 | 🗂️ **Curador de catálogo** | Lê a ficha do fabricante (link, PDF, DOCX, XLSX, texto) e propõe produtos com atributos validados; vai apontar as lacunas do catálogo que geram INDETERMINADO e sugerir fichas | saída estruturada | usuário revisa antes de adicionar | 🟡 |
@@ -207,7 +207,7 @@ Toda proposta de um modelo passa por três portas antes de virar fato. É isso q
 
 | Porta | O que faz | Exemplos reais, do teste cego |
 |---|---|---|
-| **Validação por tipo e faixa** (`rules/validar.py`) | cada valor proposto é checado contra o tipo e a faixa plausível do atributo | rejeitados: `cct_k = "branca fria"`, `tensao_v = 600–1000` (era isolação de cabo), `material_corpo = "PRETA"`, `irc = 0,7` |
+| **Validação por tipo, faixa e categoria** (`rules/validar.py`, `catalog/atributos.py`) | cada valor proposto é checado contra o tipo e a faixa plausível do atributo; atributos luminotécnicos (fluxo, dimerização, CCT…) só entram em itens que emitem luz | rejeitados: `cct_k = "branca fria"`, `tensao_v = 600–1000` (era isolação de cabo), `material_corpo = "PRETA"`, `irc = 0,7`; em 24/10, "dimerizável" lido no TR da luminária e atribuído ao relé |
 | **Citação conferida** (`evidence/verify.py`) | o trecho literal precisa existir na página citada (similaridade ≥ 90); conferido no registro e de novo pelo Verificador | 107/107 em Goianira, 72/72 em Itaberaí, 62/62 em Aruanã |
 | **Motor de regras** (`rules/compare.py`) | compara cada requisito com cada atributo: número com tolerância, faixa que precisa cobrir, IP/IK ordinais, booleanos, texto, exigências documentais | IP65 < IP66 → não atende; garantia ausente no catálogo → indeterminado, nunca "atende" |
 
@@ -228,7 +228,7 @@ Agregação por item: qualquer obrigatório não atendido → **INCOMPATÍVEL**;
 
 - Documentos e descrições entram **como dados** (`<documento>`, `<item>`), nunca como instruções.
 - **Nenhum agente tem ferramenta de ação externa**: não envia proposta, não dá lance, não participa de licitação.
-- Saída de modelo sempre validada por esquema (Pydantic, `strict: true`); valor fora do tipo ou da faixa é descartado com registro.
+- Saída de modelo sempre validada por esquema (Pydantic, `strict: true`); valor fora do tipo, da faixa ou da categoria do item é descartado com registro.
 - Limites de passos, de tokens e de análises por prospecção; orçamento proporcional ao número de itens.
 - Requisito tirado **só** pela IA da descrição entra como desejável: pode deixar o item parcial, nunca o derruba sozinho. Especificação do TR com citação conferida é exigência de verdade.
 - **Pontos de revisão humana:** revisão dos produtos propostos pela ficha técnica ✅ · aprovar/rejeitar/comentar o dossiê ✅ · fila de confiança baixa 🟡 · pausa no grafo antes de análises caras e feedback que recalibra a prioridade ⬜ F2.
@@ -315,7 +315,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as li
 
 | O quê | Resultado | Como conferir |
 |---|---|---|
-| Testes automatizados | **121 passando** (unitários + API, incluindo observabilidade e grafo), lint limpo (ruff) | `pytest -m "not integracao"` |
+| Testes automatizados | **122 passando** (unitários + API, incluindo observabilidade e grafo), lint limpo (ruff) | `pytest -m "not integracao"` |
 | Custo e latência medidos (24/10, Gemini) | Itaberaí, 21 itens, sem cache: 17 chamadas, 0 erros, 165 mil tokens (4,8 mil de raciocínio), **US$ 0,145 ≈ R$ 0,73** pela tabela paga, 78 s, latência média 4,9 s e p95 9,9 s por chamada, 73/73 evidências; o Investigador respondeu por 68% do custo | trilha em `data/obranexo.db` · `GET /api/analises/{id}/chamadas` · tela **Qualidade → Uso de modelos** |
 | Benchmark contra gabaritos revisados | 2 contratações, 9 itens e 8 pares item × produto: **100% de acerto por item, 100% nos pares, 100% de rastreabilidade** | `python eval/run_benchmark.py` · [`docs/benchmark_resultado.json`](docs/benchmark_resultado.json) |
 | Tempo | 5 s para os 2 casos em modo determinístico; 55 s com Gemini (2 chamadas) | idem |
@@ -434,7 +434,7 @@ obranexo analisar goianira_pe038_2026     # análise completa pela linha de coma
 obranexo abertas --uf GO                  # pregões com propostas abertas, ao vivo no PNCP
 obranexo coletar 01291707000167 2026 75 meu_caso   # baixa e congela uma contratação
 
-pytest -m "not integracao"                # 121 testes, sem chamar o LLM
+pytest -m "not integracao"                # 122 testes, sem chamar o LLM
 pytest -m integracao -v                   # chama o provedor configurado (usa cota)
 python eval/run_benchmark.py              # benchmark contra os gabaritos
 obranexo grafo --formato md               # o grafo da análise (etapas, lê/escreve, condições), gerado do código
@@ -444,7 +444,7 @@ obranexo grafo --formato md               # o grafo da análise (etapas, lê/esc
 
 | Provedor | Chave no `.env` | Modelos padrão | Observação |
 |---|---|---|---|
-| **Google Gemini** (padrão) | `GEMINI_API_KEY` | agentes `gemini-3.8-flash` → reserva `gemini-3.5-flash-lite`; extração `gemini-3.5-flash-lite` | nível gratuito; o cliente cai para o reserva em 429/503 e põe o modelo em quarentena por 10 min |
+| **Google Gemini** (padrão) | `GEMINI_API_KEY` | agentes `gemini-3.8-flash` (Especificador, Investigador, Verificador, Planejador, Prospecção, Assistente) → reserva `gemini-3.5-flash-lite`; extração `gemini-3.5-flash-lite` (Analista Técnico, Curador) | nível gratuito; o cliente cai para o reserva em 429/503 e põe o modelo em quarentena por 10 min |
 | **Groq** | `GROQ_API_KEY` | agentes `openai/gpt-oss-120b`; extração `openai/gpt-oss-20b`; reserva `openai/gpt-oss-20b` (o Llama 3.3 70B saiu do nível gratuito do Groq em 16/08/2026) | saída estruturada por `json_schema` quando o modelo suporta; lotes menores por causa do limite de tokens por minuto |
 | **Anthropic** | `ANTHROPIC_API_KEY` | `claude-sonnet-5-5` / `claude-haiku-5-5` | `OBRANEXO_LLM_PROVIDER=anthropic` |
 
@@ -586,7 +586,7 @@ docs/
   teste_cego_*.{md,csv}  teste cego e planilha de rotulagem
   benchmark_resultado.json
 eval/run_benchmark.py    benchmark contra gabaritos
-tests/                   121 testes (regras, agentes sem LLM, API, observabilidade, grafo, regressão do teste cego, integração com LLM)
+tests/                   122 testes (regras, agentes sem LLM, API, observabilidade, grafo, regressão do teste cego, integração com LLM)
 pitch/                   planejamento, fala e slides do pitch
 BMC_ObraNexo.txt · reports/ · research_notes/   modelo de negócio e pesquisa
 ```
