@@ -5,11 +5,16 @@
   </picture>
 </p>
 
-<h3 align="center">O seu catálogo nas licitações certas, item a item, com prova.</h3>
+<h3 align="center">Todo dia, o governo publica mais de mil pedidos de compra.<br>Quem entende primeiro, vende primeiro.</h3>
 
 <p align="center">
-  Agentes de IA que encontram, leem e comparam licitações públicas com o catálogo de um fornecedor —<br>
-  e um núcleo verificável que garante que cada veredito aponte para o trecho literal do edital.
+  O ObraNexo é uma plataforma de agentes de IA que lê essas licitações no PNCP, item por item, cruza cada exigência<br>
+  com o catálogo de um fornecedor e mostra o que ele atende, apontando a linha exata do edital.<br>
+  Começamos por material elétrico e iluminação, onde 9 em cada 10 pregões não citam esses itens no título.
+</p>
+
+<p align="center">
+  <a href="https://claude.ai/artifact/RTygyfwEqM7tmEEQdhJDLu"><img alt="Business Model Canvas: ver o canvas" src="https://img.shields.io/badge/Business%20Model%20Canvas-ver%20o%20canvas%20%E2%86%92-00ab9f?style=for-the-badge&labelColor=0b2a3c"></a>
 </p>
 
 <p align="center">
@@ -328,7 +333,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório, em mo
 
 ## Modelo de negócio e mercado
 
-Resumo do [Business Model Canvas](BMC_ObraNexo.txt) e do [relatório de modelo de negócio](reports/Modelo%20de%20negócio%20ObraNexo.md). Natureza de cada número: **[FATO]** publicado com fonte · **[DADO PRÓPRIO]** medido pela equipe no PNCP · **[ESTIMATIVA]** cálculo da equipe · **[PREMISSA]** hipótese a validar.
+Resumo do [Business Model Canvas](https://claude.ai/artifact/RTygyfwEqM7tmEEQdhJDLu) (versão interativa; texto completo com fontes em [`BMC_ObraNexo.txt`](BMC_ObraNexo.txt)) e do [relatório de modelo de negócio](reports/Modelo%20de%20negócio%20ObraNexo.md). Natureza de cada número: **[FATO]** publicado com fonte · **[DADO PRÓPRIO]** medido pela equipe no PNCP · **[ESTIMATIVA]** cálculo da equipe · **[PREMISSA]** hipótese a validar.
 
 | | |
 |---|---|
