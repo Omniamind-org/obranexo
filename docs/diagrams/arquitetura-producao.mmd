@@ -1,0 +1,43 @@
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#e2f4f2','primaryTextColor':'#10222f','primaryBorderColor':'#00ab9f','lineColor':'#7d8b96','edgeLabelBackground':'#f1f3f3','fontFamily':'Plus Jakarta Sans, Segoe UI, sans-serif','fontSize':'14px','clusterBkg':'transparent','clusterBorder':'#7d8b96','titleColor':'#7d8b96'}}}%%
+flowchart LR
+  subgraph CLI[" Clientes "]
+    direction TB
+    W[🖥️ Web app ✅<br/>JS puro, sem build]:::inf
+    API2[🔌 API pública e servidor MCP ⬜ F4<br/>para CRM e assessorias]:::plan
+  end
+  subgraph APP[" Aplicação · AWS, infraestrutura como código ⬜ F3 "]
+    direction TB
+    G[🚪 API FastAPI ✅<br/>login e isolamento por empresa ⬜ F1]:::inf
+    Q[📬 Fila e workers ⬜ F2<br/>hoje: threads ✅]:::plan
+    OR[🕸️ Orquestrador de agentes ⬜ F2<br/>grafo durável · checkpoints · pausas para revisão<br/>hoje: sequência fixa em Python ✅]:::plan
+    GW[🔀 Gateway de modelos ✅<br/>roteamento, lote, cache,<br/>orçamento por cliente ⬜ F3]:::inf
+  end
+  subgraph DAT[" Dados "]
+    direction TB
+    PG[(🐘 PostgreSQL + pgvector ⬜ F1–F2<br/>hoje: JSON em disco ✅)]:::mem
+    S3[(🗄️ Anexos versionados, S3 ⬜ F3<br/>hoje: pacotes congelados ✅)]:::mem
+  end
+  subgraph ING[" Ingestão "]
+    direction TB
+    PN[(🏛️ PNCP ✅)]:::mem
+    IG[📡 Coleta agendada e índice de itens ⬜ F2<br/>hoje: busca ao vivo com cache ✅]:::plan
+    OUT[(Obrasgov e portais estaduais ⬜ F4)]:::plan
+  end
+  subgraph OBS[" Qualidade "]
+    direction TB
+    OT[📈 OpenTelemetry + Langfuse ⬜ F2<br/>hoje: trilha por análise ✅]:::plan
+    EV[🧪 Avaliação contínua<br/>benchmark ✅ · trava no CI ⬜ F1<br/>amostragem em produção ⬜ F3]:::plan
+  end
+  LLM{{Gemini · Groq · Anthropic ✅<br/>Bedrock ⬜ F3}}:::inf
+  W --> G
+  API2 --> G
+  G --> Q --> OR --> GW --> LLM
+  OR --- PG
+  OR --- S3
+  PN --> IG --> PG
+  OUT -.-> IG
+  OR -.-> OT
+  OR -.-> EV
+  classDef plan fill:#f1f3f3,stroke:#a5b0b8,color:#4b5b67,stroke-dasharray:5 4
+  classDef mem fill:#0b2a3c,stroke:#0b2a3c,color:#ffffff
+  classDef inf fill:#e2f4f2,stroke:#00ab9f,color:#10222f
