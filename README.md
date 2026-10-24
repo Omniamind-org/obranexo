@@ -585,10 +585,12 @@ BMC_ObraNexo.txt · reports/ · research_notes/   modelo de negócio e pesquisa
 
 ## Time e contato
 
-Kauan Divino · Fabrycio Nakano · Victor Emanuel · Maykon Adriell — [DADO NECESSÁRIO: papéis por frente]
+Kauan Divino · Fabrycio Nakano · Victor Emanuel · Maykon Adriell
 
-Contato: [DADO NECESSÁRIO: e-mail] · Projeto desenvolvido para o AKCIT Camp Multicêntrico 2026 (Goiás).
+[contato.omniamind@gmail.com](mailto:contato.omniamind@gmail.com)
 
-Licença: proprietária, conforme o edital do programa. Dados do PNCP são públicos e abertos por lei (Lei 14.133/2021, art. 174); catálogos pertencem a cada fornecedor e ficam isolados por empresa.
+## Licença
 
-<p align="center"><sub>A IA interpreta e investiga. O núcleo verificável garante. Você decide.</sub></p>
+Proprietária, conforme o edital do programa. Dados do PNCP são públicos e abertos por lei (Lei 14.133/2021, art. 174); catálogos pertencem a cada fornecedor e ficam isolados por empresa.
+
+<p align="center"><sub>O governo já está comprando o que você vende. Só faltava alguém avisar.</sub></p>
