@@ -213,8 +213,8 @@ não compra garantida; a medição cobre só pregões eletrônicos (fora dispens
 e um mês (há sazonalidade); a amostra dos demais pregões é pequena (39 de 400 com item elétrico,
 intervalo de confiança de 95% de cerca de 7–13%, ou ~2.100–3.800 pregões por mês) e sua extrapolação
 de valor tem variância alta; a classificação usa as regras do ObraNexo, sem auditoria independente
-de precisão. Os scripts e resultados estão em research_notes/Modelo de negócio
-ObraNexo/medicao_pncp/ e podem ser reexecutados para outros meses e UFs.
+de precisão. Os scripts e resultados estão em bmc/pesquisa/medicao_pncp/ e podem ser
+reexecutados para outros meses e UFs.
 
 Na lente de software, o cálculo parte do número de empresas e de um ticket de referência.
 
