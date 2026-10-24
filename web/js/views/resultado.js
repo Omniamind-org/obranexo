@@ -1,13 +1,13 @@
-// Resultado de uma análise: resumo, itens × catálogo, evidências, trilha do Investigador, pendências e dossiê.
+// Resultado de uma análise: resumo visual, itens × catálogo, provas, pendências, dossiê e trilha do agente.
 
 import { api } from '../api.js';
-import { data, local, moeda, numero, OPERADOR, pct, valorTecnico } from '../format.js';
+import { barras, COR_RESULTADO, gauge, legendaResultados, medidor, prazo, RESULTADOS, ROTULO_RESULTADO, waffle } from '../charts.js';
+import { hora, local, moeda, moedaCompacta, numero, OPERADOR, pct, valorTecnico, nomeProprio } from '../format.js';
 import { renderMarkdown } from '../markdown.js';
 import {
-  abrirModal, badgeConfianca, badgePrazo, badgeRequisito, badgeResultado, badgeRevisao, badgeTipo,
+  abrirModal, aviso, badgeConfianca, badgePrazo, badgeRequisito, badgeResultado, badgeRevisao, badgeTipo,
   esc, html, icon, raw, render, toast, vazio,
 } from '../ui.js';
-import { barraResultados, legendaResultados } from './analises.js';
 import { rotuloCategoria } from './catalogo.js';
 
 const ORDEM = { COMPATIVEL: 3, PARCIAL: 2, INDETERMINADO: 1, INCOMPATIVEL: 0 };
@@ -19,36 +19,39 @@ export async function render_(el, id) {
   const c = a.contratacao;
 
   if (a.status !== 'concluida') {
-    render(el, html`<div class="crumbs"><a href="#/analises">Análises</a> / ${a.id}</div>
-      <div class="alert alert-bad">${icon('alert')}<div class="alert-body"><strong>A análise terminou com erro.</strong> ${a.erro}</div></div>`);
+    render(el, html`<a class="voltar" href="#/analises">${icon('back')} Análises</a>
+      ${aviso(html`<strong>A análise terminou com erro.</strong> ${a.erro}`, 'bad', 'alert')}`);
     return;
   }
 
+  const pendencias = a.lacunas.length + a.conflitos.length + a.revisao_humana.filter((x) => !x.startsWith('Parecer')).length;
   const abas = [
     ['resumo', 'Resumo', null],
-    ['itens', 'Itens × catálogo', a.itens.length],
-    ['evidencias', 'Evidências', a.evidencias.length],
-    ['investigacao', 'Investigação', a.passos_investigacao.length],
-    ['pendencias', 'Pendências', a.lacunas.length + a.conflitos.length + a.revisao_humana.length],
-    ['dossie', 'Dossiê', null],
+    ['itens', 'Itens', a.itens.length],
+    ['provas', 'Provas', a.evidencias.length],
+    ['pendencias', 'Pendências', pendencias || null],
+    ['dossie', 'Dossiê e decisão', null],
+    ['trilha', 'Trilha do agente', null],
   ];
 
   render(el, html`
-    <div class="crumbs"><a href="#/analises">Análises</a> / ${a.id}</div>
-    <div class="page-head">
-      <div>
-        <div class="eyebrow">${c.modalidade || 'Contratação'}${c.numero_compra ? ` nº ${c.numero_compra}/${c.ano}` : ''} · ${local(c)}</div>
-        <h1>${c.orgao_nome}</h1>
-        <p class="clamp-2">${c.objeto}</p>
-        <div class="chips" style="margin-top:10px">
-          ${badgeTipo(resumo.tipo_oportunidade)} ${badgePrazo(resumo.prazo_status)} ${badgeRevisao(resumo.revisao)}
-          <span class="badge plain mono">${a.modo}</span>
+    <a class="voltar" href="#/analises">${icon('back')} Análises</a>
+    <div class="page-head" style="margin-bottom:24px">
+      <div style="min-width:0;flex:1">
+        <div class="sobretitulo">${c.modalidade || 'Contratação'}${c.numero_compra ? ` nº ${c.numero_compra}/${c.ano}` : ''} · ${local(c)}</div>
+        <h1>${nomeProprio(c.orgao_nome)}</h1>
+        <p class="sub clamp-2" data-tip="${c.objeto}">${c.objeto}</p>
+        <div class="fatos" style="margin-top:14px">
+          <span data-tip="Valor estimado da contratação">${icon('money')}${moeda(c.valor_estimado)}</span>
+          <span>${icon('calendar')}${prazo(c.data_encerramento_proposta)}</span>
+          ${badgeTipo(resumo.tipo_oportunidade)}
+          ${badgeRevisao(resumo.revisao)}
         </div>
       </div>
       <div class="actions">
-        ${resumo.caso ? html`<a class="btn" href="#/casos/${resumo.caso}">${icon('refresh')} Reexecutar</a>` : ''}
+        ${resumo.caso ? html`<a class="btn btn-ghost" href="#/casos/${resumo.caso}" data-tip="Analisar de novo esta licitação">${icon('refresh')} Reexecutar</a>` : ''}
         <a class="btn" href="${c.link_oficial}" target="_blank" rel="noopener">${icon('external')} PNCP</a>
-        <a class="btn btn-primary" href="${api.dossieDownloadUrl(a.id)}">${icon('download')} Dossiê .md</a>
+        <a class="btn btn-primary" href="${api.dossieDownloadUrl(a.id)}">${icon('download')} Dossiê</a>
       </div>
     </div>
     <div class="tabs" role="tablist">
@@ -59,21 +62,22 @@ export async function render_(el, id) {
   const conteudo = el.querySelector('#conteudo');
   const telas = {
     resumo: () => telaResumo(conteudo, a, resumo, ctx),
-    itens: () => telaItens(conteudo, a, ctx),
-    evidencias: () => telaEvidencias(conteudo, a, ctx),
-    investigacao: () => telaInvestigacao(conteudo, a),
-    pendencias: () => telaPendencias(conteudo, a, ctx),
+    itens: (itemId) => telaItens(conteudo, a, ctx, itemId),
+    provas: () => telaProvas(conteudo, a, ctx),
+    pendencias: () => telaPendencias(conteudo, a),
     dossie: () => telaDossie(conteudo, a),
+    trilha: () => telaTrilha(conteudo, a),
   };
-  const abrir = (k) => {
+  const abrir = (k, arg) => {
     el.querySelectorAll('.tab').forEach((t) => t.classList.toggle('ativo', t.dataset.aba === k));
-    telas[k]();
+    telas[k](arg);
   };
   el.querySelector('.tabs').addEventListener('click', (e) => { const b = e.target.closest('.tab'); if (b) abrir(b.dataset.aba); });
-  // Botões de evidência em qualquer aba abrem o modal de conferência
   conteudo.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-ev]');
-    if (b) abrirEvidencia(a, ctx, b.dataset.ev);
+    const ev = e.target.closest('[data-ev]');
+    if (ev) { abrirEvidencia(a, ctx, ev.dataset.ev); return; }
+    const item = e.target.closest('[data-item]');
+    if (item) { abrir('itens', item.dataset.item); return; }
     const irAba = e.target.closest('[data-ir-aba]');
     if (irAba) abrir(irAba.dataset.irAba);
   });
@@ -89,123 +93,127 @@ function montarContexto(a, produtos, atributos) {
   const porItem = {};
   a.correspondencias.forEach((c) => { (porItem[c.item_id] ||= []).push(c); });
   Object.values(porItem).forEach((l) => l.sort((x, y) => (ORDEM[y.resultado] - ORDEM[x.resultado]) || (y.score - x.score)));
+  const resultadoItem = (i) => porItem[i.id]?.[0]?.resultado || 'FORA_DO_PORTFOLIO';
   return {
-    reqs, evs, docs, porItem, produtos,
+    reqs, evs, docs, porItem, produtos, resultadoItem,
     rotulo: (k) => atributos[k]?.rotulo || k,
     unidade: (k) => atributos[k]?.unidade || '',
   };
 }
 
+const nomeDoc = (ctx, id) => {
+  const d = ctx.docs[id];
+  if (!d) return id;
+  return id.startsWith('pncp-item') ? 'Descrição do item' : d.nome.replace(/\.pdf$/i, '');
+};
+
 const evBotao = (ctx, evId) => {
   const ev = ctx.evs[evId];
-  if (!ev) return html`<span class="muted small">sem evidência</span>`;
-  const doc = ctx.docs[ev.documento_id];
-  const nome = doc ? doc.nome.replace(/\.pdf$/i, '') : ev.documento_id;
-  return html`<button class="ev-link ${ev.verificada ? '' : 'nv'}" data-ev="${ev.id}" title="${ev.trecho_literal}">
-    ${icon(ev.verificada ? 'quote' : 'alert')}<span class="truncate" style="max-width:190px">${nome}${ev.pagina ? `, p.${ev.pagina}` : ''}</span></button>`;
+  if (!ev) return html`<span class="muted small">—</span>`;
+  return html`<button class="ev-link ${ev.verificada ? '' : 'nv'}" data-ev="${ev.id}" data-tip="“${ev.trecho_literal.slice(0, 220)}”">
+    ${icon(ev.verificada ? 'quote' : 'alert')}<span class="truncate">${nomeDoc(ctx, ev.documento_id)}${ev.pagina && !ev.documento_id.startsWith('pncp-item') ? `, p. ${ev.pagina}` : ''}</span></button>`;
 };
+
+const valorItem = (i) => (i.quantidade || 0) * (i.valor_unit_estimado || 0);
 
 // ---------------------------------------------------------------------------- resumo
 
 function telaResumo(alvo, a, resumo, ctx) {
   const q = a.qualificacao;
-  const evOk = resumo.evidencias_verificadas;
   const passos = q.proximos_passos || [];
   const riscos = q.riscos || [];
-  const itensCompat = a.itens
-    .map((i) => ({ i, m: ctx.porItem[i.id]?.[0] }))
-    .filter(({ m }) => m && (m.resultado === 'COMPATIVEL' || m.resultado === 'PARCIAL'));
-  const valorCompat = itensCompat.reduce((s, { i }) => s + (i.quantidade || 0) * (i.valor_unit_estimado || 0), 0);
+  const evOk = resumo.evidencias_verificadas;
+  const evTotal = resumo.evidencias_total;
+  const pend = resumo.lacunas + resumo.conflitos;
+
+  const itens = a.itens.map((i) => {
+    const r = ctx.resultadoItem(i);
+    const sku = ctx.porItem[i.id]?.[0] ? ctx.produtos[ctx.porItem[i.id][0].produto_id]?.sku : null;
+    return {
+      id: i.id, num: i.numero_item, resultado: r,
+      tip: `**Item ${i.numero_item} · ${ROTULO_RESULTADO[r]}**${sku ? ` (${sku})` : ''}\n${i.descricao.slice(0, 140)}${i.descricao.length > 140 ? '…' : ''}`,
+    };
+  });
+  const valorPor = {};
+  a.itens.forEach((i) => { const r = ctx.resultadoItem(i); valorPor[r] = (valorPor[r] || 0) + valorItem(i); });
+  const linhasValor = RESULTADOS.filter(([k]) => valorPor[k]).map(([k, , n]) => ({
+    rot: n, valor: valorPor[k], txt: moedaCompacta(valorPor[k]), cor: COR_RESULTADO[k],
+    tip: `**${n}**: ${moeda(valorPor[k])} em valor estimado`,
+  }));
+  const valorAtendido = (valorPor.COMPATIVEL || 0) + (valorPor.PARCIAL || 0);
 
   render(alvo, html`
-    <div class="grid grid-main">
-      <div class="stack">
-        <div class="card card-pad">
-          <div class="qualif">
-            <div class="score-ring" style="--v:${q.prioridade}"><span>${Math.round(q.prioridade)}</span></div>
-            <div>
-              <div class="kpi-label">Prioridade comercial</div>
-              <div style="font-weight:650;margin:2px 0 4px">${q.comprador_provavel}</div>
-              <div class="muted small">${q.justificativa_prioridade}</div>
-            </div>
-          </div>
-          <hr>
-          <div class="section-title" style="margin-top:0">Resumo executivo</div>
-          <p style="margin:0">${a.dossie?.resumo_executivo}</p>
-        </div>
+    <div class="destaque">
+      ${gauge(q.prioridade, 'prioridade')}
+      <div class="texto">
+        <div class="quem">${q.comprador_provavel}</div>
+        <p class="ink-2 clamp-3" style="margin-top:6px;max-width:640px" data-tip="${q.justificativa_prioridade}">${q.justificativa_prioridade}</p>
+        <div class="fatos" style="margin-top:10px">${badgePrazo(q.prazo_status)}${a.contratacao.srp ? html`<span class="tag plain" data-tip="Registro de preços: o órgão compra sob demanda durante a vigência da ata">Registro de preços</span>` : ''}</div>
+      </div>
+    </div>
 
-        <div class="card">
-          <div class="card-head"><h2>Resultado por item</h2><button class="btn btn-ghost btn-sm" data-ir-aba="itens">Ver itens ${icon('arrow')}</button></div>
-          <div class="card-body">
-            ${barraResultados(resumo.resultados)}
-            ${legendaResultados(resumo.resultados)}
-            ${itensCompat.length ? html`<div class="alert alert-ok" style="margin-top:14px">${icon('check')}<div class="alert-body">
-              <strong>${moeda(valorCompat)}</strong> do valor estimado está em ${itensCompat.length} item(ns) que o catálogo atende total ou parcialmente.</div></div>` : ''}
-            ${a.insumos_indiretos?.length ? html`<div class="alert alert-info" style="margin-top:14px">${icon('layers')}<div class="alert-body">
-              Oportunidade indireta: ${a.insumos_indiretos.length} menção(ões) a insumos do portfólio nos projetos e orçamentos. <button class="ev-link" data-ir-aba="itens">Ver insumos</button></div></div>` : ''}
-          </div>
-        </div>
+    <div class="colunas secao" style="margin-top:44px">
+      <div>
+        <div class="secao-head"><h2>Itens</h2><span class="sub">clique num quadrado para ver o item</span></div>
+        ${waffle(itens)}
+        ${legendaResultados(resumo.resultados)}
 
-        <div class="grid grid-2">
-          <div class="card">
-            <div class="card-head"><h2>Próximos passos</h2></div>
-            <div class="card-body"><ol style="margin:0;padding-left:20px">${passos.map((p) => html`<li style="margin:4px 0">${p}</li>`)}</ol></div>
-          </div>
-          <div class="card">
-            <div class="card-head"><h2>Riscos</h2></div>
-            <div class="card-body">${riscos.length ? html`<ul style="margin:0;padding-left:20px">${riscos.map((r) => html`<li style="margin:4px 0">${r}</li>`)}</ul>` : html`<span class="muted">Nenhum risco adicional identificado.</span>`}</div>
-          </div>
-        </div>
+        ${linhasValor.length ? html`
+          <div class="secao-head" style="margin-top:40px"><h2>Valor estimado por resultado</h2>
+            ${valorAtendido ? html`<span class="sub"><b style="color:var(--ink)">${moedaCompacta(valorAtendido)}</b> em itens atendidos</span>` : ''}</div>
+          ${barras(linhasValor)}` : ''}
+
+        ${a.dossie?.resumo_executivo ? html`
+          <div class="secao-head" style="margin-top:40px"><h2>Resumo</h2></div>
+          <p class="resumo-exec">${a.dossie.resumo_executivo}</p>` : ''}
       </div>
 
-      <div class="stack">
-        <div class="card">
-          <div class="card-head"><h2>Classificação</h2></div>
-          <div class="card-body">
-            <dl class="dl">
-              <dt>Tipo</dt><dd>${badgeTipo(q.tipo_oportunidade)}</dd>
-              <dt>Comprador</dt><dd>${q.comprador_provavel}</dd>
-              <dt>Prazo</dt><dd>${badgePrazo(q.prazo_status)}<div class="muted small" style="margin-top:4px">${q.prazo_observacao}</div></dd>
-              <dt>Valor</dt><dd>${moeda(a.contratacao.valor_estimado)}</dd>
-              <dt>SRP</dt><dd>${a.contratacao.srp ? 'sim (registro de preços)' : 'não'}</dd>
-            </dl>
-            <p class="muted small" style="margin:12px 0 0">${q.justificativa_tipo}</p>
-          </div>
-        </div>
-        <div class="grid grid-2">
-          <div class="card kpi"><div class="kpi-label">Evidências</div><div class="kpi-value ${evOk === resumo.evidencias_total ? 'ok' : 'warn'}">${pct(resumo.evidencias_total ? evOk / resumo.evidencias_total : null)}</div><div class="kpi-sub">${evOk}/${resumo.evidencias_total} verificadas</div></div>
-          <div class="card kpi"><div class="kpi-label">Pendências</div><div class="kpi-value ${resumo.conflitos || resumo.lacunas ? 'warn' : ''}">${resumo.lacunas + resumo.conflitos}</div><div class="kpi-sub">${resumo.lacunas} lacuna(s), ${resumo.conflitos} conflito(s)</div></div>
-          <div class="card kpi"><div class="kpi-label">Duração</div><div class="kpi-value">${numero(resumo.duracao_s)}s</div><div class="kpi-sub">${data(a.iniciada_em, true)}</div></div>
-          <div class="card kpi"><div class="kpi-label">Uso de LLM</div><div class="kpi-value">${resumo.llm.chamadas}</div><div class="kpi-sub">${numero(resumo.llm.tokens)} tokens · US$ ${resumo.llm.custo_usd.toFixed(4)}</div></div>
-        </div>
-        ${resumo.llm.modelos.length ? html`<div class="muted small">Modelos: ${resumo.llm.modelos.map((m) => html`<span class="mono">${m}</span> `)}</div>` : ''}
+      <div>
+        ${passos.length ? html`
+          <div class="secao-head"><h2>Próximos passos</h2></div>
+          <ol class="passos-lista">${passos.map((p) => html`<li><span>${p}</span></li>`)}</ol>` : ''}
+        ${riscos.length ? html`
+          <div class="secao-head" style="margin-top:36px"><h2>Riscos</h2></div>
+          <ul class="riscos">${riscos.map((r) => html`<li>${icon('alert')}<span>${r}</span></li>`)}</ul>` : ''}
+
+        <div class="secao-head" style="margin-top:36px"><h2>Confiabilidade</h2></div>
+        <div class="small ink-2" style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span>Provas conferidas no documento</span><b style="color:var(--ink)">${pct(evTotal ? evOk / evTotal : null)}</b></div>
+        ${medidor(evTotal ? evOk / evTotal : 0, { ok: evOk === evTotal, tip: `${evOk} de ${evTotal} trechos citados foram localizados literalmente no documento` })}
+        <p class="small ink-2" style="margin-top:14px">${pend
+          ? html`${icon('alert')} <button class="ev-link" data-ir-aba="pendencias">${pend} ponto(s) para revisar</button> — informações ausentes ou divergentes.`
+          : 'Nenhuma informação ausente ou divergente.'}</p>
+        ${a.insumos_indiretos?.length ? html`<p class="small ink-2" style="margin-top:10px">${icon('layers')} <button class="ev-link" data-ir-aba="itens">${a.insumos_indiretos.length} menção(ões)</button> a produtos do catálogo nos projetos e orçamentos (oportunidade indireta).</p>` : ''}
       </div>
     </div>`);
 }
 
 // ---------------------------------------------------------------------------- itens
 
-function telaItens(alvo, a, ctx) {
+function telaItens(alvo, a, ctx, abrirItemId) {
+  const contagem = {};
+  a.itens.forEach((i) => { const r = ctx.resultadoItem(i); contagem[r] = (contagem[r] || 0) + 1; });
+  let filtro = null;
+
   const blocoProduto = (c) => {
     const p = ctx.produtos[c.produto_id] || { sku: c.produto_id, nome: '' };
     return html`
       <div class="produto-bloco">
         <div class="produto-head">
-          <div><strong class="mono">${p.sku}</strong> — ${p.nome}</div>
-          <div class="chips">${badgeResultado(c.resultado)} ${badgeConfianca(c.confianca)} <span class="badge plain">score ${c.score.toFixed(2)}</span></div>
+          <div><span class="mono muted">${p.sku}</span> <strong>${p.nome}</strong></div>
+          <div class="fatos">${badgeResultado(c.resultado)} ${badgeConfianca(c.confianca)}</div>
         </div>
-        <div class="table-wrap" style="border:1px solid var(--border);border-radius:8px"><table class="table">
-          <thead><tr><th>Requisito</th><th>Exigido</th><th>Produto</th><th>Resultado</th><th>Origem</th><th>Evidência</th></tr></thead>
+        <div class="table-wrap"><table class="table">
+          <thead><tr><th>Exigência</th><th>Edital pede</th><th>Seu produto</th><th>Resultado</th><th>Prova</th></tr></thead>
           <tbody>${c.detalhes.map((d) => {
             const r = ctx.reqs[d.requisito_id] || {};
             const op = OPERADOR[r.operador] || r.operador || '';
             const mostraOp = op && !['exigido', 'contém'].includes(op);
-            return html`<tr title="${d.justificativa}">
-              <td>${ctx.rotulo(d.atributo)}${r.obrigatorio === false ? html` <span class="muted small">(desejável)</span>` : ''}</td>
+            return html`<tr>
+              <td>${ctx.rotulo(d.atributo)}${r.obrigatorio === false ? html` <span class="muted small" data-tip="Requisito desejável: não reprova o item sozinho">(desejável)</span>` : ''}</td>
               <td class="nowrap">${mostraOp ? `${op} ` : ''}${valorTecnico(d.valor_exigido, ctx.unidade(d.atributo))}</td>
               <td>${valorTecnico(d.valor_produto, ctx.unidade(d.atributo))}</td>
-              <td>${badgeRequisito(d.resultado)}</td>
-              <td class="small muted">${r.fonte_extracao || '—'}</td>
+              <td><span data-tip="${d.justificativa}">${badgeRequisito(d.resultado)}</span></td>
               <td>${evBotao(ctx, r.evidencia_id)}</td>
             </tr>`;
           })}</tbody>
@@ -213,109 +221,120 @@ function telaItens(alvo, a, ctx) {
       </div>`;
   };
 
-  const insumos = a.insumos_indiretos || [];
-  render(alvo, html`
-    ${insumos.length ? html`
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-head"><h2>Insumos do portfólio nos projetos/orçamentos</h2><span class="muted small">oportunidade indireta</span></div>
-        <div class="table-wrap"><table class="table">
-          <thead><tr><th>Categoria</th><th>Documento</th><th>Trecho</th><th>Evidência</th></tr></thead>
-          <tbody>${insumos.map((i) => html`<tr><td class="nowrap">${rotuloCategoria(i.categoria)}</td><td class="small">${ctx.docs[i.documento_id]?.nome || i.documento_id}, p.${i.pagina}</td>
-            <td class="small"><div class="clamp-2">${i.trecho}</div></td><td>${evBotao(ctx, i.evidencia_id)}</td></tr>`)}</tbody>
-        </table></div>
-      </div>` : ''}
-    ${a.itens.map((item) => {
+  const desenhar = () => {
+    const lista = a.itens.filter((i) => !filtro || ctx.resultadoItem(i) === filtro);
+    render(alvo.querySelector('#lista-itens'), lista.length ? html`${lista.map((item) => {
       const cs = ctx.porItem[item.id] || [];
       const melhor = cs[0];
       const p = melhor ? ctx.produtos[melhor.produto_id] : null;
       return html`
-        <details class="item">
+        <details class="item" id="item-${item.id}">
           <summary>
-            <span class="item-num">Item ${item.numero_item}</span>
-            <span class="item-desc">
+            <span class="item-num">${item.numero_item}</span>
+            <span class="item-desc" style="min-width:0">
               <span class="t clamp-2">${item.descricao}</span>
-              <span class="muted small">${numero(item.quantidade)} ${item.unidade || ''} · ${moeda(item.valor_unit_estimado)} un. · ${rotuloCategoria(item.categoria_inferida)}</span>
+              <span class="muted small">${numero(item.quantidade)} ${item.unidade || ''} · ${moeda(item.valor_unit_estimado)} cada · ${rotuloCategoria(item.categoria_inferida)}</span>
             </span>
-            <span style="text-align:right">${melhor ? html`${badgeResultado(melhor.resultado)}<div class="mono small muted" style="margin-top:4px">${p?.sku}</div>` : badgeResultado('FORA_DO_PORTFOLIO')}</span>
+            <span style="text-align:right">${badgeResultado(melhor ? melhor.resultado : 'FORA_DO_PORTFOLIO')}${p ? html`<div class="mono small muted" style="margin-top:4px">${p.sku}</div>` : ''}</span>
           </summary>
           <div class="item-body">
-            <p class="small" style="margin-top:0;color:var(--text-2)">${item.descricao}</p>
-            ${cs.length ? cs.map(blocoProduto) : html`<div class="alert alert-info">${icon('info')}<div class="alert-body">Categoria <strong>${rotuloCategoria(item.categoria_inferida)}</strong> não existe no catálogo ativo — item fora do portfólio.</div></div>`}
+            ${cs.length ? cs.map(blocoProduto) : html`<p class="ink-2">A categoria <strong>${rotuloCategoria(item.categoria_inferida)}</strong> não está no seu catálogo.</p>`}
           </div>
         </details>`;
-    })}`);
-  const primeiro = alvo.querySelector('details.item');
-  if (primeiro) primeiro.open = true;
+    })}` : vazio('Nenhum item com este resultado'));
+  };
+
+  const insumos = a.insumos_indiretos || [];
+  render(alvo, html`
+    <div class="pilulas" id="filtro-itens" style="margin-bottom:12px">
+      <button class="pilula ativo" data-r="">Todos <span class="cnt">${a.itens.length}</span></button>
+      ${RESULTADOS.filter(([k]) => contagem[k]).map(([k, c, n]) => html`<button class="pilula" data-r="${k}"><i class="${c}" style="width:8px;height:8px;border-radius:50%;display:inline-block"></i>${n} <span class="cnt">${contagem[k]}</span></button>`)}
+    </div>
+    <div id="lista-itens"></div>
+    ${insumos.length ? html`
+      <section class="secao">
+        <div class="secao-head"><h2>Produtos do catálogo citados nos projetos</h2><span class="sub">oportunidade indireta</span></div>
+        <div class="table-wrap"><table class="table">
+          <thead><tr><th>Categoria</th><th>Trecho</th><th>Prova</th></tr></thead>
+          <tbody>${insumos.map((i) => html`<tr><td class="nowrap">${rotuloCategoria(i.categoria)}</td>
+            <td class="small"><div class="clamp-2">${i.trecho}</div></td><td>${evBotao(ctx, i.evidencia_id)}</td></tr>`)}</tbody>
+        </table></div>
+      </section>` : ''}`);
+
+  alvo.querySelector('#filtro-itens').addEventListener('click', (e) => {
+    const b = e.target.closest('.pilula');
+    if (!b) return;
+    filtro = b.dataset.r || null;
+    alvo.querySelectorAll('#filtro-itens .pilula').forEach((x) => x.classList.toggle('ativo', x === b));
+    desenhar();
+  });
+  desenhar();
+  const alvoItem = abrirItemId ? alvo.querySelector(`#item-${CSS.escape(abrirItemId)}`) : null;
+  if (alvoItem) {
+    alvoItem.open = true;
+    alvoItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
-// ---------------------------------------------------------------------------- evidências
+// ---------------------------------------------------------------------------- provas
 
-function telaEvidencias(alvo, a, ctx) {
+function telaProvas(alvo, a, ctx) {
   const filtros = {
     todas: () => true,
     edital: (e) => !e.documento_id.startsWith('pncp-item'),
     itens: (e) => e.documento_id.startsWith('pncp-item'),
     nv: (e) => !e.verificada,
   };
+  const n = (f) => a.evidencias.filter(filtros[f]).length;
   const desenhar = (f) => {
     const lista = a.evidencias.filter(filtros[f]);
     render(alvo.querySelector('#lista-ev'), lista.length ? html`
       <div class="table-wrap"><table class="table">
-        <thead><tr><th>ID</th><th>Documento</th><th class="num">Pág.</th><th>Trecho citado</th><th>Verificação</th></tr></thead>
+        <thead><tr><th style="width:220px">Documento</th><th>Trecho citado</th><th>Conferência</th></tr></thead>
         <tbody>${lista.map((e) => html`
           <tr class="clicavel" data-ev="${e.id}">
-            <td class="mono small nowrap">${e.id}</td>
-            <td class="small" style="max-width:240px"><div class="truncate">${ctx.docs[e.documento_id]?.nome || e.documento_id}</div></td>
-            <td class="num">${e.pagina ?? '—'}</td>
-            <td class="small"><div class="clamp-2">“${e.trecho_literal}”</div></td>
-            <td class="nowrap">${e.verificada ? html`<span class="badge b-ok">verificada</span>` : html`<span class="badge b-warn">não verificada</span>`}<div class="muted small">score ${e.score_match ?? '—'}</div></td>
+            <td class="small"><div class="truncate" style="max-width:220px" data-tip="${ctx.docs[e.documento_id]?.nome || e.documento_id}">${nomeDoc(ctx, e.documento_id)}</div>
+              ${e.pagina && !e.documento_id.startsWith('pncp-item') ? html`<div class="muted">página ${e.pagina}</div>` : ''}</td>
+            <td><div class="clamp-2">“${e.trecho_literal}”</div></td>
+            <td class="nowrap">${e.verificada
+              ? html`<span class="res ok" data-tip="Trecho localizado no documento (similaridade ${e.score_match ?? '—'})">${icon('check')}Conferida</span>`
+              : html`<span class="res bad" data-tip="O trecho não foi localizado literalmente (similaridade ${e.score_match ?? '—'})">${icon('alert')}Não localizada</span>`}</td>
           </tr>`)}</tbody>
-      </table></div>` : vazio('Nenhuma evidência neste filtro'));
+      </table></div>` : vazio('Nenhuma prova neste filtro'));
   };
-  const n = (f) => a.evidencias.filter(filtros[f]).length;
   render(alvo, html`
-    <div class="alert alert-info" style="margin-bottom:14px">${icon('quote')}<div class="alert-body">Cada evidência é um trecho literal de um documento. O Verificador confere se ele existe na página citada (similaridade ≥ 90) e corrige a página quando necessário. Clique para conferir.</div></div>
-    <div class="card">
-      <div class="card-head"><div class="chips" id="filtros-ev">
-        <button class="chip ativo" data-f="todas">Todas (${n('todas')})</button>
-        <button class="chip" data-f="edital">Anexos do edital (${n('edital')})</button>
-        <button class="chip" data-f="itens">Descrições de item (${n('itens')})</button>
-        <button class="chip" data-f="nv">Não verificadas (${n('nv')})</button>
-      </div></div>
-      <div id="lista-ev"></div>
-    </div>`);
+    <div class="actions" style="justify-content:space-between;margin-bottom:16px">
+      <div class="segmentos" id="filtros-ev">
+        <button class="ativo" data-f="todas">Todas ${n('todas')}</button>
+        <button data-f="edital">Anexos do edital ${n('edital')}</button>
+        <button data-f="itens">Descrições dos itens ${n('itens')}</button>
+        ${n('nv') ? html`<button data-f="nv">Não localizadas ${n('nv')}</button>` : ''}
+      </div>
+      <span class="muted small">Clique num trecho para vê-lo destacado no documento.</span>
+    </div>
+    <div id="lista-ev"></div>`);
   alvo.querySelector('#filtros-ev').addEventListener('click', (e) => {
-    const b = e.target.closest('.chip');
+    const b = e.target.closest('button');
     if (!b) return;
-    alvo.querySelectorAll('#filtros-ev .chip').forEach((c) => c.classList.toggle('ativo', c === b));
+    alvo.querySelectorAll('#filtros-ev button').forEach((c) => c.classList.toggle('ativo', c === b));
     desenhar(b.dataset.f);
   });
   desenhar('todas');
 }
 
-// ---------------------------------------------------------------------------- investigação
+// ---------------------------------------------------------------------------- trilha do agente
 
-function telaInvestigacao(alvo, a) {
+function telaTrilha(alvo, a) {
   const passos = a.passos_investigacao;
-  if (!passos.length) {
-    render(alvo, vazio('O Investigador não foi acionado', 'Todas as informações necessárias estavam nas descrições dos itens, ou não havia anexos com texto.'));
-    return;
-  }
-  const modoLlm = a.modo.startsWith('llm');
   render(alvo, html`
-    <div class="alert alert-info" style="margin-bottom:14px">${icon('search')}<div class="alert-body">
-      O Agente Investigador procura nos anexos as exigências que não estão na descrição dos itens (garantia, prazo de entrega, amostra, ensaios)
-      ${modoLlm ? 'usando ferramentas (buscar trechos, ler página, registrar requisito) em um loop limitado de passos' : 'por busca textual e padrões (modo determinístico)'}.
-      Tudo o que ele registra vira um requisito com evidência.</div></div>
-    <div class="card"><ul class="timeline" style="max-height:none;padding:6px 16px">
-      ${passos.map((p) => p.tipo === 'ferramenta' ? html`
-        <li style="grid-template-columns:64px 170px 1fr">
-          <span class="ts">passo ${p.passo}</span>
-          <span class="no">${p.ferramenta}</span>
-          <span><span class="mono small">${JSON.stringify(p.entrada)}</span><div class="muted small" style="margin-top:3px">→ ${String(p.saida).slice(0, 320)}</div></span>
-        </li>` : html`
-        <li style="grid-template-columns:64px 170px 1fr"><span class="ts">passo ${p.passo}</span><span class="no">raciocínio</span><span>${p.texto}</span></li>`)}
-    </ul></div>`);
+    <p class="ink-2" style="margin-bottom:20px;max-width:760px">Etapas que a análise percorreu e, quando acionado, o que o Investigador procurou nos anexos
+      (garantia, prazo de entrega, amostra, ensaios) para completar o que a descrição dos itens não dizia.</p>
+    ${a.log?.length ? html`<details class="mais" open><summary>Linha do tempo da análise (${a.log.length} eventos)</summary>
+      <ul class="feed">${a.log.map((ev) => html`<li><span class="ts">${hora(ev.ts)}</span><span class="no">${ev.no}</span><span>${ev.mensagem}</span></li>`)}</ul></details>` : ''}
+    ${passos.length ? html`<details class="mais" style="margin-top:24px"><summary>Passos do Investigador (${passos.length})</summary>
+      <ul class="feed">${passos.map((p) => (p.tipo === 'ferramenta'
+        ? html`<li><span class="ts">passo ${p.passo}</span><span class="no">${p.ferramenta}</span><span><span class="small">${JSON.stringify(p.entrada)}</span><div class="muted small" style="margin-top:3px">→ ${String(p.saida).slice(0, 320)}</div></span></li>`
+        : html`<li><span class="ts">passo ${p.passo}</span><span class="no">raciocínio</span><span>${p.texto}</span></li>`))}</ul></details>` : ''}`);
 }
 
 // ---------------------------------------------------------------------------- pendências
@@ -323,17 +342,25 @@ function telaInvestigacao(alvo, a) {
 function telaPendencias(alvo, a) {
   const parecer = a.revisao_humana.find((x) => x.startsWith('Parecer'));
   const outras = a.revisao_humana.filter((x) => !x.startsWith('Parecer'));
+  const vazioTudo = !a.lacunas.length && !a.conflitos.length && !outras.length;
+  const lista = (titulo, sub, itens) => (itens.length ? html`
+    <section style="margin-bottom:36px">
+      <div class="secao-head"><h2>${titulo} <span class="muted" style="font-weight:500">${itens.length}</span></h2><span class="sub">${sub}</span></div>
+      <ul class="riscos">${itens.map((x) => html`<li>${icon('alert')}<span>${x}</span></li>`)}</ul>
+    </section>` : '');
   render(alvo, html`
-    ${parecer ? html`<div class="card" style="margin-bottom:16px"><div class="card-head"><h2>Parecer do Agente Verificador</h2><span class="badge b-accent plain">LLM</span></div>
-      <div class="card-body markdown">${raw(renderMarkdown(parecer.replace(/^Parecer do Agente Verificador:\s*/, '')))}</div></div>` : ''}
-    <div class="grid grid-3">
-      <div class="card"><div class="card-head"><h2>Lacunas</h2><span class="count badge plain">${a.lacunas.length}</span></div>
-        <div class="card-body">${a.lacunas.length ? html`<ul class="list">${a.lacunas.map((x) => html`<li class="small">${x}</li>`)}</ul>` : html`<span class="muted small">Nenhuma informação ausente.</span>`}</div></div>
-      <div class="card"><div class="card-head"><h2>Conflitos</h2><span class="count badge plain">${a.conflitos.length}</span></div>
-        <div class="card-body">${a.conflitos.length ? html`<ul class="list">${a.conflitos.map((c) => html`<li class="small">${c.descricao}
-          <div class="muted" style="margin-top:4px">${c.valores.map((v) => html`<div>${v.fonte}: <strong>${valorTecnico(v.valor)}</strong></div>`)}</div></li>`)}</ul>` : html`<span class="muted small">Nenhum conflito entre fontes.</span>`}</div></div>
-      <div class="card"><div class="card-head"><h2>Revisão humana</h2><span class="count badge plain">${outras.length}</span></div>
-        <div class="card-body">${outras.length ? html`<ul class="list">${outras.map((x) => html`<li class="small">${x}</li>`)}</ul>` : html`<span class="muted small">Nada marcado para revisão.</span>`}</div></div>
+    ${vazioTudo ? aviso('Nada pendente: nenhuma informação ausente, divergente ou marcada para revisão.', 'ok', 'check') : ''}
+    <div class="colunas" style="margin-top:${vazioTudo ? '28px' : '0'}">
+      <div>
+        ${lista('Informações ausentes', 'o edital não diz', a.lacunas)}
+        ${a.conflitos.length ? html`<section style="margin-bottom:36px">
+          <div class="secao-head"><h2>Divergências <span class="muted" style="font-weight:500">${a.conflitos.length}</span></h2><span class="sub">fontes discordam</span></div>
+          <ul class="riscos">${a.conflitos.map((c) => html`<li>${icon('alert')}<span>${c.descricao}
+            <span class="muted small" style="display:block;margin-top:2px">${c.valores.map((v) => `${v.fonte}: ${valorTecnico(v.valor)}`).join(' · ')}</span></span></li>`)}</ul></section>` : ''}
+        ${lista('Para revisão humana', 'conferir antes de decidir', outras)}
+      </div>
+      <div>${parecer ? html`<div class="secao-head"><h2>Parecer do Verificador</h2></div>
+        <div class="markdown small">${raw(renderMarkdown(parecer.replace(/^Parecer do Agente Verificador:\s*/, '')))}</div>` : ''}</div>
     </div>`);
 }
 
@@ -341,31 +368,34 @@ function telaPendencias(alvo, a) {
 
 function telaDossie(alvo, a) {
   const d = a.dossie;
+  const OPCOES = [['APROVADO', 'Seguir'], ['PENDENTE', 'A decidir'], ['REJEITADO', 'Descartar']];
   render(alvo, html`
-    <div class="grid grid-main">
-      <div class="card"><div class="card-body markdown" id="md">${raw(renderMarkdown(d.conteudo_md))}</div></div>
-      <div class="stack">
-        <div class="card">
-          <div class="card-head"><h2>Decisão humana</h2>${badgeRevisao(d.status_revisao)}</div>
-          <form class="card-body" id="form-revisao">
-            <div class="chips" style="margin-bottom:12px">
-              ${['PENDENTE', 'APROVADO', 'REJEITADO'].map((s) => html`<label class="chip ${d.status_revisao === s ? 'ativo' : ''}"><input type="radio" name="status" value="${s}" ${d.status_revisao === s ? raw('checked') : ''} hidden>${s === 'PENDENTE' ? 'Pendente' : s === 'APROVADO' ? 'Seguir com a oportunidade' : 'Descartar'}</label>`)}
+    <div class="colunas">
+      <div class="markdown" id="md">${raw(renderMarkdown(d.conteudo_md))}</div>
+      <div>
+        <div style="position:sticky;top:96px">
+          <div class="secao-head"><h2>Sua decisão</h2>${badgeRevisao(d.status_revisao)}</div>
+          <form id="form-revisao">
+            <div class="segmentos" style="margin-bottom:14px">
+              ${OPCOES.map(([s, n]) => html`<button type="button" data-s="${s}" class="${d.status_revisao === s ? 'ativo' : ''}">${n}</button>`)}
             </div>
-            <label class="field">Comentário<textarea name="comentario" rows="4" placeholder="Motivo da decisão, responsável, próximos contatos…">${d.comentario_usuario}</textarea></label>
+            <input type="hidden" name="status" value="${d.status_revisao}">
+            <label class="field">Comentário<textarea name="comentario" rows="4" placeholder="Motivo, responsável, próximos contatos…">${d.comentario_usuario}</textarea></label>
             <button class="btn btn-primary" type="submit" style="margin-top:12px;width:100%">${icon('check')} Salvar decisão</button>
-            <p class="muted small" style="margin:10px 0 0">A decisão fica registrada na análise e alimenta o benchmark de qualidade.</p>
           </form>
-        </div>
-        <div class="card card-pad">
-          <a class="btn" style="width:100%" href="${api.dossieDownloadUrl(a.id)}">${icon('download')} Baixar dossiê (.md)</a>
-          <button class="btn btn-ghost" style="width:100%;margin-top:8px" id="imprimir">${icon('doc')} Imprimir / salvar PDF</button>
+          <div class="actions" style="margin-top:24px">
+            <a class="btn btn-ghost" href="${api.dossieDownloadUrl(a.id)}">${icon('download')} Baixar (.md)</a>
+            <button class="btn btn-ghost" id="imprimir">${icon('doc')} Imprimir / PDF</button>
+          </div>
         </div>
       </div>
     </div>`);
   const form = alvo.querySelector('#form-revisao');
-  form.addEventListener('change', (e) => {
-    if (e.target.name !== 'status') return;
-    form.querySelectorAll('label.chip').forEach((l) => l.classList.toggle('ativo', l.querySelector('input').checked));
+  form.querySelector('.segmentos').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    form.querySelectorAll('.segmentos button').forEach((x) => x.classList.toggle('ativo', x === b));
+    form.elements.status.value = b.dataset.s;
   });
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -380,8 +410,8 @@ function telaDossie(alvo, a) {
   });
   alvo.querySelector('#imprimir').addEventListener('click', () => {
     const w = window.open('', '_blank');
-    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(d.titulo)}</title><link rel="stylesheet" href="/css/app.css">
-      <style>body{background:#fff;color:#13232b}.markdown{max-width:900px;margin:30px auto;padding:0 24px}</style></head>
+    w.document.write(`<!doctype html><html lang="pt-BR" data-theme="light"><head><meta charset="utf-8"><title>${esc(d.titulo)}</title><link rel="stylesheet" href="/css/app.css">
+      <style>body{background:#fff}.markdown{max-width:860px;margin:30px auto;padding:0 24px}</style></head>
       <body><div class="markdown">${renderMarkdown(d.conteudo_md)}</div><script>setTimeout(()=>print(),300)<\/script></body></html>`);
     w.document.close();
   });
@@ -405,31 +435,32 @@ function realcar(texto, trecho) {
 }
 
 async function abrirEvidencia(a, ctx, evId) {
-  const m = abrirModal({ titulo: 'Conferir evidência', subtitulo: evId, corpo: html`<div class="empty"><span class="spinner"></span></div>` });
+  const m = abrirModal({ titulo: 'Prova no documento', corpo: html`<div class="empty"><span class="spinner"></span></div>` });
   try {
     const r = await api.evidencia(a.id, evId);
     const ev = r.evidencia;
     const doc = r.documento;
-    const corpo = html`
-      <div class="chips" style="margin-bottom:12px">
-        ${ev.verificada ? html`<span class="badge b-ok">verificada no documento</span>` : html`<span class="badge b-warn">não localizada literalmente</span>`}
-        <span class="badge plain">similaridade ${ev.score_match ?? '—'}</span>
-        <span class="badge plain">${doc.nome}${ev.pagina ? ` · página ${ev.pagina}` : ''}</span>
-      </div>
-      <div class="quote" style="margin-bottom:14px">“${ev.trecho_literal}”</div>
-      <div class="kpi-label" style="margin-bottom:6px">${doc.id.startsWith('pncp-item') ? 'Descrição do item no PNCP' : `Texto da página ${ev.pagina}`}</div>
-      <div class="page-text">${realcar(r.texto_pagina, ev.trecho_literal)}</div>`;
-    m.el.querySelector('.modal-body').innerHTML = corpo.s;
-    const rodape = document.createElement('div');
-    rodape.className = 'modal-foot';
-    rodape.innerHTML = html`
-      ${doc.url_origem ? html`<a class="btn btn-ghost" href="${doc.url_origem}" target="_blank" rel="noopener">${icon('external')} Origem (PNCP)</a>` : ''}
-      ${doc.tem_arquivo ? html`<a class="btn btn-primary" href="${api.arquivoUrl(a.id, doc.id, doc.eh_pdf ? ev.pagina : null)}" target="_blank" rel="noopener">${icon('doc')} ${doc.eh_pdf ? `Abrir PDF na página ${ev.pagina || ''}` : 'Abrir arquivo original'}</a>` : ''}`.s;
-    m.el.appendChild(rodape);
+    const ehItem = doc.id.startsWith('pncp-item');
+    m.el.querySelector('.modal-head .muted, .modal-head h2').insertAdjacentHTML('afterend',
+      html`<div class="muted small" style="margin-top:4px">${ehItem ? 'Descrição do item no PNCP' : `${doc.nome}${ev.pagina ? ` · página ${ev.pagina}` : ''}`}</div>`.s);
+    m.el.querySelector('.modal-body').innerHTML = html`
+      <div style="margin-bottom:14px">${ev.verificada
+        ? html`<span class="res ok">${icon('check')}Trecho localizado no documento</span>`
+        : html`<span class="res bad">${icon('alert')}Trecho não localizado literalmente</span>`}</div>
+      <div class="citacao" style="margin-bottom:18px">“${ev.trecho_literal}”</div>
+      <div class="page-text">${realcar(r.texto_pagina, ev.trecho_literal)}</div>`.s;
+    if (doc.url_origem || doc.tem_arquivo) {
+      const rodape = document.createElement('div');
+      rodape.className = 'modal-foot';
+      rodape.innerHTML = html`
+        ${doc.url_origem ? html`<a class="btn btn-ghost" href="${doc.url_origem}" target="_blank" rel="noopener">${icon('external')} Origem no PNCP</a>` : ''}
+        ${doc.tem_arquivo ? html`<a class="btn btn-primary" href="${api.arquivoUrl(a.id, doc.id, doc.eh_pdf ? ev.pagina : null)}" target="_blank" rel="noopener">${icon('doc')} ${doc.eh_pdf ? `Abrir o PDF na página ${ev.pagina || ''}` : 'Abrir o arquivo'}</a>` : ''}`.s;
+      m.el.appendChild(rodape);
+    }
     const marca = m.el.querySelector('mark');
     if (marca) marca.scrollIntoView({ block: 'center' });
   } catch (err) {
-    m.el.querySelector('.modal-body').innerHTML = html`<div class="alert alert-bad">${icon('alert')}<div class="alert-body">${err.message}</div></div>`.s;
+    m.el.querySelector('.modal-body').innerHTML = aviso(err.message, 'bad', 'alert').s;
   }
 }
 

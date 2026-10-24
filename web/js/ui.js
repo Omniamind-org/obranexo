@@ -1,4 +1,4 @@
-// Utilitários de interface: template HTML com escape, ícones, toasts, modal e badges.
+// Utilitários de interface: template HTML com escape, ícones, toasts, dicas, modal e etiquetas.
 
 export class Raw {
   constructor(s) { this.s = s; }
@@ -60,6 +60,13 @@ const ICONES = {
   arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+  chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/><path d="M8.5 10.5h7M8.5 13.5h4"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/>',
+  send: '<path d="M4 12 20 4l-6 16-3-7Z"/><path d="m11 13 9-9"/>',
+  sparkle: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
 };
 
 export function icon(nome, cls = '') {
@@ -81,6 +88,42 @@ export function toast(mensagem, tipo = 'ok', ms = 4200) {
   el.innerHTML = html`${icon(tipo === 'erro' ? 'alert' : 'check')}<div>${mensagem}</div>`.s;
   raiz.appendChild(el);
   setTimeout(() => el.remove(), ms);
+}
+
+// ------------------------------------------------------------------ dica flutuante (gráficos)
+
+/** Qualquer elemento com data-tip mostra a dica ao passar o mouse ou receber foco. */
+export function ativarDicas() {
+  const dica = document.getElementById('dica');
+  if (!dica) return;
+  let alvo = null;
+  const posicionar = (x, y) => {
+    const r = dica.getBoundingClientRect();
+    const left = Math.min(window.innerWidth - r.width - 8, Math.max(8, x - r.width / 2));
+    const top = y - r.height - 12 < 8 ? y + 18 : y - r.height - 12;
+    dica.style.left = `${left}px`;
+    dica.style.top = `${top}px`;
+  };
+  const mostrar = (el, x, y) => {
+    alvo = el;
+    dica.innerHTML = esc(el.dataset.tip).replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    dica.classList.add('on');
+    posicionar(x, y);
+  };
+  const esconder = () => { alvo = null; dica.classList.remove('on'); };
+  document.addEventListener('mouseover', (e) => {
+    const el = e.target.closest('[data-tip]');
+    if (el && el.dataset.tip) mostrar(el, e.clientX, e.clientY);
+    else if (alvo) esconder();
+  });
+  document.addEventListener('mousemove', (e) => { if (alvo) posicionar(e.clientX, e.clientY); });
+  document.addEventListener('focusin', (e) => {
+    const el = e.target.closest('[data-tip]');
+    if (el && el.dataset.tip) { const r = el.getBoundingClientRect(); mostrar(el, r.left + r.width / 2, r.top); }
+  });
+  document.addEventListener('focusout', esconder);
+  window.addEventListener('scroll', esconder, { passive: true });
+  window.addEventListener('hashchange', esconder);
 }
 
 // ------------------------------------------------------------------ modal
@@ -110,54 +153,56 @@ export function abrirModal({ titulo, subtitulo = '', corpo, rodape = '' }) {
 // ------------------------------------------------------------------ estados
 
 export const carregando = (texto = 'Carregando…') => html`
-  <div class="empty"><span class="spinner" style="color:var(--accent)"></span><div style="margin-top:10px">${texto}</div></div>`;
+  <div class="empty"><span class="spinner" style="color:var(--teal)"></span><div style="margin-top:10px">${texto}</div></div>`;
 
 export const vazio = (titulo, texto = '', acao = '') => html`
-  <div class="empty">${icon('layers')}<h3>${titulo}</h3>${texto ? html`<div>${texto}</div>` : ''}${acao ? html`<div style="margin-top:14px">${acao}</div>` : ''}</div>`;
+  <div class="empty">${icon('layers')}<h3>${titulo}</h3>${texto ? html`<div>${texto}</div>` : ''}${acao ? html`<div style="margin-top:16px">${acao}</div>` : ''}</div>`;
 
 export const erroBox = (msg) => html`
-  <div class="alert alert-bad">${icon('alert')}<div class="alert-body"><strong>Não foi possível carregar.</strong> ${msg}</div></div>`;
+  <div class="aviso bad">${icon('alert')}<div><strong>Não foi possível carregar.</strong> ${msg}</div></div>`;
 
-// ------------------------------------------------------------------ badges de domínio
+export const aviso = (texto, tipo = '', ico = 'info') => html`<div class="aviso ${tipo}">${icon(ico)}<div>${texto}</div></div>`;
+
+// ------------------------------------------------------------------ etiquetas de domínio
 
 const RESULTADO = {
-  COMPATIVEL: ['Compatível', 'b-ok'],
-  PARCIAL: ['Parcial', 'b-warn'],
+  COMPATIVEL: ['Compatível', 'ok'],
+  PARCIAL: ['Parcial', 'warn'],
   INDETERMINADO: ['Indeterminado', ''],
-  INCOMPATIVEL: ['Incompatível', 'b-bad'],
-  FORA_DO_PORTFOLIO: ['Fora do portfólio', ''],
-};
-const REQUISITO = {
-  ATENDE: ['Atende', 'b-ok'],
-  NAO_ATENDE: ['Não atende', 'b-bad'],
-  INDETERMINADO: ['Indeterminado', ''],
+  INCOMPATIVEL: ['Incompatível', 'bad'],
+  FORA_DO_PORTFOLIO: ['Fora do catálogo', 'plain'],
 };
 const TIPO = {
-  PUBLICADA: ['Publicada', 'b-info'],
-  PLANEJADA: ['Planejada', 'b-accent'],
-  INDIRETA_POTENCIAL: ['Indireta potencial', 'b-warn'],
+  PUBLICADA: ['Licitação publicada', 'teal'],
+  PLANEJADA: ['Compra planejada', 'teal'],
+  INDIRETA_POTENCIAL: ['Oportunidade indireta', 'warn'],
   INFERIDA: ['Inferida', ''],
 };
 const PRAZO = {
-  ABERTA: ['Propostas abertas', 'b-ok'],
-  ENCERRADA: ['Prazo encerrado', ''],
-  DESCONHECIDA: ['Prazo desconhecido', ''],
+  ABERTA: ['Propostas abertas', 'ok'],
+  ENCERRADA: ['Prazo encerrado', 'plain'],
+  DESCONHECIDA: ['Prazo desconhecido', 'plain'],
 };
 const REVISAO = {
-  PENDENTE: ['Revisão pendente', ''],
-  APROVADO: ['Aprovado', 'b-ok'],
-  REJEITADO: ['Rejeitado', 'b-bad'],
+  PENDENTE: ['A decidir', 'plain'],
+  APROVADO: ['Seguir', 'ok'],
+  REJEITADO: ['Descartada', 'bad'],
 };
-const CONFIANCA = { alta: ['Confiança alta', 'b-ok'], media: ['Confiança média', 'b-warn'], baixa: ['Confiança baixa', 'b-bad'] };
+const CONFIANCA = { alta: ['Confiança alta', 'ok'], media: ['Confiança média', 'warn'], baixa: ['Confiança baixa', 'bad'] };
 
-function badgeDe(mapa, chave) {
-  const [rotulo, cls] = mapa[chave] || [chave || '—', ''];
-  return html`<span class="badge ${cls}">${rotulo}</span>`;
+function tagDe(mapa, chave) {
+  const [rotulo, cls] = mapa[chave] || [chave || '—', 'plain'];
+  return html`<span class="tag ${cls}">${rotulo}</span>`;
 }
-export const badgeResultado = (v) => badgeDe(RESULTADO, v);
-export const badgeRequisito = (v) => badgeDe(REQUISITO, v);
-export const badgeTipo = (v) => badgeDe(TIPO, v);
-export const badgePrazo = (v) => badgeDe(PRAZO, v);
-export const badgeRevisao = (v) => badgeDe(REVISAO, v);
-export const badgeConfianca = (v) => badgeDe(CONFIANCA, v);
+export const badgeResultado = (v) => tagDe(RESULTADO, v);
+export const badgeTipo = (v) => tagDe(TIPO, v);
+export const badgePrazo = (v) => tagDe(PRAZO, v);
+export const badgeRevisao = (v) => tagDe(REVISAO, v);
+export const badgeConfianca = (v) => tagDe(CONFIANCA, v);
 export const rotuloResultado = (v) => (RESULTADO[v] || [v])[0];
+
+const REQUISITO = { ATENDE: ['Atende', 'ok', 'check'], NAO_ATENDE: ['Não atende', 'bad', 'x'], INDETERMINADO: ['Sem dado', 'indet', 'help'] };
+export function badgeRequisito(v) {
+  const [rotulo, cls, ico] = REQUISITO[v] || [v, 'indet', 'help'];
+  return html`<span class="res ${cls}">${icon(ico)}${rotulo}</span>`;
+}

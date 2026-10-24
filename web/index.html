@@ -3,43 +3,52 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ObraNexo // Mission Control PNCP</title>
-  <meta name="description" content="Inteligência comercial agêntica e auditoria forense para contratações públicas">
+  <title>ObraNexo</title>
+  <meta name="description" content="Encontre licitações públicas aderentes ao seu catálogo, com cada conclusão ligada ao trecho do edital">
   <link rel="icon" type="image/png" href="/images/emblem.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/app.css">
+  <script>
+    // Aplica o tema antes da primeira pintura (sem piscar): escolha salva ou, sem ela, o tema do sistema
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('obranexo.tema'); } catch (e) { /* sem storage */ }
+      if (t !== 'light' && t !== 'dark') t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="topbar-brand">
-        <a class="brand" href="#/inicio">
-          <img class="brand-emblem" src="/images/emblem.png" alt="ObraNexo">
-          <img class="brand-text-img" src="/images/text.png" alt="ObraNexo">
-        </a>
-      </div>
-      <nav class="nav" id="nav" aria-label="Navegação principal">
-        <a href="#/inicio" data-rota="inicio"><span data-icon="home"></span><span>Painel Geral</span><span class="nav-hotkey">01</span></a>
-        <a href="#/agente" data-rota="agente"><span data-icon="bolt"></span><span>Prospecção IA</span><span class="nav-hotkey">02</span></a>
-        <a href="#/catalogo" data-rota="catalogo"><span data-icon="box"></span><span>Catálogo Técnico</span><span class="nav-hotkey">03</span></a>
-        <a href="#/demandas" data-rota="demandas"><span data-icon="search"></span><span>Radar PNCP</span><span class="nav-hotkey">04</span></a>
-        <a href="#/analises" data-rota="analises"><span data-icon="file"></span><span>Dossiês & Análises</span><span class="nav-hotkey">05</span></a>
-        <a href="#/metricas" data-rota="metricas"><span data-icon="chart"></span><span>Métricas</span><span class="nav-hotkey">06</span></a>
-        <a href="#/sobre" data-rota="sobre"><span data-icon="info"></span><span>Arquitetura</span><span class="nav-hotkey">07</span></a>
-      </nav>
-    </header>
-    <main class="main">
-      <div class="scanlines" aria-hidden="true"></div>
-      <div id="view" class="view" tabindex="-1"></div>
-    </main>
-  </div>
-  <div id="status-sistema" class="status-dock" aria-label="Telemetria do sistema">
-    <div class="skeleton-line" style="width:180px;height:24px"></div>
-  </div>
+  <header class="topbar">
+    <a class="brand" href="#/inicio" aria-label="ObraNexo — início">
+      <img class="brand-emblem" src="/images/emblem.png" alt="">
+      <img class="brand-text-img" src="/images/text.png" alt="ObraNexo">
+    </a>
+    <nav class="nav" id="nav" aria-label="Navegação principal">
+      <a href="#/inicio" data-rota="inicio">Início</a>
+      <a href="#/agente" data-rota="agente">Prospecção</a>
+      <a href="#/demandas" data-rota="demandas">Licitações</a>
+      <a href="#/analises" data-rota="analises">Análises</a>
+      <a href="#/catalogo" data-rota="catalogo">Catálogo</a>
+      <a href="#/metricas" data-rota="metricas">Qualidade</a>
+      <a href="#/sobre" data-rota="sobre">Como funciona</a>
+    </nav>
+    <div class="topo-dir">
+      <div id="status-sistema" class="status-ia" aria-label="Provedor de IA"></div>
+      <button id="tema" class="tema-btn" type="button" aria-label="Alternar tema"></button>
+    </div>
+  </header>
+  <main id="view" class="view" tabindex="-1"></main>
+  <button id="chat-abrir" class="chat-abrir" type="button" aria-controls="chat" aria-expanded="false">
+    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/><path d="M8.5 10.5h7M8.5 13.5h4"/></svg>
+    <span>Perguntar</span>
+  </button>
+  <aside id="chat" class="chat" aria-label="Assistente" hidden></aside>
   <div id="modal-root"></div>
   <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="dica" class="dica" role="tooltip"></div>
   <script type="module" src="/js/app.js"></script>
 </body>
 </html>

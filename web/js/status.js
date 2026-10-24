@@ -1,35 +1,47 @@
-// Painel de status do sistema na barra superior (SCADA Topbar Telemetry).
+// Provedor de IA no topo: indicador + seletor entre os provedores com chave no .env.
 
 import { api } from './api.js';
-import { html, render } from './ui.js';
+import { html, render, toast } from './ui.js';
+
+export const NOMES_IA = { gemini: 'Gemini', groq: 'Groq', anthropic: 'Claude' };
+
+function seletorLlm(s) {
+  const configurados = (s.llm.provedores || []).filter((p) => p.configurado);
+  const atual = s.llm.provedor || '';
+  const dica = atual ? `Agentes: ${s.llm.modelo_agente} · extração: ${s.llm.modelo_extracao}` : 'Sem IA: só as regras determinísticas';
+  if (!configurados.length) return html`<span class="dot"></span><span data-tip="${dica}">Sem IA</span>`;
+  return html`
+    <span class="dot ${atual ? 'on' : ''}"></span>
+    <select id="seletor-llm" aria-label="Provedor de IA" data-tip="${dica}">
+      ${configurados.map((p) => html`<option value="${p.id}" ${p.id === atual ? 'selected' : ''}>IA: ${NOMES_IA[p.id] || p.id}</option>`)}
+      <option value="" ${atual ? '' : 'selected'}>Sem IA</option>
+    </select>`;
+}
+
+async function trocar(provedor) {
+  try {
+    const llm = await api.trocarProvedor(provedor || null);
+    await atualizarStatus();
+    window.dispatchEvent(new CustomEvent('provedor-llm', { detail: llm }));
+    if (!llm.disponivel) { toast('Sem IA: as análises usam só as regras.'); return; }
+    const nome = NOMES_IA[llm.provedor] || llm.provedor;
+    const t = await api.testarProvedor();
+    if (t.ok) toast(`${nome} conectado (${t.latencia_s}s)`);
+    else toast(`${nome} não respondeu: ${t.erro}`, 'erro', 9000);
+  } catch (err) {
+    toast(err.message, 'erro', 7000);
+    atualizarStatus();
+  }
+}
 
 export async function atualizarStatus() {
   const el = document.getElementById('status-sistema');
   if (!el) return;
   try {
     const s = await api.status();
-    const llm = s.llm.disponivel
-      ? html`<span class="hud-status ok" title="${s.llm.modelo_agente}"><span class="dot on"></span>${s.llm.provedor}</span>`
-      : html`<span class="hud-status warn" title="Sem chave de API configurada"><span class="dot off"></span>DETERMINÍSTICO</span>`;
-    render(el, html`
-      <div class="topbar-hud">
-        <div class="hud-chip">
-          <span class="hud-label">IA:</span>
-          ${llm}
-        </div>
-        <div class="hud-chip">
-          <span class="hud-label">PNCP:</span>
-          <span class="hud-val mono">${s.pncp_offline ? 'CACHE' : 'REDE'}</span>
-        </div>
-        <div class="hud-ping">SYS:OK</div>
-        <div class="hud-chip version-chip"><span class="hud-val mono">v${s.versao}</span></div>
-      </div>`);
+    render(el, seletorLlm(s));
+    el.querySelector('#seletor-llm')?.addEventListener('change', (e) => trocar(e.target.value));
   } catch {
-    render(el, html`
-      <div class="topbar-hud">
-        <div class="hud-ping bad">OFFLINE</div>
-      </div>`);
+    render(el, html`<span class="dot"></span><span>Servidor indisponível</span>`);
   }
 }
-
-

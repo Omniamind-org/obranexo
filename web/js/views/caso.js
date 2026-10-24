@@ -1,105 +1,103 @@
-// Detalhe de um caso congelado + execução da análise com acompanhamento ao vivo (SSE).
+// Detalhe de uma licitação salva + execução da análise com acompanhamento ao vivo (SSE).
 
 import { acompanharJob, api } from '../api.js';
-import { data, hora, local, moeda, numero } from '../format.js';
-import { badgePrazo, html, icon, render, toast } from '../ui.js';
+import { prazo } from '../charts.js';
+import { data, hora, local, moeda, moedaCompacta, numero, nomeProprio } from '../format.js';
+import { html, icon, raw, render, toast } from '../ui.js';
 
 export const ETAPAS = [
-  ['carregar_contexto', 'Contexto', 'catálogo × contratação'],
-  ['coletar_documentos', 'Documentos', 'leitura dos anexos'],
-  ['extrair_itens', 'Analista Técnico', 'requisitos dos itens'],
-  ['filtrar_relevantes', 'Portfólio', 'itens do catálogo'],
-  ['especificador', 'Especificador', 'especificação no TR'],
-  ['casar_com_catalogo', 'Motor de regras', 'compatibilidade'],
-  ['investigador', 'Investigador', 'busca no edital'],
-  ['varrer_insumos', 'Insumos', 'obras/serviços'],
-  ['verificador', 'Verificador', 'citações e conflitos'],
-  ['qualificar', 'Qualificação', 'tipo, prazo, prioridade'],
-  ['planejador', 'Planejador', 'próximos passos'],
-  ['gerar_dossie', 'Dossiê', 'documento final'],
+  ['carregar_contexto', 'Contexto'],
+  ['coletar_documentos', 'Documentos'],
+  ['extrair_itens', 'Requisitos'],
+  ['filtrar_relevantes', 'Catálogo'],
+  ['especificador', 'Termo de referência'],
+  ['casar_com_catalogo', 'Comparação'],
+  ['investigador', 'Investigação'],
+  ['varrer_insumos', 'Insumos'],
+  ['verificador', 'Verificação'],
+  ['qualificar', 'Qualificação'],
+  ['planejador', 'Plano'],
+  ['gerar_dossie', 'Dossiê'],
 ];
 
 export async function render_(el, nome) {
   const caso = await api.caso(nome);
   const c = caso.contratacao;
-  const aberta = c.data_encerramento_proposta && new Date(c.data_encerramento_proposta) > new Date();
+  const valorItem = (i) => (i.quantidade || 0) * (i.valor_unit_estimado || 0);
+  const maxValor = Math.max(1, ...caso.itens.map(valorItem));
+  const ultima = caso.analises.find((a) => a.status === 'concluida');
 
   render(el, html`
-    <div class="crumbs"><a href="#/demandas">Demandas</a> / ${caso.nome}</div>
+    <a class="voltar" href="#/demandas">${icon('back')} Licitações</a>
     <div class="page-head">
-      <div>
-        <div class="eyebrow">${c.modalidade || 'Contratação'}${c.numero_compra ? ` nº ${c.numero_compra}/${c.ano}` : ''}</div>
-        <h1>${c.orgao_nome}</h1>
-        <p>${c.objeto}</p>
+      <div style="min-width:0;flex:1">
+        <div class="sobretitulo">${c.modalidade || 'Contratação'}${c.numero_compra ? ` nº ${c.numero_compra}/${c.ano}` : ''} · ${local(c)}</div>
+        <h1>${nomeProprio(c.orgao_nome)}</h1>
+        <p class="sub clamp-3">${c.objeto}</p>
+        <div class="fatos" style="margin-top:14px">
+          <span data-tip="Valor estimado">${icon('money')}${moeda(c.valor_estimado)}</span>
+          <span>${icon('calendar')}${prazo(c.data_encerramento_proposta)}</span>
+          <span>${icon('layers')}${caso.itens.length} itens</span>
+          <span data-tip="${caso.documentos.filter((d) => d.baixado).length} com arquivo baixado">${icon('doc')}${caso.documentos.length} anexos</span>
+        </div>
+        ${ultima ? html`<p class="small ink-2" style="margin-top:12px">Já analisada em ${data(ultima.iniciada_em, true)} — <a href="#/analises/${ultima.id}">ver resultado</a></p>` : ''}
       </div>
       <div class="actions">
-        <a class="btn" href="${c.link_oficial}" target="_blank" rel="noopener">${icon('external')} Ver no PNCP</a>
-        <button class="btn btn-primary btn-lg" id="executar">${icon('play')} Executar análise</button>
+        <a class="btn" href="${c.link_oficial}" target="_blank" rel="noopener">${icon('external')} PNCP</a>
+        <button class="btn btn-primary btn-lg" id="executar">${icon('play')} ${ultima ? 'Analisar de novo' : 'Analisar'}</button>
       </div>
-    </div>
-
-    <div class="grid grid-4">
-      <div class="card kpi"><div class="kpi-label">Valor estimado</div><div class="kpi-value" style="font-size:21px">${moeda(c.valor_estimado)}</div><div class="kpi-sub">${c.valor_homologado ? `homologado ${moeda(c.valor_homologado)}` : 'sem valor homologado'}</div></div>
-      <div class="card kpi"><div class="kpi-label">Local</div><div class="kpi-value" style="font-size:21px">${local(c)}</div><div class="kpi-sub truncate">${c.unidade_nome || '—'}</div></div>
-      <div class="card kpi"><div class="kpi-label">Propostas até</div><div class="kpi-value" style="font-size:21px">${data(c.data_encerramento_proposta)}</div><div class="kpi-sub">${badgePrazo(aberta ? 'ABERTA' : 'ENCERRADA')}</div></div>
-      <div class="card kpi"><div class="kpi-label">Itens / anexos</div><div class="kpi-value" style="font-size:21px">${caso.itens.length} / ${caso.documentos.length}</div><div class="kpi-sub">${caso.documentos.filter((d) => d.baixado).length} anexo(s) com arquivo local</div></div>
     </div>
 
     <div id="execucao"></div>
 
-    <div class="grid grid-main" style="margin-top:16px">
-      <div class="card">
-        <div class="card-head"><h2>Itens da contratação</h2><span class="muted small">${caso.itens.length} itens</span></div>
+    <div class="colunas secao" style="margin-top:40px">
+      <div>
+        <div class="secao-head"><h2>Itens</h2><span class="sub">barra = valor total estimado do item</span></div>
         <div class="table-wrap"><table class="table">
-          <thead><tr><th>#</th><th>Descrição</th><th class="num">Qtd</th><th class="num">Valor unit.</th></tr></thead>
-          <tbody>${caso.itens.map((i) => html`
-            <tr><td class="muted">${i.numero_item}</td><td><div class="clamp-2" title="${i.descricao}">${i.descricao}</div></td>
-            <td class="num">${numero(i.quantidade)} <span class="muted small">${i.unidade || ''}</span></td><td class="num">${moeda(i.valor_unit_estimado)}</td></tr>`)}</tbody>
+          <thead><tr><th>#</th><th>Descrição</th><th class="num">Qtd.</th><th style="width:170px">Valor total</th></tr></thead>
+          <tbody>${caso.itens.map((i, k) => html`
+            <tr ${k >= 15 ? raw('hidden data-extra') : ''}><td class="muted">${i.numero_item}</td>
+              <td><div class="clamp-2" data-tip="${i.descricao}">${i.descricao}</div></td>
+              <td class="num">${numero(i.quantidade)} <span class="muted small">${i.unidade || ''}</span></td>
+              <td data-tip="${moeda(i.valor_unit_estimado)} por unidade"><div class="barras" style="grid-template-columns:1fr"><div class="trilho">
+                <span class="barra" style="width:${Math.max(1, (valorItem(i) / maxValor) * 100)}%"></span><span class="val">${moedaCompacta(valorItem(i))}</span></div></div></td></tr>`)}</tbody>
         </table></div>
+        ${caso.itens.length > 15 ? html`<button class="btn btn-ghost" id="todos-itens" style="margin-top:10px">Mostrar todos os ${caso.itens.length} itens</button>` : ''}
       </div>
-      <div class="stack">
-        <div class="card">
-          <div class="card-head"><h2>Anexos</h2></div>
-          <ul class="list" style="padding:0 20px;max-height:340px;overflow-y:auto">
-            ${caso.documentos.map((d) => html`<li class="small" style="display:flex;gap:8px;align-items:flex-start">
-              ${icon(d.baixado ? 'doc' : 'x')}<div style="min-width:0"><div class="truncate" title="${d.nome}">${d.nome}</div><div class="muted">${d.tipo || ''}${d.baixado ? '' : ' · não baixado'}</div></div></li>`)}
-          </ul>
-        </div>
-        <div class="card">
-          <div class="card-head"><h2>Análises anteriores</h2></div>
-          <ul class="list" style="padding:0 20px">
-            ${caso.analises.length ? caso.analises.map((a) => html`<li class="small" style="display:flex;justify-content:space-between;gap:8px">
-              <a href="#/analises/${a.id}">${data(a.iniciada_em, true)}</a><span class="muted">${a.modo}${a.status === 'concluida' ? '' : ' · erro'}</span></li>`)
-            : html`<li class="muted small">Nenhuma análise deste caso ainda.</li>`}
-          </ul>
-        </div>
+      <div>
+        <div class="secao-head"><h2>Anexos</h2></div>
+        <ul class="riscos">${caso.documentos.map((d) => html`<li style="color:${d.baixado ? 'var(--ink)' : 'var(--muted)'}">${icon(d.baixado ? 'doc' : 'x')}
+          <span style="min-width:0"><span class="truncate" style="display:block" data-tip="${d.nome}">${d.nome}</span><span class="muted small">${d.tipo || ''}${d.baixado ? '' : ' · não baixado'}</span></span></li>`)}</ul>
       </div>
     </div>`);
+
+  el.querySelector('#todos-itens')?.addEventListener('click', (e) => {
+    el.querySelectorAll('tr[data-extra]').forEach((tr) => { tr.hidden = false; });
+    e.currentTarget.remove();
+  });
 
   let parar = null;
   el.querySelector('#executar').addEventListener('click', async (e) => {
     const botao = e.currentTarget;
     botao.disabled = true;
-    botao.innerHTML = '<span class="spinner"></span> Executando…';
+    botao.innerHTML = '<span class="spinner"></span> Analisando…';
     const alvo = el.querySelector('#execucao');
     render(alvo, html`
-      <div class="card" style="margin-top:16px">
-        <div class="card-head"><h2>Execução do fluxo agêntico</h2><span class="muted small" id="exec-status">iniciando…</span></div>
-        <div class="card-body">
-          <div class="stepper" id="stepper">${ETAPAS.map(([id, nome, sub]) => html`<div class="step" data-etapa="${id}"><strong>${nome}</strong><span>${sub}</span></div>`)}</div>
-          <ul class="timeline" id="timeline" style="margin-top:14px"></ul>
-        </div>
-      </div>`);
-    alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      <section style="padding:8px 0 4px">
+        <div class="progresso" id="progresso">${ETAPAS.map(([id, n]) => html`<div class="passo" data-etapa="${id}"><i></i><span>${n}</span></div>`)}</div>
+        <div class="agora"><span class="spinner" id="girando"></span><span id="agora">Iniciando a análise…</span></div>
+        <details class="mais" style="margin-top:14px"><summary>Ver detalhes</summary><ul class="feed" id="feed"></ul></details>
+      </section>`);
+    alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    const timeline = alvo.querySelector('#timeline');
-    const statusEl = alvo.querySelector('#exec-status');
+    const feed = alvo.querySelector('#feed');
+    const agora = alvo.querySelector('#agora');
     let etapaAtual = null;
     // Etapas podem se repetir (o motor de regras roda de novo após o Investigador): nunca desmarca o que já terminou.
     const marcar = (no) => {
-      const passo = alvo.querySelector(`.step[data-etapa="${no}"]`);
+      const passo = alvo.querySelector(`.passo[data-etapa="${no}"]`);
       if (!passo) return;
-      alvo.querySelectorAll('.step.ativo').forEach((s) => { s.classList.remove('ativo'); s.classList.add('feito'); });
+      alvo.querySelectorAll('.passo.ativo').forEach((s) => { s.classList.remove('ativo'); s.classList.add('feito'); });
       passo.classList.remove('feito');
       passo.classList.add('ativo');
       etapaAtual = no;
@@ -107,26 +105,26 @@ export async function render_(el, nome) {
 
     try {
       const job = await api.iniciarAnalise(nome);
-      statusEl.textContent = 'em execução';
       parar = acompanharJob(job.id, {
         onEvento: (ev) => {
           if (ev.no !== etapaAtual) marcar(ev.no);
+          agora.textContent = ev.mensagem;
           const li = document.createElement('li');
           li.innerHTML = html`<span class="ts">${hora(ev.ts)}</span><span class="no">${ev.no}</span><span>${ev.mensagem}</span>`.s;
-          timeline.appendChild(li);
-          timeline.scrollTop = timeline.scrollHeight;
+          feed.appendChild(li);
+          feed.scrollTop = feed.scrollHeight;
         },
         onFim: (fim) => {
-          alvo.querySelectorAll('.step').forEach((s) => {
+          alvo.querySelectorAll('.passo').forEach((s) => {
             if (s.classList.contains('ativo')) { s.classList.remove('ativo'); s.classList.add('feito'); }
             if (!s.classList.contains('feito')) s.classList.add('pulado');
           });
+          alvo.querySelector('#girando')?.remove();
           if (fim.status === 'concluida') {
-            statusEl.textContent = 'concluída';
-            toast('Análise concluída — abrindo o dossiê');
+            agora.textContent = 'Análise concluída — abrindo o resultado…';
             setTimeout(() => { location.hash = `#/analises/${fim.analise_id}`; }, 700);
           } else {
-            statusEl.textContent = 'erro';
+            agora.textContent = fim.erro || 'A análise terminou com erro.';
             toast(fim.erro || 'A análise terminou com erro', 'erro', 8000);
             botao.disabled = false;
             botao.innerHTML = `${icon('refresh').s} Tentar de novo`;
@@ -137,7 +135,7 @@ export async function render_(el, nome) {
     } catch (err) {
       toast(err.message, 'erro');
       botao.disabled = false;
-      botao.innerHTML = `${icon('play').s} Executar análise`;
+      botao.innerHTML = `${icon('play').s} Analisar`;
     }
   });
 

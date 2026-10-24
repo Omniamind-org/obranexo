@@ -34,6 +34,20 @@ export function valorTecnico(v, unidade) {
 
 export const OPERADOR = { '=': '=', '>=': '≥', '<=': '≤', entre: 'entre', contem: 'contém', verdadeiro: 'exigido' };
 
+const MINUSCULAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e', 'em', 'a', 'o', 'para', 'no', 'na']);
+const SIGLAS = /^(?:[A-Z]{2}|S\/A|SA|LTDA|ME|EPP|SAAE|DAE|SESI|SENAI|IFG|UFG|[IVX]+)$/;
+
+/** Nomes de órgão vêm do PNCP em CAIXA ALTA: exibe com iniciais maiúsculas (siglas e UFs preservadas). */
+export function nomeProprio(s) {
+  if (!s || s !== s.toUpperCase()) return s || '—';
+  return s.split(/\s+/).map((p, i) => {
+    const min = p.toLocaleLowerCase('pt-BR');
+    if (i > 0 && MINUSCULAS.has(min)) return min;
+    if (SIGLAS.test(p.replace(/[.,]/g, ''))) return p;
+    return min.charAt(0).toLocaleUpperCase('pt-BR') + min.slice(1);
+  }).join(' ');
+}
+
 export function local(c) {
   return [c.municipio, c.uf].filter(Boolean).join('/') || '—';
 }

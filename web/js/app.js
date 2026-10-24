@@ -1,7 +1,9 @@
 // Roteador (hash) e casca da aplicação.
 
+import { iniciarChat } from './chat.js';
 import { atualizarStatus } from './status.js';
-import { carregando, erroBox, hidratarIcones, html, render } from './ui.js';
+import { iniciarTema } from './tema.js';
+import { ativarDicas, carregando, erroBox, html, render } from './ui.js';
 import * as inicio from './views/inicio.js';
 import * as catalogo from './views/catalogo.js';
 import * as demandas from './views/demandas.js';
@@ -40,7 +42,7 @@ async function navegar() {
   document.getElementById('modal-root').innerHTML = '';
   document.querySelectorAll('#nav a').forEach((a) => a.classList.toggle('ativo', Boolean(rota) && a.dataset.rota === rota.nav));
   if (!rota) {
-    render(view, html`<div class="empty"><h3>Página não encontrada</h3><a class="btn" href="#/inicio">Voltar ao início</a></div>`);
+    render(view, html`<div class="empty"><h3>Página não encontrada</h3><a class="btn" href="#/inicio" style="margin-top:12px">Voltar ao início</a></div>`);
     return;
   }
   const params = caminho.match(rota.re).slice(1);
@@ -66,7 +68,13 @@ async function navegar() {
   view.focus({ preventScroll: true });
 }
 
-hidratarIcones(document.getElementById('nav'));
+iniciarTema();
+ativarDicas();
+iniciarChat();
 window.addEventListener('hashchange', navegar);
+// Telas que mostram o provedor de LLM (início e prospecção) são redesenhadas quando ele é trocado no seletor
+window.addEventListener('provedor-llm', () => {
+  if (/^#?\/?(inicio|agente)?$/.test(location.hash)) navegar();
+});
 atualizarStatus();
 navegar();

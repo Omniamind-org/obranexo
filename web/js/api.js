@@ -24,6 +24,8 @@ const q = (params) => new URLSearchParams(Object.entries(params).filter(([, v]) 
 
 export const api = {
   status: () => req('GET', '/api/status'),
+  trocarProvedor: (provedor) => req('POST', '/api/config/llm', { provedor }),
+  testarProvedor: () => req('POST', '/api/config/llm/testar'),
 
   catalogo: () => req('GET', '/api/catalogo'),
   enviarCatalogo: (arquivo) => {
@@ -60,6 +62,10 @@ export const api = {
   evidencia: (id, evId) => req('GET', `/api/analises/${encodeURIComponent(id)}/evidencias/${encodeURIComponent(evId)}`),
   arquivoUrl: (id, docId, pagina) => `/api/analises/${encodeURIComponent(id)}/documentos/${encodeURIComponent(docId)}/arquivo${pagina ? `#page=${pagina}` : ''}`,
   dossieDownloadUrl: (id) => `/api/analises/${encodeURIComponent(id)}/dossie.md?download=true`,
+
+  criarConversa: () => req('POST', '/api/chat'),
+  conversa: (id) => req('GET', `/api/chat/${encodeURIComponent(id)}`),
+  enviarMensagem: (id, texto) => req('POST', `/api/chat/${encodeURIComponent(id)}/mensagens`, { texto }),
 
   metricas: () => req('GET', '/api/metricas'),
   fluxo: () => req('GET', '/api/conteudo/fluxo'),
