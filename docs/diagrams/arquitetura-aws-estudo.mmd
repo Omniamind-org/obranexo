@@ -1,0 +1,50 @@
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#e2f4f2','primaryTextColor':'#10222f','primaryBorderColor':'#00ab9f','lineColor':'#7d8b96','edgeLabelBackground':'#f1f3f3','fontSize':'14px','clusterBkg':'transparent','clusterBorder':'#7d8b96','titleColor':'#7d8b96'}}}%%
+flowchart LR
+  subgraph ENT[" Entradas "]
+    direction TB
+    U([👤 Fornecedor]):::nav
+    PNCP[(🏛️ PNCP<br/>API pública)]:::nav
+  end
+  subgraph ESTUDO[" ⚠️ Estudo em andamento · primeira proposta AWS, não implementada "]
+    direction LR
+    subgraph PROC[" Processamento "]
+      direction TB
+      CF[🛡️ CloudFront + WAF · F3<br/>no F1: ALB]:::plan
+      API[🖥️ API e interface<br/>ECS Fargate · a aplicação atual · F1]:::plan
+      Q2[[📬 SQS análises · F2]]:::plan
+      WA[🧠 Workers de análise · F2<br/>ECS Fargate · grafo de agentes]:::plan
+      EB[⏱️ EventBridge Scheduler · F2]:::plan
+      LC[λ Lambda coletor · F2<br/>metadados e itens de todas]:::plan
+      Q1[[📬 SQS documentos · F2<br/>só quem passa no portão 1]]:::plan
+      WD[📄 Workers de documentos · F2<br/>ECS Fargate · ritmo controlado,<br/>texto por página, seções, embeddings]:::plan
+    end
+    subgraph DADOS[" Dados e IA "]
+      direction TB
+      PG[(🐘 PostgreSQL<br/>RDS no F1 → Aurora Serverless v2<br/>dados · índice de itens pgvector + texto<br/>cota · trilha de IA · chat)]:::mem
+      S3[(🗄️ S3 · acervo<br/>PDF pelo hash · texto por página<br/>dossiês e propostas)]:::mem
+      BR{{🤖 Amazon Bedrock<br/>Claude para os agentes<br/>embeddings para o índice}}:::inf
+    end
+    subgraph SEG[" Transversal: segurança e custos "]
+      direction LR
+      CG[🔑 Cognito · login · F3]:::plan
+      KMS[🔐 KMS + Secrets Manager]:::plan
+      CW[📈 CloudWatch + AWS Budgets]:::plan
+    end
+  end
+  U --> CF --> API
+  API --> Q2 --> WA
+  EB --> LC --> Q1 --> WD
+  PNCP -- metadados e itens --> LC
+  PNCP -- anexos --> WD
+  API --> PG
+  API --> S3
+  LC --> PG
+  WD --> S3
+  WD --> PG
+  WD --> BR
+  WA --> PG
+  WA --> BR
+  classDef plan fill:#f1f3f3,stroke:#a5b0b8,color:#4b5b67,stroke-dasharray:5 4
+  classDef mem fill:#0b2a3c,stroke:#0b2a3c,color:#ffffff
+  classDef inf fill:#e2f4f2,stroke:#00ab9f,color:#10222f
+  classDef nav fill:#0b2a3c,stroke:#0b2a3c,color:#ffffff

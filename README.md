@@ -62,12 +62,14 @@
    - [Orquestração, estado e memória](#orquestração-estado-e-memória) — grafo explícito e estado compartilhado
    - [Guardrails e revisão humana](#guardrails-e-revisão-humana)
    - [Observabilidade e avaliação](#observabilidade-e-avaliação) — trilha de chamadas, custo real, logs, benchmark, CI
+   - [Como a busca encontra licitações](#como-a-busca-encontra-licitações) — encontrar candidatos × decidir
    - [Decisões de projeto](#decisões-de-projeto) — por que regras decidem e por que não há LangChain
    - [Uma prospecção real atravessando o sistema](#uma-prospecção-real-atravessando-o-sistema)
 5. [Diferenciais](#diferenciais)
 6. [Validação e resultados](#validação-e-resultados) — benchmark, teste cego, testes, custo medido
 7. [Modelo de negócio e mercado](#modelo-de-negócio-e-mercado)
 8. [Status e roadmap](#status-e-roadmap) — fases F0 a F4
+   - [Arquitetura em nuvem (AWS) — estudo em andamento](#arquitetura-em-nuvem-aws--estudo-em-andamento)
 9. [Quickstart](#quickstart) — instalação, comandos e [provedores de IA](#provedores-de-ia)
 10. [Limitações conhecidas e próximos desafios](#limitações-conhecidas-e-próximos-desafios)
 11. [Referência](#referência) — arquitetura da aplicação, endpoints da API, casos congelados, estrutura do repositório
@@ -281,6 +283,18 @@ Agregação por item: qualquer obrigatório não atendido → **INCOMPATÍVEL**;
   <sub>Trilha de chamadas de IA da análise de Itaberaí/GO com o Gemini: 17 chamadas, US$ 0,145, cada uma com agente, modelo, tokens (entrada / saída / raciocínio), custo e latência.</sub>
 </p>
 
+### Como a busca encontra licitações
+
+Encontrar e decidir são etapas diferentes, e só a primeira usa (ou vai usar) busca por significado:
+
+| Etapa | Hoje | Com o índice de itens (⬜ F2) |
+|---|---|---|
+| **1. Quem entra na fila** | palavra no **objeto** da licitação (determinístico, mas cego para os ~90% de pregões com itens elétricos que não dizem isso no objeto); no Agente de Prospecção, os termos são escolhidos pela IA | **busca híbrida sobre os itens**: palavra exata (IP66, 100 W, NBR) e significado ("luminária viária" ≈ "luminária pública") |
+| **2. Qual a categoria do item** | regras sobre o começo da descrição; a IA sugere quando as regras não reconhecem | igual; o significado também ajuda quando a redação foge do comum |
+| **3. Atende ou não atende** | **motor de regras**, por atributo, com prova literal — não é comparação de texto exato | **igual, sem mudança** |
+
+A busca por significado só decide **quem entra na fila e em que ordem**: nunca descarta sozinha e nunca decide compatibilidade. A IA encontra e interpreta; as regras decidem; tudo tem prova.
+
 ### Decisões de projeto
 
 | Decisão | Por quê |
@@ -290,7 +304,7 @@ Agregação por item: qualquer obrigatório não atendido → **INCOMPATÍVEL**;
 | **Citação conferida no ato do registro** | Verificar só no fim deixa o agente seguir por um caminho errado. Devolver o erro na hora faz o agente corrigir a si mesmo e barra alucinação de trecho na origem. |
 | **Três provedores pela mesma interface** | Nível gratuito instável (429/503) não pode derrubar uma demo nem um cliente. Troca de modelo é configuração, não reescrita. |
 | **Orquestração própria, sem LangChain/LangGraph** | O edital avalia a qualidade da aplicação, não a ferramenta. A orquestração é explícita: o grafo é declarado como dado (`agents/grafo.py`), cada nó diz o que lê, o que escreve e quando roda, é testado (`tests/test_grafo.py`) e observável (cada chamada de IA fica ligada ao agente e à análise na trilha). LangGraph continua como opção de F2 para checkpoints duráveis e pausas para revisão. |
-| **Sem busca vetorial na v0.1** | Primeiro provar o veredito com prova; o índice semântico entra quando a ingestão contínua existir (F2) e passa a atacar os 90% invisíveis. |
+| **Busca por significado só para encontrar candidatos** | Hoje a descoberta depende de palavra no objeto e o cruzamento é por categoria + atributos. O índice de itens (F2) será híbrido — palavra exata e significado — e decide só quem entra na fila e em que ordem; o veredito continua no motor de regras. Primeiro provamos o veredito com prova; depois atacamos os 90% invisíveis. |
 | **Modo determinístico sem chave de API** | A demo e os testes nunca dependem de cota de terceiros; o núcleo verificável roda sozinho. |
 
 ### Uma prospecção real atravessando o sistema
@@ -393,9 +407,9 @@ A visão é ampla; a execução começa pequena, verificável e orientada por re
 | Fase | Período | Objetivo | Entregas principais | Critério de saída |
 |---|---|---|---|---|
 | **F0 · v0.1** Prova de conceito | 22–24/10/2026 | demo de ponta a ponta com dados reais | 7 agentes, PNCP ao vivo, 9 casos reais, catálogo por ficha, assistente, 3 provedores, benchmark, teste cego, grafo explícito, trilha de chamadas de IA em SQLite com custo real e logs estruturados, CI com benchmark como trava | os 7 critérios da demo rodam offline sem intervenção — **atingido ✅** |
-| **F1 · v0.2** MVP robusto | 25/10–28/11/2026 | confiabilidade e primeira prova de valor | gabarito duplo em 10+ contratações; PostgreSQL + Alembic; login e isolamento por empresa; Docker; CI com benchmark como trava ✅; busca em todas as modalidades; recalibração da prioridade; 5 entrevistas e 1–2 pilotos | roda na nuvem com Postgres; benchmark ≥ 10 contratações; ≥ 1 piloto com fornecedor real |
+| **F1 · v0.2** MVP robusto | 25/10–28/11/2026 | confiabilidade e primeira prova de valor | gabarito duplo em 10+ contratações; PostgreSQL + Alembic; login e isolamento por empresa; Docker; CI com benchmark como trava ✅; busca em todas as modalidades; recalibração da prioridade; 5 entrevistas e 1–2 pilotos | roda na nuvem (AWS) com Postgres; benchmark ≥ 10 contratações; ≥ 1 piloto com fornecedor real |
 | **F2 · v0.3** Beta fechado | dez/2026–fev/2027 | plataforma agêntica e piloto em escala | grafo durável com checkpoints e pausas para revisão; registro MCP de ferramentas; Monitor (ingestão contínua, índice híbrido com pgvector, alertas); Habilitação; feedback que recalibra; fila com workers; OTel + Langfuse; PCA, OCR e tabelas; **piloto de 60 dias com 10 distribuidores** | precisão ≥ 95% fora da amostra; rastreabilidade 100%; custo medido < R$ 1/análise; 95% das análises em < 3 min |
-| **F3 · v1.0** Produção | mar–jun/2027 | operar com clientes pagantes | AWS como código (ECS, RDS + pgvector, S3, Bedrock); gateway de modelos com roteamento, lote e orçamento por cliente; RLS e anexos versionados; Rastreador de obras; planos e cobrança; LGPD documentada, pentest, trilha de auditoria; avaliação contínua em produção | 30 dias cumprindo as metas de serviço (99,5%, p95 < 90 s); margem 75–85% |
+| **F3 · v1.0** Produção | mar–jun/2027 | operar com clientes pagantes | AWS como código (ECS Fargate, Aurora/RDS PostgreSQL + pgvector, S3, SQS, Bedrock, Cognito — [estudo em andamento](#arquitetura-em-nuvem-aws--estudo-em-andamento)); gateway de modelos com roteamento, lote e orçamento por cliente; RLS e anexos versionados; Rastreador de obras; planos e cobrança; LGPD documentada, pentest, trilha de auditoria; avaliação contínua em produção | 30 dias cumprindo as metas de serviço (99,5%, p95 < 90 s); margem 75–85% |
 | **F4 · v1.x** Escala | 2º sem/2027 → | novas fontes, segmentos e agentes | Obrasgov e portais estaduais; Precificação com histórico de preços; grafo órgão–objeto–item–fornecedor; API pública e servidor MCP para CRM e assessorias; novos segmentos (hidráulica, climatização, incêndio) | churn < 3%/mês; LTV/CAC ≥ 3 |
 
 ```mermaid
@@ -443,6 +457,68 @@ flowchart LR
   classDef mem fill:#0b2a3c,stroke:#0b2a3c,color:#ffffff
   classDef inf fill:#e2f4f2,stroke:#00ab9f,color:#10222f
 ```
+
+### Arquitetura em nuvem (AWS) — estudo em andamento
+
+> **Estudo em andamento.** Primeira proposta de arquitetura na AWS, **ainda não implementada nem validada em custo**. Serviços, região e preços serão confirmados antes de qualquer decisão. Detalhes, decisões pendentes e a comparação com uma proposta externa em [`docs/PLANO_DESENVOLVIMENTO.md`](docs/PLANO_DESENVOLVIMENTO.md#arquitetura-em-nuvem-aws--estudo-em-andamento).
+
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#e2f4f2','primaryTextColor':'#10222f','primaryBorderColor':'#00ab9f','lineColor':'#7d8b96','edgeLabelBackground':'#f1f3f3','fontSize':'14px','clusterBkg':'transparent','clusterBorder':'#7d8b96','titleColor':'#7d8b96'}}}%%
+flowchart LR
+  subgraph ENT[" Entradas "]
+    direction TB
+    U([👤 Fornecedor]):::nav
+    PNCP[(🏛️ PNCP<br/>API pública)]:::nav
+  end
+  subgraph ESTUDO[" ⚠️ Estudo em andamento · primeira proposta AWS, não implementada "]
+    direction LR
+    subgraph PROC[" Processamento "]
+      direction TB
+      CF[🛡️ CloudFront + WAF · F3<br/>no F1: ALB]:::plan
+      API[🖥️ API e interface<br/>ECS Fargate · a aplicação atual · F1]:::plan
+      Q2[[📬 SQS análises · F2]]:::plan
+      WA[🧠 Workers de análise · F2<br/>ECS Fargate · grafo de agentes]:::plan
+      EB[⏱️ EventBridge Scheduler · F2]:::plan
+      LC[λ Lambda coletor · F2<br/>metadados e itens de todas]:::plan
+      Q1[[📬 SQS documentos · F2<br/>só quem passa no portão 1]]:::plan
+      WD[📄 Workers de documentos · F2<br/>ECS Fargate · ritmo controlado,<br/>texto por página, seções, embeddings]:::plan
+    end
+    subgraph DADOS[" Dados e IA "]
+      direction TB
+      PG[(🐘 PostgreSQL<br/>RDS no F1 → Aurora Serverless v2<br/>dados · índice de itens pgvector + texto<br/>cota · trilha de IA · chat)]:::mem
+      S3[(🗄️ S3 · acervo<br/>PDF pelo hash · texto por página<br/>dossiês e propostas)]:::mem
+      BR{{🤖 Amazon Bedrock<br/>Claude para os agentes<br/>embeddings para o índice}}:::inf
+    end
+    subgraph SEG[" Transversal: segurança e custos "]
+      direction LR
+      CG[🔑 Cognito · login · F3]:::plan
+      KMS[🔐 KMS + Secrets Manager]:::plan
+      CW[📈 CloudWatch + AWS Budgets]:::plan
+    end
+  end
+  U --> CF --> API
+  API --> Q2 --> WA
+  EB --> LC --> Q1 --> WD
+  PNCP -- metadados e itens --> LC
+  PNCP -- anexos --> WD
+  API --> PG
+  API --> S3
+  LC --> PG
+  WD --> S3
+  WD --> PG
+  WD --> BR
+  WA --> PG
+  WA --> BR
+  classDef plan fill:#f1f3f3,stroke:#a5b0b8,color:#4b5b67,stroke-dasharray:5 4
+  classDef mem fill:#0b2a3c,stroke:#0b2a3c,color:#ffffff
+  classDef inf fill:#e2f4f2,stroke:#00ab9f,color:#10222f
+  classDef nav fill:#0b2a3c,stroke:#0b2a3c,color:#ffffff
+```
+
+- **Guardar seguindo o funil, não "tudo":** metadados e itens de todas as licitações; PDFs e texto por página só das que têm item do portfólio; análise completa só das escolhidas. O disco é barato (~4 MB de anexos por pregão, medido); o que limita é o ritmo aceito pelo PNCP, o processamento dos PDFs e os tokens.
+- **Um PostgreSQL para tudo que é estruturado e para o índice de itens** (pgvector + busca por texto); **S3** como acervo, com o texto por página sempre acessível para as provas e arquivo profundo só depois que a ata de registro de preços vencer.
+- **Fases:** F1 — a aplicação atual em ECS Fargate, RDS PostgreSQL, S3, Secrets Manager e alerta de orçamento · F2 — coleta agendada (EventBridge + Lambda), filas (SQS), workers e índice de itens · F3 — Aurora Serverless v2, Cognito, KMS, CloudFront e WAF, Bedrock com lote noturno, AWS Budgets Actions.
+- **Fora por enquanto:** DynamoDB, OpenSearch Serverless, AgentCore Memory, Bedrock Knowledge Bases e EKS. S3 Vectors fica como opção futura para busca semântica entre editais em grande volume.
 
 O plano de desenvolvimento detalhado, com cada item ligado ao status acima, está em [`docs/PLANO_DESENVOLVIMENTO.md`](docs/PLANO_DESENVOLVIMENTO.md); o roadmap original do MVP, em [`ROADMAP_MVP.txt`](ROADMAP_MVP.txt).
 
@@ -502,7 +578,7 @@ Encontradas em auditoria do código em 24/10/2026; todas têm item no plano de d
 |---|---|---|
 | Busca só em pregão eletrônico (modalidade 6) | concorrências (obras), pregões presenciais e dispensas não entram na prospecção | parâmetro de modalidades · F1 |
 | Tela de busca lê até 6 páginas; GO tinha 9 | cerca de um terço dos pregões abertos não aparece na interface (o Prospector lê 12) | limite dinâmico · F1 |
-| Filtro do objeto por substring | ruído: "faróis em **LED**" num SUV, "controle de **lumin**osidade" em persianas | índice de itens com busca híbrida · F2 |
+| Descoberta pela palavra no objeto, por substring | licitações com itens elétricos sob objeto genérico ("material de consumo") não aparecem; e há ruído: "faróis em **LED**" num SUV, "controle de **lumin**osidade" em persianas | índice de itens com busca híbrida · F2 |
 | Um catálogo ativo por servidor | dois fornecedores na mesma instalação veriam o catálogo um do outro | login e isolamento por empresa · F1 |
 | Categoria do produto precisa ser a chave exata (`luminaria_publica_led`) | planilha com "Luminária pública" não casa com nada, sem aviso | validação e sugestão na importação · F1 |
 | Pesos da prioridade não calibrados | licitação encerrada (SRP) pode ficar acima de uma aberta | prazo aberto pesa mais; feedback recalibra · F1–F2 |
