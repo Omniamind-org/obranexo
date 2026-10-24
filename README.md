@@ -47,7 +47,7 @@
   <sub>Cada conclusão abre o trecho literal que a sustenta. Pregão real: Goianira/GO, PE 038/2026, luminárias LED.</sub>
 </p>
 
-<p align="center">▶ <a href="pitch/demo_obranexo_90s.mp4"><b>Demo em vídeo (90 s)</b></a> — catálogo, pregão real, veredito com prova, trilha dos agentes, dossiê e assistente · sem áudio, feita para rodar dentro do pitch</p>
+<p align="center">▶ <a href="https://drive.google.com/file/d/1spq6lckd1lY5e2IG8tP-v9-dzrEJ2c3z/view?usp=drive_link"><b>Demo em vídeo (90 s)</b></a> — catálogo, pregão real, veredito com prova, trilha dos agentes, dossiê e assistente · sem áudio, feita para rodar dentro do pitch</p>
 
 ---
 
