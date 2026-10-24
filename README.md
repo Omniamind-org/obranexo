@@ -8,8 +8,8 @@
 <h3 align="center">Todo dia, o governo publica mais de mil pedidos de compra.<br>Quem entende primeiro, vende primeiro.</h3>
 
 <p align="center">
-  O ObraNexo é uma plataforma de agentes de IA que lê essas licitações no PNCP, item por item, cruza cada exigência<br>
-  com o catálogo de um fornecedor e mostra o que ele atende, apontando a linha exata do edital.<br>
+  O ObraNexo é uma plataforma de agentes de IA que lê essas licitações no PNCP, item por item, cruza cada exigência
+  com o catálogo de um fornecedor e mostra o que ele atende, apontando a linha exata do edital.
   Começamos por material elétrico e iluminação, onde 9 em cada 10 pregões não citam esses itens no título.
 </p>
 
@@ -268,6 +268,15 @@ Agregação por item: qualquer obrigatório não atendido → **INCOMPATÍVEL**;
 
 - **Hoje ✅:** trilha completa de cada análise (nó, mensagem, modelo, item, documento), visível na interface e via SSE. **Trilha por chamada de IA** em SQLite (`observability/trilha.py`, tabela `chamadas_llm` em `data/obranexo.db`): toda chamada lógica a um provedor vira uma linha com agente, origem (análise, prospecção, chat, importação), versão do prompt, operação, provedor, modelo pedido × modelo usado, tokens de entrada, saída, raciocínio e cache, custo em US$, latência, cache, reserva, status/erro e resumo da entrada e da saída; o agente é identificado por escopo (`escopo(agente=...)`, um contextvar), inclusive nos lotes em paralelo do Analista Técnico; exposta em `GET /api/analises/{id}/chamadas` e `GET /api/metricas/llm` e na interface (aba **Trilha do agente → Chamadas de IA**; tela **Qualidade → Uso de modelos**). **Logs estruturados** com a biblioteca padrão (`observability/logs.py`): uma linha por etapa e por chamada de modelo; JSON por linha com `OBRANEXO_LOG_JSON=1`. **Custo real** pela tabela oficial de preços consultada em 24/10/2026 (`PRECOS_USD` em `config.py`), com os tokens de raciocínio lidos da resposta de cada API e cobrados como saída; por análise e por período em `GET /api/custos` (métrica interna, em US$ e R$, contra a meta de R$ 1 por análise); no nível gratuito a cobrança real é zero. Temperatura 0 em todos os provedores; versão dos prompts registrada na análise e em cada chamada. Nada disso derruba uma análise se falhar. Benchmark contra gabaritos revisados (`eval/run_benchmark.py`); testes de regressão gerados a partir de cada defeito encontrado em dados reais; **CI em todo PR** (lint, testes e o benchmark como trava: se uma métrica cair abaixo do mínimo em `eval/limiares.json`, o PR fica vermelho).
 - **Produção ⬜:** OpenTelemetry + Langfuse por agente e por cliente; conjunto rotulado por duas pessoas com concordância medida (F1); amostragem revisada em produção e monitor de deriva da qualidade (F3).
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/chamadas_ia_dark.jpg">
+    <img src="docs/images/chamadas_ia_light.jpg" alt="Chamadas de IA de uma análise real: agente, operação, modelo, tokens de entrada, saída e raciocínio, custo e latência de cada chamada" width="920">
+  </picture>
+  <br>
+  <sub>Trilha de chamadas de IA da análise de Itaberaí/GO com o Gemini: 17 chamadas, US$ 0,145, cada uma com agente, modelo, tokens (entrada / saída / raciocínio), custo e latência.</sub>
+</p>
 
 ### Decisões de projeto
 
