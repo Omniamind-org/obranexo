@@ -119,6 +119,9 @@ def cmd_servidor(args) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from obranexo.observability import logs
+
+    logs.configurar()
     parser = argparse.ArgumentParser(prog="obranexo", description="ObraNexo — inteligência comercial agêntica")
     sub = parser.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("servidor", help="sobe a API e a interface web")
@@ -148,8 +151,25 @@ def main(argv: list[str] | None = None) -> int:
         # buscar: publicadas nos últimos N dias · abertas: que encerram nos próximos N dias
         p.add_argument("--dias", default=30 if nome == "buscar" else 60)
         p.set_defaults(fn=fn)
+    p = sub.add_parser("grafo", help="imprime o grafo da análise (o mesmo que executa a análise) para a documentação")
+    p.add_argument("--formato", choices=("md", "mermaid", "json"), default="md")
+    p.set_defaults(fn=cmd_grafo)
     args = parser.parse_args(argv)
     return args.fn(args)
+
+
+def cmd_grafo(args) -> int:
+    import json
+
+    from obranexo.agents.pipeline import GRAFO
+
+    if args.formato == "mermaid":
+        print(GRAFO.mermaid())
+    elif args.formato == "json":
+        print(json.dumps(GRAFO.descrever(), ensure_ascii=False, indent=1))
+    else:
+        print(GRAFO.markdown())
+    return 0
 
 
 if __name__ == "__main__":

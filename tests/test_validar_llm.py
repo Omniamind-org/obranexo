@@ -48,3 +48,15 @@ def test_comparacao_nunca_derruba_a_analise():
     req = Requisito(id="r", item_id="i", atributo="cct_k", operador=Operador.IGUAL, valor="branca fria")
     d = comparar_requisito_seguro(req, produto)
     assert d.resultado == ResultadoRequisito.INDETERMINADO and "não interpretável" in d.justificativa
+
+
+def test_atributo_luminotecnico_nao_entra_em_item_de_outra_categoria():
+    """Goianira com LLM: o TR da luminária cita "tomada para relé fotoelétrico" e o Especificador levou
+    "iluminação dimerizável" para o item do relé, que virou INDETERMINADO em vez de PARCIAL."""
+    from obranexo.catalog.atributos import aplicavel
+
+    assert not aplicavel("dimerizavel", "rele_fotoeletrico")
+    assert not aplicavel("fluxo_lm", "cabo")
+    assert aplicavel("dimerizavel", "luminaria_publica_led")
+    assert aplicavel("tensao_v", "rele_fotoeletrico")
+    assert aplicavel("fluxo_lm", "outro") and aplicavel("fluxo_lm", None)  # categoria desconhecida não bloqueia

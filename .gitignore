@@ -24,3 +24,7 @@ data/prospeccoes/
 node_modules/
 # Licitações baixadas pelo Agente de Prospecção (nome = CNPJ_ANO_SEQ); casos de demonstração têm nome legível
 data/casos/[0-9]*_[0-9]*_[0-9]*/
+
+# Configuração local do editor
+.claude/
+.DS_Store

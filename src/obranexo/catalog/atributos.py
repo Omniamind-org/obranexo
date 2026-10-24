@@ -59,6 +59,21 @@ ATRIBUTOS_INVESTIGAVEIS: dict[str, list[str]] = {
 }
 
 
+# Atributos luminotécnicos só fazem sentido em produtos que emitem luz. Um relé, um cabo ou um disjuntor não têm
+# fluxo luminoso nem dimerização: quando um modelo atribui isso a um item dessas categorias, pegou a especificação
+# de outro produto (no edital de Goianira, o TR da luminária cita "tomada para relé fotoelétrico" e o Especificador
+# levou "iluminação dimerizável" para o item do relé, que ficou INDETERMINADO em vez de PARCIAL).
+CATEGORIAS_LUMINOSAS = {"luminaria_publica_led", "luminaria_interna", "refletor_led", "lampada"}
+SO_LUMINOSOS = {"cct_k", "fluxo_lm", "eficiencia_lm_w", "irc", "dimerizavel", "tomada_rele", "lente", "led_tipo", "angulo_abertura"}
+
+
+def aplicavel(atributo: str, categoria: str | None) -> bool:
+    """Se o atributo faz sentido para a categoria do item. Categoria desconhecida ("outro") não bloqueia nada."""
+    if not categoria or categoria == "outro":
+        return True
+    return atributo not in SO_LUMINOSOS or categoria in CATEGORIAS_LUMINOSAS
+
+
 def rotulo(atributo: str) -> str:
     return ATRIBUTOS.get(atributo, {}).get("rotulo", atributo)
 

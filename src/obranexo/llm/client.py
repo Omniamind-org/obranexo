@@ -1,15 +1,19 @@
 """Clientes de modelos de linguagem com interface única para o restante do sistema.
 
-Provedores: Google Gemini (SDK `google-genai`) e Anthropic (SDK `anthropic`).
+Provedores: Google Gemini (SDK `google-genai`), Groq (SDK `groq`) e Anthropic (SDK `anthropic`).
 Toda chamada passa por aqui para que:
-  - custo e tokens de cada análise sejam contabilizados (UsoLLM);
-  - respostas idênticas sejam reaproveitadas do cache em disco (reprodutibilidade);
+  - custo e tokens de cada análise sejam contabilizados (UsoLLM), lidos da resposta de cada API,
+    com os tokens de raciocínio ("thinking") separados dos de resposta;
+  - cada chamada lógica vire uma linha na trilha (observability/trilha.py): agente, modelo pedido × usado,
+    latência, cache, reserva e erro — é o que permite investigar uma resposta ruim depois;
+  - respostas idênticas sejam reaproveitadas do cache em disco (reprodutibilidade; temperatura 0 em todos);
   - falhas transitórias (429/503) tenham retentativa e, se persistirem, caiam para um modelo reserva;
   - os agentes dependam só de três operações: extrair (saída estruturada), texto e conversa (ferramentas).
 """
 
 from __future__ import annotations
 
+import contextvars
 import hashlib
 import json
 import re
@@ -17,6 +21,8 @@ import threading
 import time
 import uuid
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, TypeVar
@@ -25,8 +31,13 @@ from pydantic import BaseModel
 
 from obranexo.config import Config, config
 from obranexo.models import UsoLLM
+from obranexo.observability import logs
+from obranexo.observability.trilha import ChamadaLLM, resumir, trilha
 
 T = TypeVar("T", bound=BaseModel)
+
+# A chamada lógica em andamento nesta thread: _contabilizar e _ler_cache completam o registro dela
+_chamada_atual: contextvars.ContextVar[ChamadaLLM | None] = contextvars.ContextVar("obranexo_chamada", default=None)
 
 
 class LLMIndisponivel(RuntimeError):
@@ -77,7 +88,7 @@ class LLMClient(ABC):
         return False
 
     def tokens_usados(self) -> int:
-        return self.uso.tokens_entrada + self.uso.tokens_saida
+        return self.uso.tokens_entrada + self.uso.tokens_saida + self.uso.tokens_raciocinio
 
     def excedeu_orcamento(self, desde: int = 0, limite: int | None = None) -> bool:
         """Sem argumentos: orçamento total do cliente. Com `desde`/`limite`: orçamento de um trecho (ex.: um agente)."""
@@ -89,8 +100,12 @@ class LLMClient(ABC):
         bruto = json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str).encode()
         return self.cfg.dir_llm_cache / f"{hashlib.sha256(bruto).hexdigest()}.json"
 
-    def _ler_cache(self, chave: Path) -> dict[str, Any] | None:
+    def _ler_cache(self, chave: Path, modelo: str | None = None) -> dict[str, Any] | None:
         if self.cfg.llm_cache and chave.exists():
+            reg = _chamada_atual.get()
+            if reg is not None:
+                reg.cache_hit = True
+                reg.modelo_usado = modelo or reg.modelo_pedido
             return json.loads(chave.read_text(encoding="utf-8"))
         return None
 
@@ -98,29 +113,69 @@ class LLMClient(ABC):
         if self.cfg.llm_cache:
             chave.write_text(json.dumps(dados, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
 
+    # ------------------------------------------------------------ trilha
+
+    @contextmanager
+    def _chamada(self, operacao: str, modelo: str, entrada: str = "") -> Iterator[ChamadaLLM]:
+        """Uma chamada lógica: mede a latência de ponta a ponta (com retentativas e reserva), consolida os
+        tokens que _contabilizar for recebendo e grava a linha na trilha, inclusive quando falha."""
+        reg = ChamadaLLM.nova(operacao, self.provedor, modelo, entrada)
+        token = _chamada_atual.set(reg)
+        inicio = time.perf_counter()
+        try:
+            yield reg
+        except Exception as exc:
+            reg.status = "erro"
+            reg.erro = f"{type(exc).__name__}: {str(exc)[:300]}"
+            raise
+        finally:
+            _chamada_atual.reset(token)
+            reg.latencia_ms = int((time.perf_counter() - inicio) * 1000)
+            reg.reserva = bool(reg.modelo_usado and reg.modelo_usado != reg.modelo_pedido)
+            with LLMClient._lock_uso:
+                self.uso.latencia_ms += reg.latencia_ms
+                self.uso.chamadas_cache += int(reg.cache_hit)
+                self.uso.chamadas_reserva += int(reg.reserva)
+            try:
+                trilha.gravar(reg)
+            except Exception as exc:  # observabilidade nunca derruba uma análise
+                logs.registrar("trilha_indisponivel", erro=f"{type(exc).__name__}: {exc}")
+
     # ------------------------------------------------------------ custo
 
     _lock_uso = threading.Lock()  # extrações rodam em paralelo; a contagem precisa ser atômica
 
-    def _contabilizar(self, modelo: str, entrada: int, saida: int, cache_leitura: int = 0, cache_escrita: int = 0) -> None:
+    def _contabilizar(self, modelo: str, entrada: int, saida: int, cache_leitura: int = 0, cache_escrita: int = 0, raciocinio: int = 0) -> None:
         with LLMClient._lock_uso:
-            self._contabilizar_sem_lock(modelo, entrada, saida, cache_leitura, cache_escrita)
+            self._contabilizar_sem_lock(modelo, entrada, saida, cache_leitura, cache_escrita, raciocinio)
 
-    def _contabilizar_sem_lock(self, modelo: str, entrada: int, saida: int, cache_leitura: int, cache_escrita: int) -> None:
-        preco_in, preco_out = self.cfg.precos_usd.get(modelo, (0.0, 0.0))
+    def _contabilizar_sem_lock(self, modelo: str, entrada: int, saida: int, cache_leitura: int, cache_escrita: int, raciocinio: int = 0) -> None:
+        # Raciocínio é cobrado como saída nos três provedores; escrita de cache (só Anthropic) custa 1,25× a entrada
+        preco_in, preco_out, preco_cache = self.cfg.precos_usd.get(modelo, (0.0, 0.0, 0.0))
         faixa = self.cfg.precos_faixa_usd.get(modelo)
-        if faixa and entrada + cache_escrita + cache_leitura > faixa[0]:
-            preco_in, preco_out = faixa[1], faixa[2]
-        custo =(entrada * preco_in + cache_escrita * preco_in * 1.25 + cache_leitura * preco_in * 0.1 + saida * preco_out) / 1_000_000
+        if faixa and entrada + cache_escrita + cache_leitura > faixa[0]:  # prompt longo muda de faixa (Haiku acima de 100k)
+            preco_in, preco_out, preco_cache = faixa[1], faixa[2], faixa[1] * 0.1
+        custo = (entrada * preco_in + cache_escrita * preco_in * 1.25 + cache_leitura * preco_cache + (saida + raciocinio) * preco_out) / 1_000_000
         self.uso.chamadas += 1
         self.uso.tokens_entrada += entrada + cache_escrita
         self.uso.tokens_saida += saida
+        self.uso.tokens_raciocinio += raciocinio
         self.uso.tokens_cache_leitura += cache_leitura
         self.uso.custo_usd = round(self.uso.custo_usd + custo, 6)
-        pm = self.uso.por_modelo.setdefault(modelo, {"chamadas": 0, "entrada": 0, "saida": 0})
+        pm = self.uso.por_modelo.setdefault(modelo, {"chamadas": 0, "entrada": 0, "saida": 0, "raciocinio": 0})
         pm["chamadas"] += 1
         pm["entrada"] += entrada + cache_escrita + cache_leitura
         pm["saida"] += saida
+        pm["raciocinio"] = pm.get("raciocinio", 0) + raciocinio
+        reg = _chamada_atual.get()
+        if reg is not None:  # uma chamada lógica pode somar várias respostas (retentativa, reserva)
+            reg.modelo_usado = modelo
+            reg.tokens_entrada += entrada
+            reg.tokens_saida += saida
+            reg.tokens_raciocinio += raciocinio
+            reg.tokens_cache_leitura += cache_leitura
+            reg.tokens_cache_escrita += cache_escrita
+            reg.custo_usd += custo
 
     # ------------------------------------------------------------ fallback
 
@@ -221,7 +276,7 @@ class GeminiClient(LLMClient):
         import httpx
         from google.genai import errors, types
 
-        cfg = types.GenerateContentConfig(**config_extra)
+        cfg = types.GenerateContentConfig(temperature=0, **config_extra)  # temperatura 0: mesma entrada, mesma saída
         # Poucas tentativas: se o modelo está sobrecarregado (503) ou sem cota (429), o reserva
         # responde em segundos e o modelo principal entra em quarentena nesta sessão.
         esperas = (3.0, 6.0)
@@ -248,9 +303,10 @@ class GeminiClient(LLMClient):
         if um is None:
             return
         entrada = int(getattr(um, "prompt_token_count", 0) or 0)
-        saida = int(getattr(um, "candidates_token_count", 0) or 0) + int(getattr(um, "thoughts_token_count", 0) or 0)
+        saida = int(getattr(um, "candidates_token_count", 0) or 0)
+        raciocinio = int(getattr(um, "thoughts_token_count", 0) or 0)  # o Gemini separa o "thinking" da resposta
         cache = int(getattr(um, "cached_content_token_count", 0) or 0)
-        self._contabilizar(modelo, entrada - cache, saida, cache_leitura=cache)
+        self._contabilizar(modelo, entrada - cache, saida, cache_leitura=cache, raciocinio=raciocinio)
 
     @staticmethod
     def _parada(candidato: Any) -> str:
@@ -265,7 +321,7 @@ class GeminiClient(LLMClient):
         def _run(m: str) -> T:
             payload = {"op": "extrair", "provedor": "gemini", "modelo": m, "system": system, "prompt": prompt, "schema": schema.model_json_schema()}
             chave = self._chave(payload)
-            cache = self._ler_cache(chave)
+            cache = self._ler_cache(chave, m)
             if cache is not None:
                 return schema.model_validate(cache["parsed"])
             resposta = self._gerar(
@@ -283,13 +339,16 @@ class GeminiClient(LLMClient):
             self._gravar_cache(chave, {"parsed": parsed.model_dump(mode="json")})
             return parsed
 
-        return self._com_reserva(modelo, _run)[0]
+        with self._chamada("extrair", modelo, prompt) as reg:
+            parsed = self._com_reserva(modelo, _run)[0]
+            reg.saida_resumo = resumir(parsed.model_dump_json())
+            return parsed
 
     def texto(self, modelo: str, system: str, prompt: str, max_tokens: int = 4000) -> str:
         def _run(m: str) -> str:
             payload = {"op": "texto", "provedor": "gemini", "modelo": m, "system": system, "prompt": prompt}
             chave = self._chave(payload)
-            cache = self._ler_cache(chave)
+            cache = self._ler_cache(chave, m)
             if cache is not None:
                 return cache["texto"]
             resposta = self._gerar(m, prompt, {"system_instruction": system, "max_output_tokens": max_tokens})
@@ -298,10 +357,20 @@ class GeminiClient(LLMClient):
             self._gravar_cache(chave, {"texto": texto})
             return texto
 
-        return self._com_reserva(modelo, _run)[0]
+        with self._chamada("texto", modelo, prompt) as reg:
+            texto = self._com_reserva(modelo, _run)[0]
+            reg.saida_resumo = resumir(texto)
+            return texto
 
     def conversa(self, modelo: str, system: str, tools: list[dict[str, Any]]) -> Conversa:
         return _ConversaGemini(self, modelo, system, tools)
+
+
+def _resumo_resposta(resposta: RespostaLLM) -> str | None:
+    """Texto da rodada ou, quando o modelo só pediu ferramentas, os nomes delas."""
+    if resposta.texto:
+        return resumir(resposta.texto)
+    return resumir(", ".join(f"{c.nome}({json.dumps(c.entrada, ensure_ascii=False, default=str)[:80]})" for c in resposta.chamadas))
 
 
 class _ConversaGemini(Conversa):
@@ -319,14 +388,21 @@ class _ConversaGemini(Conversa):
         )
         self.historico: list[Any] = []
         self._nomes: dict[str, str] = {}
+        self._ultima_entrada = ""
 
     def _rodada(self) -> RespostaLLM:
+        with self.c._chamada("conversa", self.modelo, self._ultima_entrada) as reg:
+            resposta = self._rodada_sem_trilha()
+            reg.saida_resumo = _resumo_resposta(resposta)
+            return resposta
+
+    def _rodada_sem_trilha(self) -> RespostaLLM:
         from google.genai import types
 
         payload = {"op": "conversa", "provedor": "gemini", "modelo": self.modelo, "system": self.system,
                    "historico": [h.model_dump(mode="json", exclude_none=True) for h in self.historico]}
         chave = self.c._chave(payload)
-        cache = self.c._ler_cache(chave)
+        cache = self.c._ler_cache(chave, self.modelo)
         if cache is not None:
             conteudo = types.Content.model_validate(cache["content"])
             parada = cache.get("parada", "fim")
@@ -361,6 +437,7 @@ class _ConversaGemini(Conversa):
         from google.genai import types
 
         self.historico.append(types.Content(role="user", parts=[types.Part.from_text(text=texto)]))
+        self._ultima_entrada = texto
         return self._rodada()
 
     def responder_ferramentas(self, resultados: list[tuple[str, str, bool]]) -> RespostaLLM:
@@ -371,7 +448,12 @@ class _ConversaGemini(Conversa):
             for cid, saida, erro in resultados
         ]
         self.historico.append(types.Content(role="user", parts=partes))
+        self._ultima_entrada = _resumo_resultados(resultados)
         return self._rodada()
+
+
+def _resumo_resultados(resultados: list[tuple[str, str, bool]]) -> str:
+    return "resultado de ferramenta(s): " + " | ".join(("ERRO " if erro else "") + saida[:120] for _, saida, erro in resultados)
 
 
 # ---------------------------------------------------------------------------
@@ -463,7 +545,11 @@ class GroqClient(LLMClient):
             raise
         u = getattr(resposta, "usage", None)
         if u is not None:
-            self._contabilizar(modelo, int(getattr(u, "prompt_tokens", 0) or 0), int(getattr(u, "completion_tokens", 0) or 0))
+            # No formato OpenAI o raciocínio vem dentro de completion_tokens; o detalhe, quando existe, permite separá-lo
+            detalhes = getattr(u, "completion_tokens_details", None)
+            raciocinio = int(getattr(detalhes, "reasoning_tokens", 0) or 0) if detalhes is not None else 0
+            saida = int(getattr(u, "completion_tokens", 0) or 0)
+            self._contabilizar(modelo, int(getattr(u, "prompt_tokens", 0) or 0), max(saida - raciocinio, 0), raciocinio=raciocinio)
         return resposta
 
     def extrair(self, modelo: str, system: str, prompt: str, schema: type[T], max_tokens: int = 8000) -> T:
@@ -475,7 +561,7 @@ class GroqClient(LLMClient):
         def _run(m: str) -> T:
             payload = {"op": "extrair", "provedor": "groq", "modelo": m, "system": system, "prompt": prompt, "schema": esquema}
             chave = self._chave(payload)
-            cache = self._ler_cache(chave)
+            cache = self._ler_cache(chave, m)
             if cache is not None:
                 return schema.model_validate(cache["parsed"])
             usa_schema = m not in self._sem_json_schema
@@ -510,13 +596,16 @@ class GroqClient(LLMClient):
                 return parsed
             raise LLMIndisponivel(f"{m}: não foi possível obter JSON válido")
 
-        return self._com_reserva(modelo, _run)[0]
+        with self._chamada("extrair", modelo, prompt) as reg:
+            parsed = self._com_reserva(modelo, _run)[0]
+            reg.saida_resumo = resumir(parsed.model_dump_json())
+            return parsed
 
     def texto(self, modelo: str, system: str, prompt: str, max_tokens: int = 4000) -> str:
         def _run(m: str) -> str:
             payload = {"op": "texto", "provedor": "groq", "modelo": m, "system": system, "prompt": prompt}
             chave = self._chave(payload)
-            cache = self._ler_cache(chave)
+            cache = self._ler_cache(chave, m)
             if cache is not None:
                 return cache["texto"]
             resp = self._criar(m, messages=[{"role": "system", "content": system}, {"role": "user", "content": prompt}],
@@ -525,7 +614,10 @@ class GroqClient(LLMClient):
             self._gravar_cache(chave, {"texto": texto})
             return texto
 
-        return self._com_reserva(modelo, _run)[0]
+        with self._chamada("texto", modelo, prompt) as reg:
+            texto = self._com_reserva(modelo, _run)[0]
+            reg.saida_resumo = resumir(texto)
+            return texto
 
     def conversa(self, modelo: str, system: str, tools: list[dict[str, Any]]) -> Conversa:
         return _ConversaGroq(self, modelo, system, tools)
@@ -537,13 +629,20 @@ class _ConversaGroq(Conversa):
         self.modelo = modelo
         self.tools = _tools_openai(tools)
         self.mensagens: list[dict[str, Any]] = [{"role": "system", "content": system}]
+        self._ultima_entrada = ""
 
     def _rodada(self) -> RespostaLLM:
+        with self.c._chamada("conversa", self.modelo, self._ultima_entrada) as reg:
+            resposta = self._rodada_sem_trilha()
+            reg.saida_resumo = _resumo_resposta(resposta)
+            return resposta
+
+    def _rodada_sem_trilha(self) -> RespostaLLM:
         import groq
 
         payload = {"op": "conversa", "provedor": "groq", "modelo": self.modelo, "mensagens": self.mensagens, "tools": self.tools}
         chave = self.c._chave(payload)
-        dados = self.c._ler_cache(chave)
+        dados = self.c._ler_cache(chave, self.modelo)
         if dados is None:
             def _run(m: str) -> dict[str, Any]:
                 for tentativa in range(2):
@@ -585,11 +684,13 @@ class _ConversaGroq(Conversa):
 
     def enviar(self, texto: str) -> RespostaLLM:
         self.mensagens.append({"role": "user", "content": texto})
+        self._ultima_entrada = texto
         return self._rodada()
 
     def responder_ferramentas(self, resultados: list[tuple[str, str, bool]]) -> RespostaLLM:
         for cid, saida, _erro in resultados:
             self.mensagens.append({"role": "tool", "tool_call_id": cid, "content": saida})
+        self._ultima_entrada = _resumo_resultados(resultados)
         return self._rodada()
 
 
@@ -612,23 +713,35 @@ class AnthropicClient(LLMClient):
         return bool(self.cfg.anthropic_api_key)
 
     def _contabilizar_resposta(self, modelo: str, usage: Any) -> None:
+        # output_tokens já inclui o thinking; output_tokens_details.thinking_tokens, quando vem, permite separá-lo
+        saida = int(getattr(usage, "output_tokens", 0) or 0)
+        detalhes = getattr(usage, "output_tokens_details", None)
+        raciocinio = int(getattr(detalhes, "thinking_tokens", 0) or 0) if detalhes is not None else 0
         self._contabilizar(
             modelo,
             int(getattr(usage, "input_tokens", 0) or 0),
-            int(getattr(usage, "output_tokens", 0) or 0),
+            max(saida - raciocinio, 0),
             cache_leitura=int(getattr(usage, "cache_read_input_tokens", 0) or 0),
             cache_escrita=int(getattr(usage, "cache_creation_input_tokens", 0) or 0),
+            raciocinio=raciocinio,
         )
 
     def extrair(self, modelo: str, system: str, prompt: str, schema: type[T], max_tokens: int = 8000) -> T:
+        with self._chamada("extrair", modelo, prompt) as reg:
+            parsed = self._extrair(modelo, system, prompt, schema, max_tokens)
+            reg.saida_resumo = resumir(parsed.model_dump_json())
+            return parsed
+
+    def _extrair(self, modelo: str, system: str, prompt: str, schema: type[T], max_tokens: int) -> T:
         payload = {"op": "extrair", "provedor": "anthropic", "modelo": modelo, "system": system, "prompt": prompt, "schema": schema.model_json_schema()}
         chave = self._chave(payload)
-        cache = self._ler_cache(chave)
+        cache = self._ler_cache(chave, modelo)
         if cache is not None:
             return schema.model_validate(cache["parsed"])
         resposta = self._client.messages.parse(
             model=modelo,
             max_tokens=max_tokens,
+            temperature=0,
             system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": prompt}],
             output_format=schema,
@@ -647,13 +760,14 @@ class AnthropicClient(LLMClient):
 
         payload = {"op": "conversar", "provedor": "anthropic", "modelo": modelo, "system": system, "messages": messages, "tools": tools}
         chave = self._chave(payload)
-        cache = self._ler_cache(chave)
+        cache = self._ler_cache(chave, modelo)
         if cache is not None:
             return anthropic.types.Message.model_validate(cache["message"])
         kwargs: dict[str, Any] = {"tools": tools} if tools else {}
         resposta = self._client.messages.create(
             model=modelo,
             max_tokens=max_tokens,
+            temperature=0,
             system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
             messages=messages,
             **kwargs,
@@ -663,8 +777,11 @@ class AnthropicClient(LLMClient):
         return resposta
 
     def texto(self, modelo: str, system: str, prompt: str, max_tokens: int = 4000) -> str:
-        resposta = self._create(modelo, system, [{"role": "user", "content": prompt}], None, max_tokens)
-        return "".join(b.text for b in resposta.content if getattr(b, "type", "") == "text").strip()
+        with self._chamada("texto", modelo, prompt) as reg:
+            resposta = self._create(modelo, system, [{"role": "user", "content": prompt}], None, max_tokens)
+            texto = "".join(b.text for b in resposta.content if getattr(b, "type", "") == "text").strip()
+            reg.saida_resumo = resumir(texto)
+            return texto
 
     def conversa(self, modelo: str, system: str, tools: list[dict[str, Any]]) -> Conversa:
         return _ConversaAnthropic(self, modelo, system, tools)
@@ -677,27 +794,33 @@ class _ConversaAnthropic(Conversa):
         self.system = system
         self.tools = tools
         self.messages: list[dict[str, Any]] = []
+        self._ultima_entrada = ""
 
     def _rodada(self) -> RespostaLLM:
-        resposta = self.c._create(self.modelo, self.system, self.messages, self.tools, 8000)
-        self.messages.append({"role": "assistant", "content": resposta.content})
-        chamadas = [
-            ChamadaFerramenta(id=b.id, nome=b.name, entrada=dict(b.input) if isinstance(b.input, dict) else json.loads(json.dumps(b.input)))
-            for b in resposta.content
-            if getattr(b, "type", "") == "tool_use"
-        ]
-        texto = " ".join(getattr(b, "text", "") for b in resposta.content if getattr(b, "type", "") == "text").strip()
-        parada = {"refusal": "recusa", "max_tokens": "limite", "tool_use": "ferramentas"}.get(resposta.stop_reason or "", "fim")
-        return RespostaLLM(texto=texto, chamadas=chamadas, parada=parada)
+        with self.c._chamada("conversa", self.modelo, self._ultima_entrada) as reg:
+            resposta = self.c._create(self.modelo, self.system, self.messages, self.tools, 8000)
+            self.messages.append({"role": "assistant", "content": resposta.content})
+            chamadas = [
+                ChamadaFerramenta(id=b.id, nome=b.name, entrada=dict(b.input) if isinstance(b.input, dict) else json.loads(json.dumps(b.input)))
+                for b in resposta.content
+                if getattr(b, "type", "") == "tool_use"
+            ]
+            texto = " ".join(getattr(b, "text", "") for b in resposta.content if getattr(b, "type", "") == "text").strip()
+            parada = {"refusal": "recusa", "max_tokens": "limite", "tool_use": "ferramentas"}.get(resposta.stop_reason or "", "fim")
+            saida = RespostaLLM(texto=texto, chamadas=chamadas, parada=parada)
+            reg.saida_resumo = _resumo_resposta(saida)
+            return saida
 
     def enviar(self, texto: str) -> RespostaLLM:
         self.messages.append({"role": "user", "content": texto})
+        self._ultima_entrada = texto
         return self._rodada()
 
     def responder_ferramentas(self, resultados: list[tuple[str, str, bool]]) -> RespostaLLM:
         self.messages.append(
             {"role": "user", "content": [{"type": "tool_result", "tool_use_id": cid, "content": saida, "is_error": erro} for cid, saida, erro in resultados]}
         )
+        self._ultima_entrada = _resumo_resultados(resultados)
         return self._rodada()
 
 

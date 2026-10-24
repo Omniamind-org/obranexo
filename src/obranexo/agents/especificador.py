@@ -15,11 +15,12 @@ from pydantic import BaseModel, Field
 
 from obranexo.agents.contexto import Contexto
 from obranexo.agents.extrator import RequisitoLLM, _valor_bruto_llm
-from obranexo.agents.prompts import SYSTEM_ESPECIFICADOR
-from obranexo.catalog.atributos import ATRIBUTOS, ATRIBUTOS_INVESTIGAVEIS, natureza
+from obranexo.agents.prompts import SYSTEM_ESPECIFICADOR, VERSAO
+from obranexo.catalog.atributos import ATRIBUTOS, ATRIBUTOS_INVESTIGAVEIS, aplicavel, natureza
 from obranexo.documents.extract import normalizar_busca
 from obranexo.evidence.verify import verificar_evidencia
 from obranexo.models import ItemDemanda, Operador, Requisito
+from obranexo.observability.trilha import escopo
 from obranexo.rules.validar import normalizar_valor
 
 MAX_PAGINAS = 14
@@ -99,7 +100,10 @@ def especificar_pelo_tr(ctx: Contexto, itens: list[ItemDemanda]) -> list[Requisi
         prompt = (f"ITENS SEM ESPECIFICAÇÃO NO PNCP:\n{lista_itens}\n\nPÁGINAS DOS ANEXOS:\n{docs}\n\n"
                   "Para cada item da lista cuja especificação aparece nestas páginas, extraia os requisitos técnicos.")
         try:
-            resp = ctx.llm.extrair(ctx.cfg.model_extracao, SYSTEM_ESPECIFICADOR, prompt, EspecificacoesTR, max_tokens=24000)
+            with escopo(agente="especificador", versao_prompt=VERSAO):
+                # Modelo de agente, não o de extração: decidir A QUAL item pertence um trecho do TR é julgamento
+                # (o flash-lite levou a especificação da luminária para o relé que ela cita). Custa ~US$ 0,01 por análise.
+                resp = ctx.llm.extrair(ctx.cfg.model_agente, SYSTEM_ESPECIFICADOR, prompt, EspecificacoesTR, max_tokens=24000)
         except Exception as exc:
             ctx.evento("especificador", f"Leitura do TR indisponível ({exc})")
             continue
@@ -110,6 +114,9 @@ def especificar_pelo_tr(ctx: Contexto, itens: list[ItemDemanda]) -> list[Requisi
             for r in it.requisitos:
                 if r.atributo in ATRIBUTOS_INVESTIGAVEIS or natureza(r.atributo) != "produto":
                     continue  # cláusulas gerais ficam com o Investigador
+                if not aplicavel(r.atributo, item.categoria_inferida):
+                    rejeitados += 1  # atributo de luminária num relé/cabo: o modelo leu a especificação de outro item
+                    continue
                 valor, _ = normalizar_valor(r.atributo, _valor_bruto_llm(r))
                 if valor is None:
                     rejeitados += 1
@@ -141,6 +148,6 @@ def especificar_pelo_tr(ctx: Contexto, itens: list[ItemDemanda]) -> list[Requisi
         "especificador",
         f"Especificador (TR): {len(especificados)}/{len(itens)} item(ns) especificado(s) a partir de {len(paginas)} página(s) "
         f"em {len(blocos)} chamada(s); {len(requisitos)} requisito(s) com citação conferida" + (f", {rejeitados} rejeitado(s)" if rejeitados else ""),
-        modelo=ctx.cfg.model_extracao,
+        modelo=ctx.cfg.model_agente,
     )
     return requisitos
