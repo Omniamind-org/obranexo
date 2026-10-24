@@ -311,11 +311,12 @@ O que é difícil de copiar não é "ler edital com IA" — isso virou padrão d
 
 ## Validação e resultados
 
-Só dados reais. Tudo abaixo é reproduzível a partir deste repositório, em modo determinístico, sem chave de API.
+Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as linhas que não citam um provedor rodam em modo determinístico, sem chave de API.
 
 | O quê | Resultado | Como conferir |
 |---|---|---|
 | Testes automatizados | **121 passando** (unitários + API, incluindo observabilidade e grafo), lint limpo (ruff) | `pytest -m "not integracao"` |
+| Custo e latência medidos (24/10, Gemini) | Itaberaí, 21 itens, sem cache: 17 chamadas, 0 erros, 165 mil tokens (4,8 mil de raciocínio), **US$ 0,145 ≈ R$ 0,73** pela tabela paga, 78 s, latência média 4,9 s e p95 9,9 s por chamada, 73/73 evidências; o Investigador respondeu por 68% do custo | trilha em `data/obranexo.db` · `GET /api/analises/{id}/chamadas` · tela **Qualidade → Uso de modelos** |
 | Benchmark contra gabaritos revisados | 2 contratações, 9 itens e 8 pares item × produto: **100% de acerto por item, 100% nos pares, 100% de rastreabilidade** | `python eval/run_benchmark.py` · [`docs/benchmark_resultado.json`](docs/benchmark_resultado.json) |
 | Tempo | 5 s para os 2 casos em modo determinístico; 55 s com Gemini (2 chamadas) | idem |
 | Teste cego | **5 pregões abertos nunca vistos**, 133 itens, rodados sem ajuste prévio; 10 defeitos encontrados e corrigidos, cada um virou teste de regressão; rastreabilidade 100% nas duas rodadas | [`docs/teste_cego_2026-10-23.md`](docs/teste_cego_2026-10-23.md) · `tests/test_regressao_teste_cego.py` |

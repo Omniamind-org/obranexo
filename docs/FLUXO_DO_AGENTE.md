@@ -220,6 +220,11 @@ mesmo resultado (temperatura 0 em todos os provedores). Pela API: `GET /api/anal
 Custo: o valor é **estimado pela tabela paga** (US$ por 1M tokens, consultada em 24/10/2026); no nível gratuito do
 Gemini e do Groq a cobrança real é zero. Serve para a meta de custo por análise do modelo de negócio.
 
+**Medição de 24/10/2026** (Itaberaí, 21 itens, Gemini 3.8 Flash + 3.5 Flash-Lite, sem cache): 17 chamadas, 0 erros,
+0 reservas, 165 mil tokens (152 mil de entrada, 8 mil de saída, 4,8 mil de raciocínio), US$ 0,145 ≈ R$ 0,73, 78 s
+de análise, latência média 4,9 s e p95 9,9 s por chamada, 73/73 evidências verificadas. O Investigador (11
+chamadas) respondeu por 68% do custo porque reenvia o histórico a cada passo — é o primeiro alvo de otimização.
+
 ## 10. Avaliação
 
 - **Benchmark com gabarito humano** (`eval/run_benchmark.py`, `data/casos/*/gabarito.json`): Goianira e Aruanã,

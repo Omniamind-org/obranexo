@@ -144,6 +144,8 @@ P: Quanto custa rodar?
 R: Centavos por análise em modelos baratos (R$ 0,02 a R$ 0,48). Usamos três provedores de IA com troca
    automática, então escolhemos o modelo certo para cada etapa. E medimos isso por chamada: cada análise
    mostra os tokens que a API devolveu, inclusive os de raciocínio, e o custo pela tabela oficial.
+   Medido hoje: um pregão de 21 itens com Gemini, sem cache, 17 chamadas, 165 mil tokens, 78 segundos,
+   R$ 0,73 pela tabela paga (no nível gratuito, zero).
 
 P: Como vocês investigariam uma resposta ruim? Que métrica indicaria degradação?
 R: Toda chamada de modelo fica na trilha: agente, modelo pedido e o que respondeu, prompt, resposta,
