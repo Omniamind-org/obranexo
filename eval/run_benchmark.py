@@ -9,12 +9,14 @@ Métricas (seção 13 do roadmap): acurácia por item, precisão de COMPATÍVEL,
 incompatibilidades, rastreabilidade (evidências verificadas), tempo e custo.
 
 Uso: python eval/run_benchmark.py [--casos goianira_pe038_2026 aruana_pp005_2026] [--catalogo ...]
+     python eval/run_benchmark.py --limiares eval/limiares.json   # trava do CI: sai com código 1 se cair
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -26,12 +28,52 @@ from obranexo.catalog.loader import carregar_catalogo_json  # noqa: E402
 from obranexo.config import config  # noqa: E402
 from obranexo.connectors.pncp import listar_casos  # noqa: E402
 
+METRICAS = {
+    "acuracia_itens": "Acerto por item",
+    "precisao_compativel": "Precisão de COMPATÍVEL",
+    "deteccao_incompatibilidade": "Detecção de incompatibilidade",
+    "acuracia_pares": "Acerto nos pares item × produto",
+    "rastreabilidade": "Citações conferidas",
+}
+
+
+def verificar_limiares(metricas: dict, limiares: dict) -> list[str]:
+    """Compara as métricas com os mínimos; devolve as falhas (lista vazia = passou)."""
+    falhas = [f"caso com erro: {e}" for e in metricas["erros"]]
+    modo = limiares.get("modo")
+    if modo and metricas["modo"] != modo:
+        falhas.append(f"o benchmark rodou em modo {metricas['modo']}; a trava exige {modo} (OBRANEXO_LLM_PROVIDER=none)")
+    for nome, minimo in limiares.get("minimos", {}).items():
+        valor = metricas.get(nome)
+        if valor is None:
+            falhas.append(f"{nome}: sem dados para medir (mínimo {minimo:.0%})")
+        elif valor < minimo:
+            falhas.append(f"{nome}: {valor:.1%} abaixo do mínimo de {minimo:.0%}")
+    return falhas
+
+
+def _publicar_resumo_github(metricas: dict, limiares: dict, falhas: list[str]) -> None:
+    """No GitHub Actions, escreve a tabela das métricas no resumo da execução."""
+    destino = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not destino:
+        return
+    linhas = ["### Benchmark contra gabaritos", "", "| Métrica | Obtido | Mínimo | |", "|---|---|---|---|"]
+    for nome, minimo in limiares.get("minimos", {}).items():
+        valor = metricas.get(nome)
+        ok = valor is not None and valor >= minimo
+        linhas.append(f"| {METRICAS.get(nome, nome)} | {'—' if valor is None else f'{valor:.1%}'} | {minimo:.0%} | {'✅' if ok else '❌'} |")
+    linhas += ["", f"Modo: {metricas['modo']} · casos: {metricas['casos']} · chamadas ao LLM: {metricas['chamadas_llm']}", ""]
+    linhas += ["**Passou.**"] if not falhas else ["**Falhou:**", *[f"- {f}" for f in falhas]]
+    with open(destino, "a", encoding="utf-8") as arq:
+        arq.write("\n".join(linhas) + "\n")
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--casos", nargs="*")
     ap.add_argument("--catalogo", default=str(config.catalogo_demo))
     ap.add_argument("--saida", default=str(RAIZ / "docs" / "benchmark_resultado.json"))
+    ap.add_argument("--limiares", help="JSON com os mínimos por métrica; abaixo deles o comando sai com código 1 (trava do CI)")
     args = ap.parse_args()
 
     empresa = carregar_catalogo_json(Path(args.catalogo))
@@ -43,11 +85,13 @@ def main() -> int:
     tot = {"itens": 0, "itens_ok": 0, "compat_previstos": 0, "compat_corretos": 0, "incompat_esperados": 0, "incompat_detectados": 0,
            "pares": 0, "pares_ok": 0, "evidencias": 0, "evidencias_ok": 0, "tempo_s": 0.0, "custo_usd": 0.0, "chamadas_llm": 0}
     relatorio = []
+    erros: list[str] = []
     for caso in casos:
         gabarito = json.loads((caso / "gabarito.json").read_text(encoding="utf-8"))
         analise = executar_caso(caso, empresa, salvar=False)
         if analise.status != "concluida":
             print(f"{caso.name}: ERRO {analise.erro}")
+            erros.append(f"{caso.name}: {analise.erro}")
             continue
         skus = {p.id: p.sku for p in empresa.produtos}
         melhor: dict[int, tuple[str, str]] = {}
@@ -118,9 +162,37 @@ def main() -> int:
         "chamadas_llm": tot["chamadas_llm"],
         "modo": "llm" if config.llm_disponivel else "deterministico",
     }
+    def razao(a, b):
+        return round(a / b, 4) if b else None
+
+    metricas = {
+        "acuracia_itens": razao(tot["itens_ok"], tot["itens"]),
+        "precisao_compativel": razao(tot["compat_corretos"], tot["compat_previstos"]),
+        "deteccao_incompatibilidade": razao(tot["incompat_detectados"], tot["incompat_esperados"]),
+        "acuracia_pares": razao(tot["pares_ok"], tot["pares"]),
+        "rastreabilidade": razao(tot["evidencias_ok"], tot["evidencias"]),
+        "chamadas_llm": tot["chamadas_llm"],
+        "modo": resumo["modo"],
+        "casos": len(casos),
+        "erros": erros,
+    }
     print("\nRESUMO:", json.dumps(resumo, ensure_ascii=False, indent=1))
-    Path(args.saida).write_text(json.dumps({"resumo": resumo, "casos": relatorio}, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+    Path(args.saida).write_text(
+        json.dumps({"resumo": resumo, "metricas": metricas, "casos": relatorio}, ensure_ascii=False, indent=1, default=str), encoding="utf-8"
+    )
     print(f"Relatório salvo em {args.saida}")
+
+    if not args.limiares:
+        return 0
+    limiares = json.loads(Path(args.limiares).read_text(encoding="utf-8"))
+    falhas = verificar_limiares(metricas, limiares)
+    _publicar_resumo_github(metricas, limiares, falhas)
+    if falhas:
+        print("\nTRAVA DE QUALIDADE: FALHOU")
+        for f in falhas:
+            print(f"  ✗ {f}")
+        return 1
+    print("\nTRAVA DE QUALIDADE: passou (todas as métricas nos mínimos de " + args.limiares + ")")
     return 0
 
 

@@ -33,6 +33,7 @@ Defeitos encontrados em 24/10 que afetam resultado ou credibilidade. Pequenos, i
 | e | Prioridade recalibrada: prazo ABERTO vale +35, ENCERRADO com SRP +5 e sem SRP 0; cobertura de valor 0,5; pesos em constantes nomeadas no topo de `planejador.py` | `agents/planejador.py`, `tests/test_agentes_sem_llm.py` | Itaberaí (aberta, 51%) fica acima de Goianira (encerrada, 100%); benchmark continua 100% |
 | f | Preços reais dos modelos (tabela oficial out/2026) em `precos_usd`, incluindo Groq; custo por análise aparece na UI e no dossiê | `config.py`, `web/js/views/metricas.js` | `custo_usd > 0` numa análise com Gemini pago; teste unitário do cálculo |
 | g | Logs estruturados: `structlog` em JSON por evento (análise, nó, ferramenta, modelo, tokens, duração, erro); `EventoLog` passa a emitir também para o logger | `agents/contexto.py`, `api/jobs.py`, novo `observability/logging.py` | cada análise gera linhas JSON parseáveis; teste lê o log de uma análise determinística |
+| i | ✅ Pacotes congelados portáveis: `documentos.json` gravado no Windows guardava `arquivos\x.pdf`, e em Linux nenhum anexo era lido (achado pelo CI); leitura aceita os dois formatos e a gravação usa `/` | `connectors/pncp.py`, `tests/test_casos_portaveis.py` | os 3 jobs do CI passam em Linux |
 | h | Limites por licitação: paginar itens (>500) e anexos (>100) do PNCP | `connectors/pncp.py` | SEINFRA lista os 100+ anexos; teste com resposta gravada de 2 páginas |
 
 ### PT-1.2 · Avaliação com gabarito duplo (semanas 1–3, em paralelo)
@@ -42,7 +43,7 @@ Defeitos encontrados em 24/10 que afetam resultado ou credibilidade. Pequenos, i
 | a | Rotular os 5 casos cegos (133 itens) por **duas pessoas** na planilha existente; resolver divergências; registrar concordância (Cohen's kappa) | `docs/teste_cego_rotulagem.csv` → `data/casos/cego_*/gabarito.json` | kappa reportado em `docs/avaliacao.md`; 7 casos com gabarito |
 | b | Coletar e rotular 3 contratações novas de outras UFs (DF, MT, TO), uma delas com TR em DOCX e uma concorrência de obra | `data/casos/` | ≥ 10 contratações, ≥ 150 pares item × produto |
 | c | `run_benchmark.py` passa a calcular precisão/recall por classe, matriz de confusão e consistência (3 execuções); sai em JSON e Markdown | `eval/run_benchmark.py`, `eval/metrics.py` (novo) | `docs/avaliacao.md` gerado com as métricas-alvo do roadmap (seção 13.2) |
-| d | Benchmark como trava no CI: job que roda o benchmark determinístico e falha se qualquer métrica cair abaixo do limiar definido em `eval/limiares.json` | `.github/workflows/ci.yml`, `eval/limiares.json` | PR que degrada o benchmark fica vermelho |
+| d | ✅ Benchmark como trava no CI: job que roda o benchmark determinístico e falha se qualquer métrica cair abaixo do limiar definido em `eval/limiares.json` | `.github/workflows/ci.yml`, `eval/limiares.json` | PR que degrada o benchmark fica vermelho |
 
 ### PT-1.3 · PostgreSQL e persistência (semanas 2–3)
 
@@ -70,7 +71,7 @@ Pré-requisito para qualquer piloto com catálogo real.
 | # | Tarefa | Arquivos | Aceite |
 |---|---|---|---|
 | a | `Dockerfile` (python 3.12-slim, `uv`), `docker-compose.yml` com `app` + `postgres:16` + volume para `data/` | `Dockerfile`, `docker-compose.yml`, `.dockerignore` | `docker compose up` sobe a aplicação com banco em < 2 min |
-| b | CI no GitHub Actions: ruff, `pytest -m "not integracao"`, benchmark determinístico (PT-1.2d), build da imagem | `.github/workflows/ci.yml` | badge real no README substitui o estático |
+| b | 🟡 CI no GitHub Actions: ruff, `pytest -m "not integracao"`, benchmark determinístico (PT-1.2d) ✅; build da imagem entra com o Dockerfile (PT-1.5a) | `.github/workflows/ci.yml` | badge real no README substitui o estático ✅ |
 | c | Deploy em uma VM ou serviço gerenciado simples (Fly.io, Railway ou EC2 única) com HTTPS; `OBRANEXO_LLM_CACHE` e `data/` em volume persistente | `infra/` (scripts), documentação em `docs/deploy.md` | URL pública estável para o piloto; healthcheck em `/api/status` |
 | d | `detect-secrets` ou `gitleaks` no pre-commit e no CI | `.pre-commit-config.yaml`, CI | commit com chave é bloqueado |
 
