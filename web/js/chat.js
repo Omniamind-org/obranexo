@@ -99,7 +99,7 @@ function desenharPainel(status) {
   const ia = status?.llm?.disponivel ? (NOMES_IA[status.llm.provedor] || status.llm.provedor) : null;
   render(painel, html`
     <div class="chat-topo">
-      <div><h2>Assistente</h2><div class="muted small">${ia ? `IA: ${ia} · dados ao vivo do PNCP` : 'Sem IA configurada'}</div></div>
+      <div><h2>Assistente</h2><div class="muted small">${ia ? `IA: ${ia} · dados ao vivo do PNCP` : 'IA não configurada'}</div></div>
       <div class="actions">
         <button class="btn btn-ghost btn-sm" id="chat-nova" data-tip="Nova conversa">${icon('refresh')}</button>
         <button class="btn btn-ghost btn-sm" id="chat-fechar" aria-label="Fechar">${icon('x')}</button>

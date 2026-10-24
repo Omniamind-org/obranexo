@@ -79,7 +79,7 @@ def test_resumo_estatisticas_meta_e_periodo():
     assert next(x for x in r["analises_recentes"] if x["id"] == "a3")["custo"]["usd"] == 0.0
     modelo = r["por_modelo"][0]
     assert modelo["modelo"] == "gemini-3.8-flash" and modelo["provedor"] == "gemini"
-    assert modelo["preco_tabela_usd_por_milhao"] == {"entrada": 0.75, "saida": 3.75}
+    assert modelo["preco_tabela_usd_por_milhao"] == {"entrada": 0.75, "saida": 3.75, "cache_leitura": 0.075}
 
 
 def test_resumo_vazio_nao_quebra():

@@ -15,15 +15,17 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from obranexo.agents.prompts import SYSTEM_ASSISTENTE
+from obranexo.agents.prompts import SYSTEM_ASSISTENTE, VERSAO
 from obranexo.agents.prospector import _compacto, _resumo_catalogo, melhor_por_item, partes_id, resumir_analise
 from obranexo.config import Config, config
 from obranexo.connectors.pncp import PNCPClient, PNCPError, carregar_caso, listar_casos
 from obranexo.documents.extract import normalizar_busca
 from obranexo.llm.client import LLMIndisponivel, criar_llm_client
 from obranexo.models import Analise, Contratacao, Empresa, EventoLog, UsoLLM
+from obranexo.observability import logs
+from obranexo.observability.trilha import escopo
 from obranexo.rules.extrair import eh_acessorio, inferir_categoria
-from obranexo.storage import store
+from obranexo.storage import chat, store
 
 MAX_RODADAS = 8  # chamadas de ferramenta por mensagem do usuário
 MAX_PAGINAS_POR_UF = 12
@@ -373,13 +375,17 @@ class Assistente:
                 self._on_evento = None
 
     def _responder(self, texto: str) -> dict[str, Any]:
+        with escopo(agente="assistente", versao_prompt=VERSAO, origem_tipo="chat", origem_id=self.id):
+            return self._responder_no_escopo(texto)
+
+    def _responder_no_escopo(self, texto: str) -> dict[str, Any]:
         if not self.llm.disponivel:
             raise RuntimeError("o assistente precisa de um provedor de IA configurado")
         entrada = texto
         if self._conversa is None:
             entrada = self._contexto_anterior() + texto
             self._conversa = self.llm.conversa(self.cfg.model_agente, self._system(), FERRAMENTAS)
-        self.mensagens.append({"papel": "usuario", "texto": texto, "ts": datetime.now().isoformat()})
+        self._guardar({"papel": "usuario", "texto": texto, "ts": datetime.now().isoformat()})
         passos: list[str] = []
         self._foco = []
         try:
@@ -405,8 +411,28 @@ class Assistente:
             final = f"O provedor de IA não respondeu agora ({str(exc)[:160]}). Tente de novo em instantes ou troque o provedor no topo da página."
         msg = {"papel": "assistente", "texto": final, "referencias": self._referencias(final), "ferramentas": passos,
                "ts": datetime.now().isoformat()}
-        self.mensagens.append(msg)
+        self._guardar(msg)
         return msg
+
+    def _guardar(self, mensagem: dict[str, Any]) -> None:
+        """Acrescenta à conversa e persiste (storage/chat.py); falha de disco não interrompe a resposta."""
+        self.mensagens.append(mensagem)
+        try:
+            chat.salvar_mensagem(self.id, self.empresa.nome, len(self.mensagens) - 1, mensagem)
+        except Exception as exc:
+            logs.registrar("chat_nao_persistido", sessao_id=self.id, erro=f"{type(exc).__name__}: {exc}")
+
+    @classmethod
+    def restaurar(cls, sessao_id: str, empresa: Empresa, cfg: Config | None = None) -> Assistente | None:
+        """Reconstrói uma conversa persistida (após reinício do servidor). O próximo turno parte do resumo das
+        últimas mensagens, porque o histórico no formato do provedor não é guardado."""
+        mensagens = chat.carregar(sessao_id)
+        if not mensagens:
+            return None
+        a = cls(empresa, cfg)
+        a.id = sessao_id
+        a.mensagens = mensagens
+        return a
 
 
 def _contagem(a: Analise) -> dict[str, int]:
@@ -430,7 +456,8 @@ def _casos_locais() -> dict[str, str]:
 
 
 class Sessoes:
-    """Conversas em memória (somem ao reiniciar o servidor; a interface recomeça sozinha)."""
+    """Conversas ativas em memória; as mensagens ficam no SQLite (storage/chat.py), por isso uma conversa
+    sobrevive ao reinício do servidor: `obter` a reconstrói quando não está mais em memória."""
 
     MAX = 50
 
@@ -439,15 +466,22 @@ class Sessoes:
         self._lock = threading.Lock()
 
     def criar(self, empresa: Empresa) -> Assistente:
-        a = Assistente(empresa)
+        return self._registrar(Assistente(empresa))
+
+    def obter(self, sessao_id: str, empresa: Empresa | None = None) -> Assistente | None:
+        a = self._s.get(sessao_id)
+        if a is None and empresa is not None:
+            a = Assistente.restaurar(sessao_id, empresa)
+            if a is not None:
+                self._registrar(a)
+        return a
+
+    def _registrar(self, a: Assistente) -> Assistente:
         with self._lock:
             self._s[a.id] = a
             while len(self._s) > self.MAX:
                 self._s.pop(next(iter(self._s)))
         return a
-
-    def obter(self, sessao_id: str) -> Assistente | None:
-        return self._s.get(sessao_id)
 
 
 sessoes = Sessoes()

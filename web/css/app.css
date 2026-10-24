@@ -206,6 +206,8 @@ svg.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none;
 .numero b { display: block; font-size: 30px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.1; }
 .numero span { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
 .numero.ok b { color: var(--ok-ink); }
+.numero.warn b { color: var(--warn-ink); }
+.numero.bad b { color: var(--bad-ink); }
 
 /* Linha de fatos (local · valor · prazo…) */
 .fatos { display: flex; flex-wrap: wrap; gap: 8px 22px; color: var(--ink-2); font-size: 13.5px; }
@@ -513,6 +515,31 @@ mark { background: var(--marca-texto); color: inherit; padding: 1px 2px; border-
 .fluxo span.agente { background: var(--teal-soft); color: var(--teal-ink); }
 .fluxo b { color: var(--line-strong); font-weight: 400; }
 
+/* Etapas do grafo da análise: número, título com etiquetas, e os campos do estado que cada uma lê e escreve */
+.etapas { list-style: none; margin: 0; padding: 0; }
+.etapas li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.etapa-num { width: 26px; height: 26px; border-radius: 50%; background: var(--teal-soft); color: var(--teal-ink); font-size: 12.5px; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
+.etapa-titulo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.etapa-titulo strong { font-size: 15px; }
+.etapa-cond { font-style: italic; color: var(--muted); font-size: 13px; }
+.etapa-campos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; }
+.etapa-campos code { font-size: 12px; }
+.etapa-campos .sep { margin-left: 10px; }
+
+/* Chamadas de IA (LLMOps): linha principal + linha de detalhe escondida */
+.table.chamadas .tag { height: 20px; padding: 0 8px; font-size: 11.5px; }
+.table.chamadas .fatos { gap: 6px 10px; }
+.chamada-abrir { border: 0; background: none; padding: 2px; color: var(--muted); cursor: pointer; display: inline-grid; place-items: center; transition: transform .15s, color .15s; }
+.chamada-abrir svg.i { width: 16px; height: 16px; }
+.chamada-abrir[aria-expanded="true"] { transform: rotate(90deg); color: var(--ink); }
+tr.chamada.aberta td { border-bottom-color: transparent; }
+tr.chamada-detalhe td { padding-top: 0; }
+.chamada-painel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.chamada-painel .rotulo { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+.chamada-painel .erro { grid-column: 1 / -1; }
+.chamada-painel .erro pre { background: var(--bad-soft); color: var(--bad-ink); }
+pre.quebra { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; max-height: 260px; overflow-y: auto; }
+
 /* ---------------------------------------------------------------- início */
 
 .boas-vindas { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 56px; align-items: end; padding: 24px 0 8px; }
@@ -569,6 +596,7 @@ mark { background: var(--marca-texto); color: inherit; padding: 1px 2px; border-
   .item-body { padding-left: 0; }
   .linha { grid-template-columns: 1fr !important; gap: 10px; }
   .barras { grid-template-columns: minmax(90px, 40%) minmax(0, 1fr); }
+  .chamada-painel { grid-template-columns: 1fr; }
 }
 
 /* Lista de definições (detalhe do produto) */

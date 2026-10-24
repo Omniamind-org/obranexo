@@ -38,7 +38,7 @@ def custo_por_modelo_usd(modelo: str, entrada: int, saida: int, cfg: Config) -> 
     preco = cfg.precos_usd.get(modelo)
     if preco is None:
         return None
-    return (entrada * preco[0] + saida * preco[1]) / 1_000_000
+    return (entrada * preco[0] + saida * preco[1]) / 1_000_000  # preco[2] é a leitura de cache, não usada no teto
 
 
 def custo_do_uso(uso: UsoLLM, cfg: Config) -> tuple[float, str, list[str]]:
@@ -50,7 +50,7 @@ def custo_do_uso(uso: UsoLLM, cfg: Config) -> tuple[float, str, list[str]]:
         return uso.custo_usd, "registrado", [m for m in uso.por_modelo if m not in cfg.precos_usd]
     total, sem_preco = 0.0, []
     for modelo, pm in uso.por_modelo.items():
-        c = custo_por_modelo_usd(modelo, pm.get("entrada", 0), pm.get("saida", 0), cfg)
+        c = custo_por_modelo_usd(modelo, pm.get("entrada", 0), pm.get("saida", 0) + pm.get("raciocinio", 0), cfg)
         if c is None:
             sem_preco.append(modelo)
         else:
@@ -154,8 +154,8 @@ def resumo_custos(
                 "provedor": provedor_do_modelo(modelo),
                 "chamadas": pm["chamadas"],
                 "tokens": {"entrada": pm["entrada"], "saida": pm["saida"]},
-                "preco_tabela_usd_por_milhao": dict(zip(("entrada", "saida"), cfg.precos_usd[modelo], strict=True)) if modelo in cfg.precos_usd else None,
-                "custo_estimado": _dinheiro(custo_por_modelo_usd(modelo, pm["entrada"], pm["saida"], cfg), cfg),
+                "preco_tabela_usd_por_milhao": dict(zip(("entrada", "saida", "cache_leitura"), cfg.precos_usd[modelo], strict=True)) if modelo in cfg.precos_usd else None,
+                "custo_estimado": _dinheiro(custo_por_modelo_usd(modelo, pm["entrada"], pm["saida"] + pm.get("raciocinio", 0), cfg), cfg),
             }
             for modelo, pm in sorted(por_modelo.items(), key=lambda kv: -kv[1]["entrada"] - kv[1]["saida"])
         ],

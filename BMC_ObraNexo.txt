@@ -470,6 +470,17 @@ de pesquisa; a faixa de tokens é premissa, não medição do ObraNexo].
 - Gemini 3.x Flash (modelo dos agentes do MVP), preço até 31/12/2026. Preço por milhão de tokens
   (entrada/saída): US$ 0,75 / 3,75; Custo por análise, 30k tokens: R$ 0,18; Custo por análise, 150k
   tokens: R$ 0,91.
+
+Medição própria em 24/10/2026 [DADO INTERNO]: a análise completa do pregão de Itaberaí/GO (21 itens de
+material elétrico, caso do teste cego) com Gemini 3.8 Flash (agentes) e 3.5 Flash-Lite (extração), sem
+cache, fez 17 chamadas de modelo, 165 mil tokens (152 mil de entrada, 8 mil de saída e 4,8 mil de
+raciocínio) e custou US$ 0,145 pela tabela paga, ou R$ 0,73 (PTAX 5,0377), em 78 segundos; latência
+média por chamada de 4,9 s e p95 de 9,9 s. O Investigador (11 chamadas com o modelo de agente)
+respondeu por 68% do custo, porque reenvia o histórico da conversa a cada passo; 83% do custo está no
+modelo de agente. Os tokens vêm da própria resposta da API (usage) e ficam registrados por chamada na
+trilha do sistema (SQLite). A premissa de 30–150 mil tokens por análise, acima, está confirmada para
+um pregão de 21 itens; pregões maiores (Anápolis, 206 itens) tendem ao teto. Caminho para reduzir:
+modelo barato também no Investigador e cache de contexto do provedor para o histórico repetido.
 - Gemini 3.x Flash, preço a partir de 01/01/2027. Preço por milhão de tokens (entrada/saída):
   US$ 1,50 / 7,50; Custo por análise, 30k tokens: R$ 0,36; Custo por análise, 150k tokens: R$ 1,81.
 - Claude Sonnet 5.5. Preço por milhão de tokens (entrada/saída): US$ 2,00 / 10,00; Custo por

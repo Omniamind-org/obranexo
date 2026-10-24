@@ -5,10 +5,11 @@ from __future__ import annotations
 from collections import defaultdict
 
 from obranexo.agents.contexto import Contexto
-from obranexo.agents.prompts import SYSTEM_VERIFICADOR
+from obranexo.agents.prompts import SYSTEM_VERIFICADOR, VERSAO
 from obranexo.catalog.atributos import rotulo
 from obranexo.evidence.verify import verificar_evidencia
 from obranexo.models import Confianca, Conflito, Correspondencia, ResultadoRequisito
+from obranexo.observability.trilha import escopo
 
 
 def _conflitos_entre_fontes(ctx: Contexto) -> None:
@@ -98,7 +99,8 @@ def verificar(ctx: Contexto) -> None:
             }
             import json
 
-            parecer = ctx.llm.texto(ctx.cfg.model_agente, SYSTEM_VERIFICADOR, "Dados da análise:\n" + json.dumps(resumo, ensure_ascii=False, indent=1, default=str))
+            with escopo(agente="verificador", versao_prompt=VERSAO):
+                parecer = ctx.llm.texto(ctx.cfg.model_agente, SYSTEM_VERIFICADOR, "Dados da análise:\n" + json.dumps(resumo, ensure_ascii=False, indent=1, default=str))
             if parecer:
                 analise.revisao_humana.insert(0, "Parecer do Agente Verificador:\n" + parecer)
                 ctx.evento("verificador", "Parecer do Agente Verificador gerado", modelo=ctx.cfg.model_agente)

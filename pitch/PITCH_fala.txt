@@ -66,7 +66,8 @@ assessorias de licitação são o nosso canal: cada uma atende dezenas de empres
 [SLIDE 9 · 2:15-2:35] JÁ FUNCIONA
 
 E isso já funciona. Sete agentes, um assistente que responde em linguagem natural, testes cegos em
-pregões reais, e cem por cento de acerto no nosso conjunto de teste, com toda conclusão rastreável.
+pregões reais, e cem por cento de acerto no nosso conjunto de teste, com toda conclusão rastreável e
+cada chamada de IA registrada com custo e latência.
 
 
 [SLIDE 10 · 2:35-3:00] IMPACTO E PEDIDO

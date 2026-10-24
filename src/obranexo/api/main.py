@@ -18,13 +18,18 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from obranexo import __version__
+from obranexo.agents.prompts import VERSAO as VERSAO_PROMPTS
 from obranexo.api.jobs import jobs
 from obranexo.catalog.atributos import ATRIBUTOS
 from obranexo.catalog.loader import carregar_catalogo_json, carregar_catalogo_tabela
 from obranexo.config import MODELOS_PADRAO, PROVEDORES, config
 from obranexo.connectors.pncp import PNCPClient, PNCPError, carregar_caso, listar_casos
 from obranexo.models import Analise, Contratacao, Empresa, Produto, ResultadoItem, StatusRevisao
+from obranexo.observability import logs
+from obranexo.observability.trilha import agregar, escopo, trilha
 from obranexo.storage import store
+
+logs.configurar()
 
 app = FastAPI(
     title="ObraNexo API",
@@ -131,7 +136,11 @@ def _resumo_analise(a: Analise, caso: str | None = None) -> dict[str, Any]:
         "prioridade": q.prioridade if q else None,
         "llm": {
             "chamadas": a.uso_llm.chamadas,
-            "tokens": a.uso_llm.tokens_entrada + a.uso_llm.tokens_saida,
+            "chamadas_cache": a.uso_llm.chamadas_cache,
+            "chamadas_reserva": a.uso_llm.chamadas_reserva,
+            "tokens": a.uso_llm.tokens_entrada + a.uso_llm.tokens_saida + a.uso_llm.tokens_raciocinio,
+            "tokens_raciocinio": a.uso_llm.tokens_raciocinio,
+            "latencia_ms": a.uso_llm.latencia_ms,
             "custo_usd": a.uso_llm.custo_usd,
             "modelos": list(a.uso_llm.por_modelo),
         },
@@ -173,6 +182,7 @@ def status() -> dict[str, Any]:
         },
         "pncp_offline": config.offline,
         "llm_cache": config.llm_cache,
+        "versao_prompt": VERSAO_PROMPTS,
         "casos": len(listar_casos()),
         "analises": len(list(config.dir_analises.glob("*.json"))) if config.dir_analises.exists() else 0,
         "empresa": empresa_atual().nome,
@@ -213,7 +223,8 @@ def testar_provedor() -> dict[str, Any]:
     llm = criar_llm_client(replace(config, llm_cache=False))
     inicio = datetime.now()
     try:
-        resposta = llm.texto(config.model_extracao, "Responda só com a palavra pedida.", "Diga: ok", max_tokens=200)
+        with escopo(agente="teste_provedor", origem_tipo="teste"):
+            resposta = llm.texto(config.model_extracao, "Responda só com a palavra pedida.", "Diga: ok", max_tokens=200)
     except Exception as exc:
         return {"ok": False, "provedor": config.llm_provider, "erro": str(exc)[:400]}
     return {"ok": True, "provedor": config.llm_provider, "modelos": list(llm.uso.por_modelo), "resposta": resposta[:80],
@@ -512,9 +523,9 @@ def prospeccao(prospeccao_id: str) -> dict[str, Any]:
 def _sessao_ou_404(sessao_id: str):
     from obranexo.agents.assistente import sessoes
 
-    s = sessoes.obter(sessao_id)
+    s = sessoes.obter(sessao_id, empresa_atual())  # fora da memória, a conversa é reconstruída do SQLite
     if s is None:
-        raise HTTPException(404, "conversa não encontrada (o servidor pode ter reiniciado)")
+        raise HTTPException(404, "conversa não encontrada")
     return s
 
 
@@ -752,6 +763,19 @@ def metricas() -> dict[str, Any]:
     }
 
 
+@app.get("/api/metricas/llm", tags=["análises"])
+def metricas_llm() -> dict[str, Any]:
+    """Agregados de todas as chamadas de modelo (análises, prospecções, chat): custo, latência, cache, reserva e erro,
+    por agente e por modelo — a trilha de observability/trilha.py vista de cima."""
+    resumo = trilha.resumo()
+    resumo["precos_usd"] = {modelo: list(preco) for modelo, preco in config.precos_usd.items()}
+    resumo["nota"] = (
+        "Custo estimado pela tabela oficial de preços (US$ por 1M tokens) a partir dos tokens que cada API devolve, "
+        "com o raciocínio cobrado como saída; no nível gratuito do Gemini e do Groq a cobrança real é zero."
+    )
+    return resumo
+
+
 @app.get("/api/custos", tags=["interno"])
 def custos(
     desde: Annotated[date | None, Query(description="primeiro dia (AAAA-MM-DD), pela data de início da análise")] = None,
@@ -767,6 +791,23 @@ def custos(
     if desde and ate and desde > ate:
         raise HTTPException(400, "'desde' é posterior a 'ate'")
     return resumo_custos(store.listar(), store.listar_prospeccoes(), config, desde=desde, ate=ate, limite=limite)
+
+
+@app.get("/api/analises/{analise_id}/chamadas", tags=["análises"])
+def chamadas_llm(analise_id: str) -> dict[str, Any]:
+    """Trilha de chamadas de modelo da análise: quem chamou, que modelo respondeu, tokens, custo, latência, cache e erro."""
+    _analise_ou_404(analise_id)
+    chamadas = trilha.listar(analise_id)
+    return {"chamadas": chamadas, "resumo": agregar(chamadas)}
+
+
+@app.get("/api/conteudo/grafo", tags=["sistema"])
+def conteudo_grafo() -> dict[str, Any]:
+    """O grafo da análise como dado (agents/grafo.py): etapas em ordem, o que cada uma lê e escreve, quando roda,
+    e a descrição do estado compartilhado. É o mesmo objeto que executa a análise."""
+    from obranexo.agents.pipeline import GRAFO
+
+    return GRAFO.descrever()
 
 
 @app.get("/api/conteudo/fluxo", tags=["sistema"], response_class=PlainTextResponse)
