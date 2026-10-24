@@ -1,0 +1,11 @@
+{
+ "descricao": "Mínimos do benchmark determinístico usados como trava no CI (python eval/run_benchmark.py --limiares eval/limiares.json). Enquanto os gabaritos forem só os casos internos, qualquer valor abaixo de 100% é regressão. Ao incluir os gabaritos do PT-1.2, recalibrar com os valores medidos, nunca abaixo das metas do roadmap (seção 13.2): precisão de COMPATÍVEL 85%, detecção de incompatibilidade 90%, rastreabilidade 95%.",
+ "modo": "deterministico",
+ "minimos": {
+  "acuracia_itens": 1.0,
+  "precisao_compativel": 1.0,
+  "deteccao_incompatibilidade": 1.0,
+  "acuracia_pares": 1.0,
+  "rastreabilidade": 1.0
+ }
+}

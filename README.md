@@ -20,7 +20,7 @@
 <p align="center">
   <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-0b2a3c?style=flat-square&logo=python&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-API%20%2B%20SSE-00ab9f?style=flat-square">
-  <img alt="Testes" src="https://img.shields.io/badge/testes-104%20passando-0ca30c?style=flat-square">
+  <a href="https://github.com/kauandivino/obranexo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/kauandivino/obranexo/ci.yml?branch=main&style=flat-square&label=CI"></a>
   <img alt="Rastreabilidade" src="https://img.shields.io/badge/cita%C3%A7%C3%B5es%20conferidas-100%25-0ca30c?style=flat-square">
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.1%20%C2%B7%20MVP-7d8b96?style=flat-square">
   <img alt="AKCIT Camp 2026" src="https://img.shields.io/badge/AKCIT%20Camp-2026-fab219?style=flat-square">
@@ -173,7 +173,7 @@ flowchart TB
     direction LR
     TR[🧰 Ferramentas<br/>por agente ✅ → registro único MCP ⬜]:::inf
     GW[🔀 Gateway de modelos<br/>3 provedores com reserva ✅<br/>roteamento por tarefa e lote ⬜]:::inf
-    OB[📈 Observabilidade e avaliação<br/>trilha por análise ✅ · benchmark ✅<br/>OTel + Langfuse · trava no CI ⬜]:::inf
+    OB[📈 Observabilidade e avaliação<br/>trilha por análise ✅ · benchmark com trava no CI ✅<br/>OTel + Langfuse ⬜]:::inf
   end
   PR -- analisar_a_fundo --> AN
   AS -- analisar_a_fundo --> AN
@@ -240,8 +240,8 @@ Agregação por item: qualquer obrigatório não atendido → **INCOMPATÍVEL**;
 
 ### Observabilidade e avaliação
 
-- **Hoje ✅:** trilha completa de cada análise (nó, mensagem, modelo, item, documento), visível na interface e via SSE; contagem de chamadas, tokens e custo por modelo; benchmark contra gabaritos revisados (`eval/run_benchmark.py`); testes de regressão gerados a partir de cada defeito encontrado em dados reais.
-- **Produção ⬜:** OpenTelemetry + Langfuse por agente e por cliente; benchmark como **trava de release no CI** (F1); conjunto rotulado por duas pessoas com concordância medida (F1); amostragem revisada em produção e monitor de deriva da qualidade (F3).
+- **Hoje ✅:** trilha completa de cada análise (nó, mensagem, modelo, item, documento), visível na interface e via SSE; contagem de chamadas, tokens e custo por modelo; benchmark contra gabaritos revisados (`eval/run_benchmark.py`); testes de regressão gerados a partir de cada defeito encontrado em dados reais; **CI em todo PR** (lint, testes e o benchmark como trava: se uma métrica cair abaixo do mínimo em `eval/limiares.json`, o PR fica vermelho).
+- **Produção ⬜:** OpenTelemetry + Langfuse por agente e por cliente; conjunto rotulado por duas pessoas com concordância medida (F1); amostragem revisada em produção e monitor de deriva da qualidade (F3).
 
 ### Decisões de projeto
 
@@ -320,7 +320,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório, em mo
 
 | O quê | Resultado | Como conferir |
 |---|---|---|
-| Testes automatizados | **104 passando** (unitários + API), lint limpo (ruff) | `pytest -m "not integracao"` |
+| Testes automatizados | **112 passando** (unitários + API), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/kauandivino/obranexo/actions/workflows/ci.yml) |
 | Benchmark contra gabaritos revisados | 2 contratações, 9 itens e 8 pares item × produto: **100% de acerto por item, 100% nos pares, 100% de rastreabilidade** | `python eval/run_benchmark.py` · [`docs/benchmark_resultado.json`](docs/benchmark_resultado.json) |
 | Tempo | 5 s para os 2 casos em modo determinístico; 55 s com Gemini (2 chamadas) | idem |
 | Teste cego | **5 pregões abertos nunca vistos**, 133 itens, rodados sem ajuste prévio; 10 defeitos encontrados e corrigidos, cada um virou teste de regressão; rastreabilidade 100% nas duas rodadas | [`docs/teste_cego_2026-10-23.md`](docs/teste_cego_2026-10-23.md) · `tests/test_regressao_teste_cego.py` |
@@ -329,7 +329,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório, em mo
 
 **Limites honestos desses números.** O benchmark de 100% é **dentro da amostra**: os 2 casos rotulados foram usados no desenvolvimento e o gabarito é da própria equipe. Os 5 casos do teste cego estão rotulados pelo sistema, com **gabarito humano pendente** em [`docs/teste_cego_rotulagem.csv`](docs/teste_cego_rotulagem.csv) — não foram rotulados pela mesma pessoa que corrigiu o código, para o benchmark não virar circular. O custo em dólar aparece como zero porque os modelos usados estão no nível gratuito; o custo estimado por análise com preços de tabela é de R$ 0,02 a R$ 0,48.
 
-**Metodologia planejada (F1–F2).** Gabarito duplo (duas pessoas, divergências resolvidas, concordância medida) para 10 ou mais contratações e 150 a 300 pares; métricas-alvo do roadmap: precisão de COMPATÍVEL ≥ 85%, recall de itens relevantes ≥ 80%, detecção de incompatibilidade obrigatória ≥ 90%, rastreabilidade ≥ 95%, consistência entre execuções ≥ 90%, tempo ≤ 3 min; benchmark como trava no CI; cronometragem do trabalho manual contra o assistido com 5 a 10 empresas no piloto.
+**Metodologia planejada (F1–F2).** Gabarito duplo (duas pessoas, divergências resolvidas, concordância medida) para 10 ou mais contratações e 150 a 300 pares; métricas-alvo do roadmap: precisão de COMPATÍVEL ≥ 85%, recall de itens relevantes ≥ 80%, detecção de incompatibilidade obrigatória ≥ 90%, rastreabilidade ≥ 95%, consistência entre execuções ≥ 90%, tempo ≤ 3 min; cronometragem do trabalho manual contra o assistido com 5 a 10 empresas no piloto.
 
 ## Modelo de negócio e mercado
 
@@ -354,7 +354,7 @@ A visão é ampla; a execução começa pequena, verificável e orientada por re
 | Fase | Período | Objetivo | Entregas principais | Critério de saída |
 |---|---|---|---|---|
 | **F0 · v0.1** Prova de conceito | 22–24/10/2026 | demo de ponta a ponta com dados reais | 7 agentes, PNCP ao vivo, 9 casos reais, catálogo por ficha, assistente, 3 provedores, benchmark, teste cego | os 7 critérios da demo rodam offline sem intervenção — **atingido ✅** |
-| **F1 · v0.2** MVP robusto | 25/10–28/11/2026 | confiabilidade e primeira prova de valor | gabarito duplo em 10+ contratações; PostgreSQL + Alembic; login e isolamento por empresa; Docker + CI com benchmark como trava; busca em todas as modalidades; temperatura 0 e versão de prompt no cache; preços reais dos modelos; logs estruturados; recalibração da prioridade; 5 entrevistas e 1–2 pilotos | roda na nuvem com Postgres; benchmark ≥ 10 contratações; ≥ 1 piloto com fornecedor real |
+| **F1 · v0.2** MVP robusto | 25/10–28/11/2026 | confiabilidade e primeira prova de valor | gabarito duplo em 10+ contratações; PostgreSQL + Alembic; login e isolamento por empresa; Docker; CI com benchmark como trava ✅; busca em todas as modalidades; temperatura 0 e versão de prompt no cache; preços reais dos modelos; logs estruturados; recalibração da prioridade; 5 entrevistas e 1–2 pilotos | roda na nuvem com Postgres; benchmark ≥ 10 contratações; ≥ 1 piloto com fornecedor real |
 | **F2 · v0.3** Beta fechado | dez/2026–fev/2027 | plataforma agêntica e piloto em escala | grafo durável com checkpoints e pausas para revisão; registro MCP de ferramentas; Monitor (ingestão contínua, índice híbrido com pgvector, alertas); Habilitação; feedback que recalibra; fila com workers; OTel + Langfuse; PCA, OCR e tabelas; **piloto de 60 dias com 10 distribuidores** | precisão ≥ 95% fora da amostra; rastreabilidade 100%; custo medido < R$ 1/análise; 95% das análises em < 3 min |
 | **F3 · v1.0** Produção | mar–jun/2027 | operar com clientes pagantes | AWS como código (ECS, RDS + pgvector, S3, Bedrock); gateway de modelos com roteamento, lote e orçamento por cliente; RLS e anexos versionados; Rastreador de obras; planos e cobrança; LGPD documentada, pentest, trilha de auditoria; avaliação contínua em produção | 30 dias cumprindo as metas de serviço (99,5%, p95 < 90 s); margem 75–85% |
 | **F4 · v1.x** Escala | 2º sem/2027 → | novas fontes, segmentos e agentes | Obrasgov e portais estaduais; Precificação com histórico de preços; grafo órgão–objeto–item–fornecedor; API pública e servidor MCP para CRM e assessorias; novos segmentos (hidráulica, climatização, incêndio) | churn < 3%/mês; LTV/CAC ≥ 3 |
@@ -388,7 +388,7 @@ flowchart LR
   subgraph OBS[" Qualidade "]
     direction TB
     OT[📈 OpenTelemetry + Langfuse ⬜ F2<br/>hoje: trilha por análise ✅]:::plan
-    EV[🧪 Avaliação contínua<br/>benchmark ✅ · trava no CI ⬜ F1<br/>amostragem em produção ⬜ F3]:::plan
+    EV[🧪 Avaliação contínua<br/>benchmark com trava no CI ✅<br/>amostragem em produção ⬜ F3]:::plan
   end
   LLM{{Gemini · Groq · Anthropic ✅<br/>Bedrock ⬜ F3}}:::inf
   W --> G
@@ -428,9 +428,10 @@ obranexo analisar goianira_pe038_2026     # análise completa pela linha de coma
 obranexo abertas --uf GO                  # pregões com propostas abertas, ao vivo no PNCP
 obranexo coletar 01291707000167 2026 75 meu_caso   # baixa e congela uma contratação
 
-pytest -m "not integracao"                # 104 testes, sem chamar o LLM
+pytest -m "not integracao"                # 112 testes, sem chamar o LLM
 pytest -m integracao -v                   # chama o provedor configurado (usa cota)
 python eval/run_benchmark.py              # benchmark contra os gabaritos
+python eval/run_benchmark.py --limiares eval/limiares.json   # a mesma trava de qualidade do CI
 ```
 
 ### Provedores de IA
@@ -569,13 +570,15 @@ docs/
   images/                capturas da interface
   teste_cego_*.{md,csv}  teste cego e planilha de rotulagem
   benchmark_resultado.json
-eval/run_benchmark.py    benchmark contra gabaritos
-tests/                   104 testes (regras, agentes sem LLM, API, regressão do teste cego, integração com LLM)
+eval/run_benchmark.py    benchmark contra gabaritos (com --limiares, trava de qualidade)
+eval/limiares.json       mínimos por métrica usados pela trava
+tests/                   112 testes (regras, agentes sem LLM, API, regressão do teste cego, integração com LLM)
+.github/workflows/ci.yml lint, testes e benchmark como trava em todo PR (Linux, modo determinístico e offline)
 pitch/                   planejamento, fala e slides do pitch
 BMC_ObraNexo.txt · reports/ · research_notes/   modelo de negócio e pesquisa
 ```
 
-**Estrutura-alvo** (F1–F3, incremental sobre a atual): `src/obranexo/graph/` (grafo durável, checkpoints, interrupções) · `tools/` (registro MCP) · `gateway/` (roteamento de modelos) · `ingest/` (coleta agendada, índice de itens) · `db/` (SQLModel + Alembic) · `observability/` · `infra/` (Docker, Terraform) · `.github/workflows/` (lint, testes, benchmark como trava).
+**Estrutura-alvo** (F1–F3, incremental sobre a atual): `src/obranexo/graph/` (grafo durável, checkpoints, interrupções) · `tools/` (registro MCP) · `gateway/` (roteamento de modelos) · `ingest/` (coleta agendada, índice de itens) · `db/` (SQLModel + Alembic) · `observability/` · `infra/` (Docker, Terraform).
 </details>
 
 ## Documentação
