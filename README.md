@@ -8,9 +8,9 @@
 <h3 align="center">Todo dia, o governo publica mais de mil pedidos de compra.<br>Quem entende primeiro, vende primeiro.</h3>
 
 <p align="center">
-  O ObraNexo é uma plataforma de agentes de IA que lê essas licitações no PNCP, item por item, cruza cada exigência
+  O ObraNexo é uma plataforma de agentes de IA que lê licitações do PNCP item por item, cruza cada exigência
   com o catálogo de um fornecedor e mostra o que ele atende, apontando a linha exata do edital.
-  Começamos por material elétrico e iluminação, onde 9 em cada 10 pregões não citam esses itens no título.
+  Começamos por material elétrico e iluminação, onde 9 em cada 10 pregões não citam esses itens no título: só quem lê os itens os encontra.
 </p>
 
 <p align="center">
@@ -85,7 +85,7 @@
 | **O que é** | Uma plataforma de inteligência comercial agêntica para contratações públicas. O fornecedor carrega o catálogo; os agentes buscam no PNCP, leem edital, termo de referência e anexos, e dizem, **item a item**, se cada produto atende, não atende, atende em parte ou se falta informação. Todo veredito vem com a prova. Quando o fornecedor decide disputar, o ObraNexo monta o kit da proposta que ele entrega ao órgão: cada item com o produto, a marca e o modelo ofertados, já conferidos contra as exigências do edital, os prazos com prova, os documentos técnicos e a **proposta de preços em Word**, pronta para precificar e assinar. Quem revisa, precifica e envia é sempre o fornecedor. A lista de habilitação e declarações do edital está *em construção*. |
 | **Para quem** | Distribuidores e atacadistas de material elétrico e iluminação, em geral micro e pequenas empresas sem analista de licitação. Depois: varejo elétrico, fabricantes, assessorias de licitação e construtoras. |
 | **Por que importa** | O PNCP publica cerca de **1.100 pregões eletrônicos por dia**. Cerca de **90% dos pregões com itens elétricos não dizem isso no objeto**, então escapam de qualquer alerta por palavra-chave. Quem lê tudo, acha a licitação certa e acerta a especificação disputa contra poucos; quem erra uma especificação é desclassificado. |
-| **O que já funciona** | Prospecção autônoma no PNCP ao vivo, análise completa de 9 licitações reais congeladas, 7 agentes (a análise roda num grafo explícito, declarado como dado), assistente em linguagem natural, catálogo por ficha técnica do fabricante, dossiê com prova, 3 provedores de IA com reserva automática, trilha de cada chamada de IA com agente, modelo, tokens, custo e latência. Roda em modo determinístico sem chave de API. |
+| **O que já funciona** | Prospecção autônoma no PNCP ao vivo, análise completa de 9 licitações reais congeladas, 7 agentes (a análise roda num grafo explícito, declarado como dado), assistente em linguagem natural, catálogo por ficha técnica do fabricante, dossiê com prova, kit da proposta com a proposta de preços em Word, 3 provedores de IA com reserva automática, trilha de cada chamada de IA com agente, modelo, tokens, custo e latência. Sem chave de API, a análise, o dossiê e o kit da proposta rodam em modo determinístico; prospecção, assistente e importação de fichas usam um provedor de IA. |
 
 > **Princípio de projeto.** A IA decide o que buscar, o que abrir, o que ler e o que investigar. Um núcleo verificável — validação por tipo e faixa, motor de regras e citação conferida no documento — garante que o veredito final seja auditável. Sem prova, o sistema diz **indeterminado** em vez de inventar.
 
@@ -117,7 +117,8 @@ flowchart LR
     A2[📄 Leitura<br/>edital, TR e anexos,<br/>item a item]:::ag
     A3[⚖️ Veredito verificável<br/>regras + prova literal]:::core
     A4[📋 Dossiê<br/>prioridade, riscos,<br/>próximos passos]:::ag
-    A1 --> A2 --> A3 --> A4
+    A5[🧾 Proposta<br/>kit e proposta de preços<br/>em Word]:::ag
+    A1 --> A2 --> A3 --> A4 --> A5
   end
   F -- catálogo --> ON
   P -- dados abertos --> ON
@@ -182,7 +183,7 @@ flowchart TB
     AT[📑 Analista Técnico ✅<br/>requisitos em lote,<br/>com trecho literal]:::ag
     ES[🔍 Especificador ✅<br/>lê o TR dos itens<br/>publicados só com o nome]:::ag
     IN[🕵️ Investigador ✅<br/>ferramentas sobre os anexos:<br/>buscar, ler página, registrar]:::ag
-    HB[📜 Habilitação ⬜ F2<br/>checklist documental<br/>e prazos do edital]:::plan
+    HB[📜 Habilitação ⬜ F1–F2<br/>checklist documental e prazos<br/>do edital, no kit da proposta]:::plan
     VE[🛡️ Verificador ✅<br/>reconfere citações, conflitos,<br/>confiança, parecer]:::ag
     PL[🧠 Planejador ✅<br/>resumo executivo,<br/>riscos, próximos passos]:::ag
     AT --> ES --> IN --> VE --> PL
@@ -233,7 +234,7 @@ Três agentes conduzem loops de ferramentas (decidem a ordem e a profundidade do
 | 🧠 **Planejador** | Resumo executivo, riscos e próximos passos, só a partir dos fatos já verificados | saída estruturada | qualificação (tipo, comprador, prazo, prioridade) vem de regras | ✅ |
 | 🗂️ **Curador de catálogo** | Lê a ficha do fabricante (link, PDF, DOCX, XLSX, texto) e propõe produtos com atributos validados; vai apontar as lacunas do catálogo que geram INDETERMINADO e sugerir fichas | saída estruturada | usuário revisa antes de adicionar | 🟡 |
 | 📡 **Monitor** | Ingestão contínua por UF e categoria, retificações de edital, alertas de novas oportunidades aderentes | coleta agendada · índice de itens | — | ⬜ F2 |
-| 📜 **Habilitação** | Checklist documental do edital (certidões, atestados, amostra, prazos) cruzado com o que a empresa tem | leitura do edital · memória da empresa | — | ⬜ F2 |
+| 📜 **Habilitação** | Checklist documental do edital (certidões, atestados, amostra, prazos) cruzado com o que a empresa tem; alimenta a lista de habilitação do kit da proposta | leitura do edital · memória da empresa | — | ⬜ F1–F2 |
 | 🏗️ **Rastreador de obras** | Em oportunidades indiretas, identifica a construtora vencedora na ata e no contrato e sugere o contato | PNCP (atas, contratos) | — | ⬜ F3 |
 | 💰 **Precificação** | Histórico de preços homologados por item e órgão para apoiar a proposta — **nunca dá lance** | PNCP (resultados) · índice de itens | — | ⬜ F4 |
 
@@ -289,7 +290,7 @@ Encontrar e decidir são etapas diferentes, e só a primeira usa (ou vai usar) b
 
 | Etapa | Hoje | Com o índice de itens (⬜ F2) |
 |---|---|---|
-| **1. Quem entra na fila** | palavra no **objeto** da licitação (determinístico, mas cego para os ~90% de pregões com itens elétricos que não dizem isso no objeto); no Agente de Prospecção, os termos são escolhidos pela IA | **busca híbrida sobre os itens**: palavra exata (IP66, 100 W, NBR) e significado ("luminária viária" ≈ "luminária pública") |
+| **1. Quem entra na fila** | palavra no **objeto** da licitação, com os termos escolhidos pelo agente a partir do catálogo; o agente então abre os itens das candidatas. Ainda não alcança os ~90% que não citam o segmento no objeto | **busca híbrida sobre os itens**: palavra exata (IP66, 100 W, NBR) e significado ("luminária viária" ≈ "luminária pública") — a mesma leitura de itens com que medimos os 90%, agora contínua |
 | **2. Qual a categoria do item** | regras sobre o começo da descrição; a IA sugere quando as regras não reconhecem | igual; o significado também ajuda quando a redação foge do comum |
 | **3. Atende ou não atende** | **motor de regras**, por atributo, com prova literal — não é comparação de texto exato | **igual, sem mudança** |
 
@@ -299,7 +300,7 @@ A busca por significado só decide **quem entra na fila e em que ordem**: nunca 
 
 | Decisão | Por quê |
 |---|---|
-| **Agentes, e não um pipeline fixo, para prospecção e investigação** | São tarefas de busca em aberto: os termos certos dependem do catálogo, a licitação certa depende dos itens, e a especificação que falta pode estar em qualquer anexo. Um pipeline fixo com palavras-chave enxerga ~10% do mercado (medição própria). |
+| **Agentes, e não um pipeline fixo, para prospecção e investigação** | São tarefas de busca em aberto: os termos certos dependem do catálogo, a licitação certa depende dos itens, e a especificação que falta pode estar em qualquer anexo. Palavra-chave fixa no objeto enxerga só ~10% dos pregões com itens elétricos (medição própria): por isso o agente escolhe os termos, abre os itens e decide o que ler; o índice de itens (F2) leva essa leitura para a descoberta. |
 | **Regras decidem a compatibilidade, a IA interpreta** | "IP65 atende IP66?" tem resposta certa e precisa ser a mesma sempre. O veredito determinístico é auditável, testável e explicável linha a linha. No teste cego, um valor inventado pelo modelo derrubava a análise inteira; hoje é descartado e registrado. |
 | **Citação conferida no ato do registro** | Verificar só no fim deixa o agente seguir por um caminho errado. Devolver o erro na hora faz o agente corrigir a si mesmo e barra alucinação de trecho na origem. |
 | **Três provedores pela mesma interface** | Nível gratuito instável (429/503) não pode derrubar uma demo nem um cliente. Troca de modelo é configuração, não reescrita. |
@@ -361,7 +362,7 @@ O que é difícil de copiar não é "ler edital com IA" — isso virou padrão d
 1. **Veredito por atributo contra o catálogo, com quatro estados.** Não "este edital parece relevante", mas "o LPL-100-50K atende os 25 requisitos do item 1; o PRO fica indeterminado porque falta a garantia na ficha".
 2. **Prova literal em cada conclusão, conferida duas vezes.** Trecho, documento e página. Quem revisa clica e vê.
 3. **Indeterminado explícito.** O sistema diz o que não sabe e onde procurou. É o estado que gera confiança e, no produto, puxa o cliente a completar o catálogo.
-4. **Leitura item a item que acha a demanda escondida.** Os ~90% de pregões com itens elétricos sem menção no objeto só aparecem lendo os itens.
+4. **Leitura item a item, onde a demanda se esconde.** Cerca de 90% dos pregões com itens elétricos não dizem isso no objeto: só aparecem para quem lê os itens. Foi assim, lendo os itens com o próprio conector e as regras de categoria do ObraNexo, que medimos esse número. Dentro de cada licitação o ObraNexo já lê item a item; levar essa leitura para a descoberta contínua, com o índice de itens, é o próximo passo (⬜ F2).
 5. **Demanda indireta em obras.** Concorrência de obra pública não lista luminárias nos itens; o sistema varre projetos e memoriais e aponta a construtora como comprador provável.
 6. **Vertical em material elétrico e iluminação.** Taxonomia de 32 atributos (potência, fluxo, eficiência, CCT, IRC, IP, IK, DPS, seção, tipo de cabo…) com regras de comparação específicas. O motor é genérico; a taxonomia é o ativo.
 7. **Autonomia com freios auditáveis.** Agentes decidem; validação, citação e regras garantem; a pessoa aprova.
@@ -380,7 +381,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as li
 | Busca ao vivo no PNCP | 24/10/2026: 9 páginas, ~450 pregões abertos em GO em 44 s; 18 candidatos pelos termos de iluminação; detalhe de uma licitação com 206 itens em 1,4 s | `obranexo abertas --uf GO` |
 | Casos reais congelados | 9 contratações do PNCP (R$ 1,4 mi a R$ 32 mi), 343 itens, 170 anexos | `obranexo casos` |
 
-**Limites honestos desses números.** O benchmark de 100% é **dentro da amostra**: os 2 casos rotulados foram usados no desenvolvimento e o gabarito é da própria equipe. Os 5 casos do teste cego estão rotulados pelo sistema, com **gabarito humano pendente** em [`docs/teste_cego_rotulagem.csv`](docs/teste_cego_rotulagem.csv) — não foram rotulados pela mesma pessoa que corrigiu o código, para o benchmark não virar circular. O custo em US$ é **estimado pela tabela oficial de preços** a partir dos tokens que cada API devolve (raciocínio incluído), por chamada na trilha e por análise em `GET /api/custos` (métrica interna); no nível gratuito do Gemini e do Groq a cobrança real é zero, e a única análise medida até agora é a de Itaberaí acima. A estimativa da pesquisa é de R$ 0,02 a R$ 0,48 por análise.
+**Limites honestos desses números.** O benchmark de 100% é **dentro da amostra**: os 2 casos rotulados foram usados no desenvolvimento e o gabarito é da própria equipe. Os 5 casos do teste cego estão rotulados pelo sistema, com **gabarito humano pendente** em [`docs/teste_cego_rotulagem.csv`](docs/teste_cego_rotulagem.csv) — não foram rotulados pela mesma pessoa que corrigiu o código, para o benchmark não virar circular. O custo em US$ é **estimado pela tabela oficial de preços** a partir dos tokens que cada API devolve (raciocínio incluído), por chamada na trilha e por análise em `GET /api/custos` (métrica interna); no nível gratuito do Gemini e do Groq a cobrança real é zero. A única análise medida até agora é a de Itaberaí: **R$ 0,73**, acima da faixa estimada na pesquisa (R$ 0,02 a R$ 0,48, calculada para modelos baratos) porque usou o modelo mais forte em todos os agentes, e ainda dentro da meta de R$ 1 por análise. O Investigador respondeu por 68% desse custo: é ali que o roteamento por tarefa (F3) atua para trazer o custo para a faixa.
 
 **Metodologia planejada (F1–F2).** Gabarito duplo (duas pessoas, divergências resolvidas, concordância medida) para 10 ou mais contratações e 150 a 300 pares; métricas-alvo do roadmap: precisão de COMPATÍVEL ≥ 85%, recall de itens relevantes ≥ 80%, detecção de incompatibilidade obrigatória ≥ 90%, rastreabilidade ≥ 95%, consistência entre execuções ≥ 90%, tempo ≤ 3 min; cronometragem do trabalho manual contra o assistido com 5 a 10 empresas no piloto.
 
@@ -393,7 +394,7 @@ Resumo do [Business Model Canvas](https://kauandivino.github.io/obranexo/) (vers
 | **Mercado** | R$ 1 trilhão em compras no PNCP em 2025 [FATO, MGI] → R$ 6,1–6,4 bi/ano em itens elétricos [DADO PRÓPRIO] → 7–13 mil empresas-alvo e R$ 51–96 mi/ano de mercado de software [ESTIMATIVA] → cenário-base de 250 clientes e R$ 1,8 mi de ARR em 36 meses [PREMISSA] |
 | **Cliente núcleo** | distribuidores e atacadistas de material elétrico (CNAE 4673-7/00): 3,4–4,2 mil empresas, em geral ME/EPP [FATO]; persona: sócio-gerente ou vendedor técnico que acumula a licitação |
 | **Planos** [PREMISSA] | Radar grátis (1 UF, 3 análises/mês) · Essencial R$ 397/mês · Profissional R$ 897/mês (todas as UFs, obras, 3 usuários) · Assessoria R$ 1.490–2.490/mês (5–10 CNPJs) · Fabricante/Enterprise sob consulta · créditos avulsos R$ 39/análise. Âncoras: concorrentes cobram R$ 101–1.397/mês [FATO] |
-| **Economia unitária** | IA custa R$ 0,02–0,48 por análise [ESTIMATIVA sobre preços oficiais]; margem bruta-alvo 75–85%; custo interno evitado pelo cliente de R$ 110–700 por edital [ESTIMATIVA] |
+| **Economia unitária** | IA custa centavos por análise: R$ 0,02–0,48 com modelos baratos [ESTIMATIVA sobre preços oficiais]; primeira medição real, com o modelo forte em todos os agentes, R$ 0,73, dentro da meta de R$ 1 [DADO INTERNO]; margem bruta-alvo 75–85%; custo interno evitado pelo cliente de R$ 110–700 por edital [ESTIMATIVA] |
 | **Canais** | assessorias de licitação (multi-CNPJ, canal de revenda), radar gratuito que converte, fabricantes que querem a rede de revenda vendendo ao governo, Sebrae e feiras |
 | **Impacto** | cada licitante qualificado a mais reduz o preço em ~3,4% [FATO, estudo europeu]; ganhar um contrato acelera o crescimento da empresa em 2,2 p.p. [FATO, NBER]; iluminação pública com ~80% dos 22 milhões de pontos sem LED [FATO]. ODS 7, 8, 9, 11, 12.7, 16 |
 | **Validação com clientes** | [DADO NECESSÁRIO] entrevistas com fornecedores · [DADO NECESSÁRIO] disposição a pagar · [DADO NECESSÁRIO] piloto supervisionado — planejados para F1–F2 |
@@ -406,11 +407,13 @@ A visão é ampla; a execução começa pequena, verificável e orientada por re
 
 | Fase | Período | Objetivo | Entregas principais | Critério de saída |
 |---|---|---|---|---|
-| **F0 · v0.1** Prova de conceito | 22–24/10/2026 | demo de ponta a ponta com dados reais | 7 agentes, PNCP ao vivo, 9 casos reais, catálogo por ficha, assistente, 3 provedores, benchmark, teste cego, grafo explícito, trilha de chamadas de IA em SQLite com custo real e logs estruturados, CI com benchmark como trava | os 7 critérios da demo rodam offline sem intervenção — **atingido ✅** |
+| **F0 · v0.1** Prova de conceito | 22–24/10/2026 | demo de ponta a ponta com dados reais | 7 agentes, PNCP ao vivo, 9 casos reais, catálogo por ficha, assistente, 3 provedores, benchmark, teste cego, grafo explícito, trilha de chamadas de IA em SQLite com custo real e logs estruturados, CI com benchmark como trava, kit da proposta e proposta de preços em Word | os 7 critérios da demo rodam offline sem intervenção — **atingido ✅** |
 | **F1 · v0.2** MVP robusto | 25/10–28/11/2026 | confiabilidade e primeira prova de valor | gabarito duplo em 10+ contratações; PostgreSQL + Alembic; login e isolamento por empresa; Docker; CI com benchmark como trava ✅; busca em todas as modalidades; recalibração da prioridade; 5 entrevistas e 1–2 pilotos | roda na nuvem (AWS) com Postgres; benchmark ≥ 10 contratações; ≥ 1 piloto com fornecedor real |
 | **F2 · v0.3** Beta fechado | dez/2026–fev/2027 | plataforma agêntica e piloto em escala | grafo durável com checkpoints e pausas para revisão; registro MCP de ferramentas; Monitor (ingestão contínua, índice híbrido com pgvector, alertas); Habilitação; feedback que recalibra; fila com workers; OTel + Langfuse; PCA, OCR e tabelas; **piloto de 60 dias com 10 distribuidores** | precisão ≥ 95% fora da amostra; rastreabilidade 100%; custo medido < R$ 1/análise; 95% das análises em < 3 min |
 | **F3 · v1.0** Produção | mar–jun/2027 | operar com clientes pagantes | AWS como código (ECS Fargate, Aurora/RDS PostgreSQL + pgvector, S3, SQS, Bedrock, Cognito — [estudo em andamento](#arquitetura-em-nuvem-aws--estudo-em-andamento)); gateway de modelos com roteamento, lote e orçamento por cliente; RLS e anexos versionados; Rastreador de obras; planos e cobrança; LGPD documentada, pentest, trilha de auditoria; avaliação contínua em produção | 30 dias cumprindo as metas de serviço (99,5%, p95 < 90 s); margem 75–85% |
 | **F4 · v1.x** Escala | 2º sem/2027 → | novas fontes, segmentos e agentes | Obrasgov e portais estaduais; Precificação com histórico de preços; grafo órgão–objeto–item–fornecedor; API pública e servidor MCP para CRM e assessorias; novos segmentos (hidráulica, climatização, incêndio) | churn < 3%/mês; LTV/CAC ≥ 3 |
+
+**Arquitetura-alvo da aplicação**: o que roda hoje (✅) e o que entra (⬜). Onde ela roda na AWS está no [estudo logo abaixo](#arquitetura-em-nuvem-aws--estudo-em-andamento).
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#e2f4f2','primaryTextColor':'#10222f','primaryBorderColor':'#00ab9f','lineColor':'#7d8b96','edgeLabelBackground':'#f1f3f3','fontSize':'14px','clusterBkg':'transparent','clusterBorder':'#7d8b96','titleColor':'#7d8b96'}}}%%
@@ -420,7 +423,7 @@ flowchart LR
     W[🖥️ Web app ✅<br/>JS puro, sem build]:::inf
     API2[🔌 API pública e servidor MCP ⬜ F4<br/>para CRM e assessorias]:::plan
   end
-  subgraph APP[" Aplicação · AWS, infraestrutura como código ⬜ F3 "]
+  subgraph APP[" Aplicação · AWS: mínima no F1, completa no F3 ⬜ "]
     direction TB
     G[🚪 API FastAPI ✅<br/>login e isolamento por empresa ⬜ F1]:::inf
     Q[📬 Fila e workers ⬜ F2<br/>hoje: threads ✅]:::plan
@@ -430,7 +433,7 @@ flowchart LR
   subgraph DAT[" Dados "]
     direction TB
     PG[(🐘 PostgreSQL + pgvector ⬜ F1–F2<br/>hoje: JSON em disco ✅ · SQLite da trilha de IA ✅)]:::mem
-    S3[(🗄️ Anexos versionados, S3 ⬜ F3<br/>hoje: pacotes congelados ✅)]:::mem
+    S3[(🗄️ Acervo no S3 ⬜ F1 · ciclo de vida F3<br/>hoje: pacotes congelados ✅)]:::mem
   end
   subgraph ING[" Ingestão "]
     direction TB
@@ -443,7 +446,7 @@ flowchart LR
     OT[📈 OpenTelemetry + Langfuse ⬜ F2<br/>hoje: trilha por análise e por chamada de IA ✅ · logs estruturados ✅]:::plan
     EV[🧪 Avaliação contínua<br/>benchmark com trava no CI ✅<br/>amostragem em produção ⬜ F3]:::plan
   end
-  LLM{{Gemini · Groq · Anthropic ✅<br/>Bedrock ⬜ F3}}:::inf
+  LLM{{Gemini · Groq · Anthropic ✅<br/>Bedrock ⬜ F2–F3}}:::inf
   W --> G
   API2 --> G
   G --> Q --> OR --> GW --> LLM
@@ -524,7 +527,7 @@ O plano de desenvolvimento detalhado, com cada item ligado ao status acima, est�
 
 ## Quickstart
 
-Testado em Windows 11 e macOS com Python 3.12. Sem chave de API, tudo roda em **modo determinístico** (sem agentes de linguagem); com uma chave, os agentes entram.
+Testado em Windows 11 e macOS com Python 3.12. Sem chave de API, a análise, o dossiê e o kit da proposta rodam em **modo determinístico** (sem agentes de linguagem); com uma chave, entram os agentes, a prospecção, o assistente e a importação de fichas.
 
 ```powershell
 # Windows (PowerShell)
@@ -583,7 +586,7 @@ Encontradas em auditoria do código em 24/10/2026; todas têm item no plano de d
 | Categoria do produto precisa ser a chave exata (`luminaria_publica_led`) | planilha com "Luminária pública" não casa com nada, sem aviso | validação e sugestão na importação · F1 |
 | Pesos da prioridade não calibrados | licitação encerrada (SRP) pode ficar acima de uma aberta | prazo aberto pesa mais; feedback recalibra · F1–F2 |
 | Benchmark só com 2 casos internos | precisão fora da amostra ainda desconhecida | gabarito duplo dos 5 casos cegos + 3 novos · F1 |
-| Custo de IA é estimativa a preço de tabela, com uma única análise medida (Itaberaí) | no nível gratuito do Gemini e do Groq a cobrança real é zero; a meta de R$ 1 por análise só se valida com volume e chave paga | acompanhar em `GET /api/custos` e na tela Qualidade; medir no piloto · F1–F2 |
+| Custo de IA é estimativa a preço de tabela, com uma única análise medida (Itaberaí, R$ 0,73) | no nível gratuito do Gemini e do Groq a cobrança real é zero; a meta de R$ 1 por análise só se valida com volume e chave paga | acompanhar em `GET /api/custos` e na tela Qualidade; medir no piloto · F1–F2 |
 | 32 atributos, quase todos de iluminação | número de condutores, comprimento de braço, classe de encordoamento ficam de fora | taxonomia por categoria · F2 |
 | Sem OCR, sem PCA, sem tabelas de PDF | editais digitalizados e demanda planejada não são lidos | F2 |
 | Persistência em JSON; o SQLite guarda a trilha de chamadas de IA e as mensagens do chat; jobs em memória | análises, prospecções e catálogo continuam em JSON; um job em andamento se perde ao reiniciar; não escala horizontalmente | Postgres (análises, trilha e chat no mesmo banco), fila e workers · F1–F2 |
@@ -650,7 +653,7 @@ O frontend não tem dependências externas nem etapa de build: o próprio FastAP
 | `aruana_pp005_2026` | Aruanã/GO — PP 005/2026 — luminárias LED 50/100/150 W (R$ 1,42 mi) | exigência de 170 lm/W derruba produtos comuns; gabarito revisado |
 | `anapolis_pe_material_eletrico_2026` | Anápolis/GO — RP de material elétrico e iluminação pública (R$ 26,5 mi, 206 itens), escolhida e baixada pelo Agente de Prospecção | itens publicados só com o nome: o Especificador lê a especificação na relação de itens do TR (dentro de um ZIP) |
 | `cego_*` (5 casos) | Pregões **com propostas abertas** em GO em 23/10/2026: refletores (Itumbiara), material elétrico (Itaberaí), iluminação de rodovia (Chapadão do Céu), iluminação pública (Cezarina), material de consumo (Base Aérea de Anápolis) | teste cego de robustez — `docs/teste_cego_2026-10-23.md`; gabarito humano pendente em `docs/teste_cego_rotulagem.csv` |
-| `seinfra_basileu_franca_2026` | Estado de Goiás — Concorrência 02/2026 — obra da EFG Basileu França (R$ 31,98 mi) | classificação INDIRETA (o comprador é a construtora) e varredura de insumos elétricos nos projetos; dos 100 anexos, só edital, TR, ETP, orçamento e projeto elétrico foram congelados |
+| `seinfra_basileu_franca_2026` | Estado de Goiás — Concorrência 02/2026 — obra da EFG Basileu França (R$ 31,98 mi) | classificação INDIRETA (o comprador é a construtora) e varredura de insumos elétricos nos projetos; dos 107 anexos publicados (o pacote congelado lista 100, coletados antes da correção da paginação), só edital, TR, ETP, orçamento e projeto elétrico foram congelados |
 </details>
 
 <details open>

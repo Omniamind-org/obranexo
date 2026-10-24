@@ -1,6 +1,6 @@
-%%{init: {'theme':'base','themeVariables':{'primaryColor':'#e2f4f2','primaryTextColor':'#10222f','primaryBorderColor':'#00ab9f','lineColor':'#7d8b96','edgeLabelBackground':'#f1f3f3','fontFamily':'Plus Jakarta Sans, Segoe UI, sans-serif','fontSize':'14px','clusterBkg':'transparent','clusterBorder':'#7d8b96','titleColor':'#7d8b96'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#e2f4f2','primaryTextColor':'#10222f','primaryBorderColor':'#00ab9f','lineColor':'#7d8b96','edgeLabelBackground':'#f1f3f3','fontSize':'14px','clusterBkg':'transparent','clusterBorder':'#7d8b96','titleColor':'#7d8b96'}}}%%
 flowchart TB
-  subgraph ORQ[" Orquestração · agentes de fronteira (decidem o que fazer) · grafo durável com checkpoints e pausas para revisão ⬜ F2 "]
+  subgraph ORQ[" Orquestração · agentes de fronteira (decidem o que fazer) · grafo explícito declarado como dado ✅ · durável com checkpoints e pausas para revisão ⬜ F2 "]
     direction LR
     PR[🧭 Prospector ✅<br/>escolhe termos, abre licitações,<br/>decide o que analisar a fundo]:::ag
     AS[💬 Assistente ✅<br/>conversa com dados<br/>ao vivo do PNCP]:::ag
@@ -12,7 +12,7 @@ flowchart TB
     AT[📑 Analista Técnico ✅<br/>requisitos em lote,<br/>com trecho literal]:::ag
     ES[🔍 Especificador ✅<br/>lê o TR dos itens<br/>publicados só com o nome]:::ag
     IN[🕵️ Investigador ✅<br/>ferramentas sobre os anexos:<br/>buscar, ler página, registrar]:::ag
-    HB[📜 Habilitação ⬜ F2<br/>checklist documental<br/>e prazos do edital]:::plan
+    HB[📜 Habilitação ⬜ F1–F2<br/>checklist documental e prazos<br/>do edital, no kit da proposta]:::plan
     VE[🛡️ Verificador ✅<br/>reconfere citações, conflitos,<br/>confiança, parecer]:::ag
     PL[🧠 Planejador ✅<br/>resumo executivo,<br/>riscos, próximos passos]:::ag
     AT --> ES --> IN --> VE --> PL
@@ -20,21 +20,21 @@ flowchart TB
   end
   subgraph NUC[" Núcleo verificável · o que torna o veredito auditável "]
     direction LR
-    N1[Validação por tipo e faixa<br/>de todo valor proposto por IA ✅]:::core
+    N1[Validação por tipo, faixa e categoria<br/>de todo valor proposto por IA ✅]:::core
     N2[Motor de regras determinístico<br/>ATENDE · NÃO ATENDE · INDETERMINADO ✅]:::core
     N3[Citação conferida no documento<br/>no ato do registro, similaridade ≥ 90 ✅]:::core
   end
   subgraph MEM[" Memória e estado "]
     direction LR
-    M1[(Estado da análise<br/>JSON ✅ → Postgres com checkpoints ⬜)]:::mem
+    M1[(Estado da análise<br/>JSON ✅ · trilha de chamadas de IA em SQLite ✅<br/>→ Postgres com checkpoints ⬜)]:::mem
     M2[(Memória da empresa<br/>catálogo ✅ · perfil 🟡 · decisões ⬜)]:::mem
     M3[(Índice de itens do PNCP<br/>busca híbrida, pgvector ⬜)]:::mem
   end
   subgraph INF[" Plataforma "]
     direction LR
     TR[🧰 Ferramentas<br/>por agente ✅ → registro único MCP ⬜]:::inf
-    GW[🔀 Gateway de modelos<br/>3 provedores com reserva ✅<br/>roteamento por tarefa e lote ⬜]:::inf
-    OB[📈 Observabilidade e avaliação<br/>trilha por análise ✅ · benchmark com trava no CI ✅<br/>OTel + Langfuse ⬜]:::inf
+    GW[🔀 Gateway de modelos<br/>3 provedores com reserva ✅ · temperatura 0 ✅<br/>roteamento por tarefa e lote ⬜]:::inf
+    OB[📈 Observabilidade e avaliação<br/>trilha por análise e por chamada de IA ✅ · custo real ✅<br/>logs estruturados ✅ · benchmark com trava no CI ✅<br/>OTel + Langfuse ⬜]:::inf
   end
   PR -- analisar_a_fundo --> AN
   AS -- analisar_a_fundo --> AN
