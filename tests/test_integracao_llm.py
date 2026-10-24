@@ -1,4 +1,4 @@
-"""Testes de integração com o provedor de LLM configurado no .env (Gemini ou Anthropic).
+"""Testes de integração com o provedor de LLM configurado no .env (Gemini, Groq ou Anthropic).
 
 Chamam a API de verdade (respeitando o cache em disco). São pulados quando não há chave.
 Rode só eles com:  pytest -m integracao -v

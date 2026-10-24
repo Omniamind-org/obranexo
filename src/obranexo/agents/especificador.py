@@ -48,10 +48,12 @@ def _paginas_relevantes(ctx: Contexto, itens: list[ItemDemanda]) -> list[tuple[s
 
 
 def _blocos(ctx: Contexto, paginas: list[tuple[str, int]]) -> list[list[tuple[str, int, str]]]:
+    # Proporcional ao lote do provedor (no Groq gratuito, pedidos grandes estouram o limite de tokens por minuto)
+    limite = min(MAX_CHARS_POR_CHAMADA, max(6000, int(ctx.cfg.lote_max_chars * 2.4)))
     blocos, atual, tamanho = [], [], 0
     for doc_id, pagina in sorted(paginas):
         texto = ctx.indice.ler_pagina(doc_id, pagina) or ""
-        if atual and tamanho + len(texto) > MAX_CHARS_POR_CHAMADA:
+        if atual and tamanho + len(texto) > limite:
             blocos.append(atual)
             atual, tamanho = [], 0
         atual.append((doc_id, pagina, texto))

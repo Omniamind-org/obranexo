@@ -72,13 +72,13 @@ _LOTE_MAX_ITENS = 10
 _LOTE_MAX_CHARS = 9000
 
 
-def _lotes(itens: list[ItemDemanda]) -> list[list[ItemDemanda]]:
+def _lotes(itens: list[ItemDemanda], max_itens: int = _LOTE_MAX_ITENS, max_chars: int = _LOTE_MAX_CHARS) -> list[list[ItemDemanda]]:
     lotes: list[list[ItemDemanda]] = []
     atual: list[ItemDemanda] = []
     tamanho = 0
     for item in itens:
         n = len(item.descricao)
-        if atual and (len(atual) >= _LOTE_MAX_ITENS or tamanho + n > _LOTE_MAX_CHARS):
+        if atual and (len(atual) >= max_itens or tamanho + n > max_chars):
             lotes.append(atual)
             atual, tamanho = [], 0
         atual.append(item)
@@ -95,7 +95,8 @@ def extrair_lotes(ctx: Contexto, itens: list[ItemDemanda]) -> dict[int, Extracao
         return {}
     from concurrent.futures import ThreadPoolExecutor
 
-    lotes = _lotes(itens)
+    # Tamanho do lote por provedor: o Groq gratuito tem limite baixo de tokens por minuto (413 em pedidos grandes)
+    lotes = _lotes(itens, ctx.cfg.lote_max_itens, ctx.cfg.lote_max_chars)
 
     def chamar(lote: list[ItemDemanda]) -> ExtracaoLote | None:
         prompt = (

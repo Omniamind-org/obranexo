@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import threading
 import time
 import uuid
@@ -371,6 +372,225 @@ class _ConversaGemini(Conversa):
 
 
 # ---------------------------------------------------------------------------
+# Groq (API no formato OpenAI, SDK `groq`)
+# ---------------------------------------------------------------------------
+#
+# Particularidades tratadas aqui:
+#  - ferramentas no formato OpenAI ({"type": "function", "function": {...}}); os argumentos chegam como
+#    STRING JSON; resultados voltam como mensagens role="tool" com tool_call_id;
+#  - saída estruturada: json_schema existe só em alguns modelos (gpt-oss, Llama 4, Kimi); nos demais o
+#    pedido é recusado com 400 e caímos para json_object, que exige a palavra "JSON" na conversa — o
+#    esquema vai no system prompt e a resposta é validada por Pydantic, com uma nova tentativa se falhar;
+#  - 400 "tool_use_failed" / "json_validate_failed": o modelo gerou chamada/JSON malformado — tentamos de
+#    novo uma vez e, persistindo, o modelo reserva assume;
+#  - 413: o pedido é maior que o limite de tokens por minuto do plano (comum no nível gratuito);
+#  - 403 "Access denied. Please check your network settings": bloqueio de rede/região do Groq (antes da
+#    autenticação) — mensagem clara e reserva;
+#  - modelos de raciocínio: gpt-oss aceita reasoning_effort; Qwen 3 pode devolver <think>…</think>.
+
+_RE_THINK = re.compile(r"<think>.*?</think>", re.S | re.I)
+
+
+def _tools_openai(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [{"type": "function", "function": {"name": t["name"], "description": t.get("description", ""), "parameters": t["input_schema"]}} for t in tools]
+
+
+def _json_da_resposta(texto: str) -> str:
+    """Tira raciocínio (<think>) e cercas de código, e isola o objeto JSON."""
+    t = _RE_THINK.sub("", texto or "").strip()
+    t = re.sub(r"^```(?:json)?\s*|\s*```$", "", t, flags=re.I).strip()
+    ini, fim = t.find("{"), t.rfind("}")
+    return t[ini : fim + 1] if ini >= 0 and fim > ini else t
+
+
+def _codigo_erro_groq(exc: Exception) -> str:
+    corpo = getattr(exc, "body", None)
+    if isinstance(corpo, dict):
+        erro = corpo.get("error", corpo)
+        if isinstance(erro, dict) and erro.get("code"):
+            return str(erro["code"])
+    return str(exc)
+
+
+class GroqClient(LLMClient):
+    provedor = "groq"
+
+    def __init__(self, cfg: Config | None = None, uso: UsoLLM | None = None):
+        super().__init__(cfg, uso)
+        import groq
+
+        self._client = groq.Groq(api_key=self.cfg.groq_api_key, timeout=self.cfg.llm_timeout_s, max_retries=2)
+        self._sem_json_schema: set[str] = set()  # modelos que recusaram response_format json_schema
+
+    @property
+    def disponivel(self) -> bool:
+        return bool(self.cfg.groq_api_key)
+
+    @staticmethod
+    def _extras(modelo: str) -> dict[str, Any]:
+        if modelo.startswith("openai/gpt-oss"):
+            return {"reasoning_effort": "low"}
+        if modelo.startswith("qwen/"):
+            return {"reasoning_format": "hidden"}
+        return {}
+
+    def _criar(self, modelo: str, **kwargs: Any) -> Any:
+        """chat.completions.create com os erros do Groq traduzidos para indisponibilidade (=> reserva)."""
+        import groq
+
+        if self.cfg.llm_pausa_s:
+            time.sleep(self.cfg.llm_pausa_s)
+        try:
+            resposta = self._client.chat.completions.create(model=modelo, **self._extras(modelo), **kwargs)
+        except groq.PermissionDeniedError as exc:
+            raise LLMIndisponivel(f"{modelo}: o Groq recusou o acesso desta rede (403 — bloqueio de rede/região do provedor, não da chave)") from exc
+        except groq.AuthenticationError as exc:
+            raise LLMIndisponivel(f"{modelo}: chave do Groq inválida (401)") from exc
+        except groq.RateLimitError as exc:
+            raise LLMIndisponivel(f"{modelo}: limite de requisições/tokens do Groq atingido (429)") from exc
+        except groq.NotFoundError as exc:
+            raise LLMIndisponivel(f"{modelo}: modelo não encontrado ou descontinuado no Groq (404)") from exc
+        except (groq.APITimeoutError, groq.APIConnectionError) as exc:
+            raise LLMIndisponivel(f"{modelo}: sem resposta do Groq ({type(exc).__name__})") from exc
+        except groq.APIStatusError as exc:
+            if exc.status_code == 413:
+                raise LLMIndisponivel(f"{modelo}: pedido maior que o limite de tokens por minuto do plano (413)") from exc
+            if exc.status_code >= 500:
+                raise LLMIndisponivel(f"{modelo}: erro do Groq (HTTP {exc.status_code})") from exc
+            raise
+        u = getattr(resposta, "usage", None)
+        if u is not None:
+            self._contabilizar(modelo, int(getattr(u, "prompt_tokens", 0) or 0), int(getattr(u, "completion_tokens", 0) or 0))
+        return resposta
+
+    def extrair(self, modelo: str, system: str, prompt: str, schema: type[T], max_tokens: int = 8000) -> T:
+        import groq
+        from pydantic import ValidationError
+
+        esquema = schema.model_json_schema()
+
+        def _run(m: str) -> T:
+            payload = {"op": "extrair", "provedor": "groq", "modelo": m, "system": system, "prompt": prompt, "schema": esquema}
+            chave = self._chave(payload)
+            cache = self._ler_cache(chave)
+            if cache is not None:
+                return schema.model_validate(cache["parsed"])
+            usa_schema = m not in self._sem_json_schema
+            mensagens = [
+                {"role": "system", "content": system + "\n\nResponda APENAS com um objeto JSON válido que siga este esquema JSON:\n"
+                 + json.dumps(esquema, ensure_ascii=False)},
+                {"role": "user", "content": prompt},
+            ]
+            for tentativa in range(3):
+                fmt = {"type": "json_schema", "json_schema": {"name": schema.__name__, "schema": esquema, "strict": False}} if usa_schema else {"type": "json_object"}
+                try:
+                    resp = self._criar(m, messages=mensagens, response_format=fmt, temperature=0, max_completion_tokens=min(max_tokens, 32000))
+                except groq.BadRequestError as exc:
+                    codigo = _codigo_erro_groq(exc)
+                    if usa_schema and ("json_schema" in codigo or "response_format" in codigo or "json_schema" in str(exc)):
+                        self._sem_json_schema.add(m)  # este modelo não tem json_schema: segue com json_object
+                        usa_schema = False
+                        continue
+                    if "json_validate_failed" in codigo and tentativa < 2:
+                        continue  # o modelo gerou JSON malformado: tenta de novo
+                    raise LLMIndisponivel(f"{m}: pedido recusado pelo Groq ({codigo[:160]})") from exc
+                texto = resp.choices[0].message.content or ""
+                try:
+                    parsed = schema.model_validate_json(_json_da_resposta(texto))
+                except ValidationError as exc:
+                    if tentativa >= 2:
+                        raise LLMIndisponivel(f"{m}: resposta fora do esquema ({str(exc)[:160]})") from exc
+                    mensagens += [{"role": "assistant", "content": texto},
+                                  {"role": "user", "content": f"O JSON não validou: {str(exc)[:600]}. Corrija e devolva só o objeto JSON."}]
+                    continue
+                self._gravar_cache(chave, {"parsed": parsed.model_dump(mode="json")})
+                return parsed
+            raise LLMIndisponivel(f"{m}: não foi possível obter JSON válido")
+
+        return self._com_reserva(modelo, _run)[0]
+
+    def texto(self, modelo: str, system: str, prompt: str, max_tokens: int = 4000) -> str:
+        def _run(m: str) -> str:
+            payload = {"op": "texto", "provedor": "groq", "modelo": m, "system": system, "prompt": prompt}
+            chave = self._chave(payload)
+            cache = self._ler_cache(chave)
+            if cache is not None:
+                return cache["texto"]
+            resp = self._criar(m, messages=[{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+                               temperature=0, max_completion_tokens=max_tokens)
+            texto = _RE_THINK.sub("", resp.choices[0].message.content or "").strip()
+            self._gravar_cache(chave, {"texto": texto})
+            return texto
+
+        return self._com_reserva(modelo, _run)[0]
+
+    def conversa(self, modelo: str, system: str, tools: list[dict[str, Any]]) -> Conversa:
+        return _ConversaGroq(self, modelo, system, tools)
+
+
+class _ConversaGroq(Conversa):
+    def __init__(self, cliente: GroqClient, modelo: str, system: str, tools: list[dict[str, Any]]):
+        self.c = cliente
+        self.modelo = modelo
+        self.tools = _tools_openai(tools)
+        self.mensagens: list[dict[str, Any]] = [{"role": "system", "content": system}]
+
+    def _rodada(self) -> RespostaLLM:
+        import groq
+
+        payload = {"op": "conversa", "provedor": "groq", "modelo": self.modelo, "mensagens": self.mensagens, "tools": self.tools}
+        chave = self.c._chave(payload)
+        dados = self.c._ler_cache(chave)
+        if dados is None:
+            def _run(m: str) -> dict[str, Any]:
+                for tentativa in range(2):
+                    try:
+                        resp = self.c._criar(m, messages=self.mensagens, tools=self.tools, tool_choice="auto", temperature=0, max_completion_tokens=4000)
+                    except groq.BadRequestError as exc:
+                        codigo = _codigo_erro_groq(exc)
+                        if "tool_use_failed" in codigo and tentativa == 0:
+                            continue  # chamada de ferramenta malformada: uma nova tentativa costuma resolver
+                        raise LLMIndisponivel(f"{m}: Groq recusou a rodada ({codigo[:160]})") from exc
+                    escolha = resp.choices[0]
+                    msg = escolha.message
+                    return {
+                        "content": _RE_THINK.sub("", msg.content or "").strip(),
+                        "tool_calls": [{"id": t.id, "name": t.function.name, "arguments": t.function.arguments or "{}"} for t in (msg.tool_calls or [])],
+                        "finish": escolha.finish_reason,
+                    }
+                raise LLMIndisponivel(f"{m}: chamadas de ferramenta malformadas")
+
+            dados, _ = self.c._com_reserva(self.modelo, _run)
+            self.c._gravar_cache(chave, dados)
+        mensagem: dict[str, Any] = {"role": "assistant", "content": dados["content"] or None}
+        if dados["tool_calls"]:
+            mensagem["tool_calls"] = [{"id": t["id"], "type": "function", "function": {"name": t["name"], "arguments": t["arguments"]}} for t in dados["tool_calls"]]
+        else:
+            mensagem["content"] = dados["content"] or ""
+        self.mensagens.append(mensagem)
+        chamadas = []
+        for t in dados["tool_calls"]:
+            try:
+                entrada = json.loads(t["arguments"]) if t["arguments"] else {}
+            except json.JSONDecodeError:
+                entrada = {}
+            chamadas.append(ChamadaFerramenta(id=t["id"], nome=t["name"], entrada=entrada if isinstance(entrada, dict) else {}))
+        parada = {"tool_calls": "ferramentas", "length": "limite", "content_filter": "recusa"}.get(dados.get("finish") or "", "fim")
+        if chamadas:
+            parada = "ferramentas"
+        return RespostaLLM(texto=dados["content"], chamadas=chamadas, parada=parada)
+
+    def enviar(self, texto: str) -> RespostaLLM:
+        self.mensagens.append({"role": "user", "content": texto})
+        return self._rodada()
+
+    def responder_ferramentas(self, resultados: list[tuple[str, str, bool]]) -> RespostaLLM:
+        for cid, saida, _erro in resultados:
+            self.mensagens.append({"role": "tool", "tool_call_id": cid, "content": saida})
+        return self._rodada()
+
+
+# ---------------------------------------------------------------------------
 # Anthropic
 # ---------------------------------------------------------------------------
 
@@ -487,6 +707,8 @@ def criar_llm_client(cfg: Config | None = None, uso: UsoLLM | None = None) -> LL
     cfg = cfg or config
     if cfg.llm_provider == "gemini" and cfg.gemini_api_key:
         return GeminiClient(cfg, uso)
+    if cfg.llm_provider == "groq" and cfg.groq_api_key:
+        return GroqClient(cfg, uso)
     if cfg.llm_provider == "anthropic" and cfg.anthropic_api_key:
         return AnthropicClient(cfg, uso)
     return ClienteNulo(cfg, uso)
