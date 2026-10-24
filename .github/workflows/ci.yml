@@ -15,20 +15,16 @@ on:
       - "**.md"
       - "docs/**"
       - "pitch/**"
-      - "research_notes/**"
-      - "reports/**"
+      - "bmc/**"
       - "ROADMAP_MVP.txt"
-      - "BMC_ObraNexo.txt"
       - "*.pdf"
   pull_request:
     paths-ignore:
       - "**.md"
       - "docs/**"
       - "pitch/**"
-      - "research_notes/**"
-      - "reports/**"
+      - "bmc/**"
       - "ROADMAP_MVP.txt"
-      - "BMC_ObraNexo.txt"
       - "*.pdf"
   workflow_dispatch:
 

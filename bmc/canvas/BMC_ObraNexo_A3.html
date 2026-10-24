@@ -98,6 +98,7 @@ h1, h2, h3, p, ul { margin: 0; }
 .ancoras.tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .ancora { display: grid; gap: 1px; }
 .ancora b { font-size: 18px; font-weight: 700; line-height: 1.1; color: var(--branco); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.ancora b.medido { font-size: inherit; font-weight: 700; display: inline; white-space: nowrap; }
 .ancora span { font-size: 10px; line-height: 1.3; color: var(--branco); opacity: .88; }
 .a-valor .ancora b { font-size: 26px; }
 .planos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
@@ -276,7 +277,7 @@ h1, h2, h3, p, ul { margin: 0; }
       </div>
       <div class="col lado2">
         <div class="ancoras lado">
-          <div class="ancora"><b>R$ 0,02–0,48</b><span>por análise de edital, com preços oficiais de out/2026</span><span class="tag t-estim">estimativa</span></div>
+          <div class="ancora"><b>R$ 0,02–0,48</b><span>por análise em modelos baratos, preços oficiais de out/2026 · medido no MVP: <b class="medido">R$ 0,73</b> (Itaberaí, 21 itens)</span><span class="tag t-estim">estimativa</span> <span class="tag t-interno">medição interna</span></div>
           <div class="ancora"><b>75–85%</b><span>margem bruta-alvo · equilíbrio com ~89 clientes se o custo fixo for R$ 40 mil/mês</span><span class="tag t-estim">estimativa</span></div>
         </div>
       </div>
