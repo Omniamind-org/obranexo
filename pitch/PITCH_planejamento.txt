@@ -92,7 +92,8 @@ SLIDE 9 - TRAÇÃO / PRODUTO FUNCIONANDO
 - Tela real: ranking da prospecção + assistente de conversa.
 - Lista: 7 agentes de IA; assistente com dados ao vivo do PNCP; testes cegos em pregões reais abertos;
   100% de acerto e de rastreabilidade no conjunto de teste (interno); 3 provedores de IA com troca
-  automática.
+  automática; cada chamada de IA registrada com agente, modelo, tokens (inclusive de raciocínio), custo
+  e latência (trilha em SQLite, visível na tela da análise e em Qualidade).
 
 SLIDE 10 - IMPACTO E PEDIDO
 - Impacto: cerca de -3% no preço a cada concorrente a mais; +2,2 p.p. de crescimento para a empresa que
@@ -141,7 +142,21 @@ R: São no nosso conjunto de teste, com gabarito revisado por nós. O próximo p
 
 P: Quanto custa rodar?
 R: Centavos por análise em modelos baratos (R$ 0,02 a R$ 0,48). Usamos três provedores de IA com troca
-   automática, então escolhemos o modelo certo para cada etapa.
+   automática, então escolhemos o modelo certo para cada etapa. E medimos isso por chamada: cada análise
+   mostra os tokens que a API devolveu, inclusive os de raciocínio, e o custo pela tabela oficial.
+
+P: Como vocês investigariam uma resposta ruim? Que métrica indicaria degradação?
+R: Toda chamada de modelo fica na trilha: agente, modelo pedido e o que respondeu, prompt, resposta,
+   tokens, custo, latência, se veio do cache ou do reserva. Abrimos a análise, aba Trilha do agente,
+   Chamadas de IA, e vemos a chamada exata; com temperatura zero e cache, reexecutar reproduz o resultado.
+   Degradação: taxa de erro e de reserva por modelo, latência p95 por agente, custo por análise, taxa de
+   itens indeterminados, rastreabilidade abaixo de 100% e o benchmark com gabarito abaixo de 100%.
+
+P: Usam LangChain ou LangGraph?
+R: Não. A orquestração é nossa e explícita: o grafo da análise é declarado como dado (13 etapas, cada uma
+   com o que lê e escreve no estado compartilhado) e é esse objeto que executa a análise, testado e
+   observável. O edital avalia a qualidade da aplicação, não a ferramenta. LangGraph fica como opção para
+   checkpoints duráveis na próxima fase.
 
 P: De onde vêm os dados? Tem problema de LGPD?
 R: Do PNCP, que é público e aberto por lei (Lei 14.133, art. 174). O catálogo é do próprio cliente.

@@ -523,9 +523,9 @@ def prospeccao(prospeccao_id: str) -> dict[str, Any]:
 def _sessao_ou_404(sessao_id: str):
     from obranexo.agents.assistente import sessoes
 
-    s = sessoes.obter(sessao_id)
+    s = sessoes.obter(sessao_id, empresa_atual())  # fora da memória, a conversa é reconstruída do SQLite
     if s is None:
-        raise HTTPException(404, "conversa não encontrada (o servidor pode ter reiniciado)")
+        raise HTTPException(404, "conversa não encontrada")
     return s
 
 

@@ -111,3 +111,21 @@ def test_limite_de_rodadas_de_ferramentas(assistente):
     msg = assistente.responder("loop")
     assert len(msg["ferramentas"]) == mod.MAX_RODADAS
     assert "AVISO DO SISTEMA" in conversa.resultados[-1][-1][1]
+
+
+def test_conversa_sobrevive_ao_reinicio_do_servidor(tmp_path, monkeypatch):
+    """As mensagens ficam no SQLite: outra instância de Sessoes (como após reiniciar) reconstrói a conversa."""
+    monkeypatch.setattr(config, "dir_dados", tmp_path)
+    empresa = carregar_catalogo_json(config.catalogo_demo)
+    cfg = Config(llm_provider=None, gemini_api_key=None, groq_api_key=None, anthropic_api_key=None, dir_llm_cache=tmp_path, llm_cache=False)
+    a = Assistente(empresa, cfg=cfg)
+    a.llm = LLMFalso([ConversaRoteirizada([RespostaLLM(texto="Posso ajudar com luminárias.")])])
+    a.responder("oi")
+    assert [m["papel"] for m in a.mensagens] == ["usuario", "assistente"]
+
+    nova = mod.Sessoes()  # memória vazia, como um servidor recém-iniciado
+    assert nova.obter(a.id) is None  # sem a empresa não há como reconstruir
+    restaurada = nova.obter(a.id, empresa)
+    assert restaurada is not None and restaurada.id == a.id and restaurada.mensagens == a.mensagens
+    assert "Posso ajudar" in restaurada._contexto_anterior()  # o próximo turno parte do resumo
+    assert nova.obter("nao-existe", empresa) is None
