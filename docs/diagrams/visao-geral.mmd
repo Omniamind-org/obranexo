@@ -1,0 +1,20 @@
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#e2f4f2','primaryTextColor':'#10222f','primaryBorderColor':'#00ab9f','lineColor':'#7d8b96','edgeLabelBackground':'#f1f3f3','fontFamily':'Plus Jakarta Sans, Segoe UI, sans-serif','fontSize':'15px','clusterBkg':'transparent','clusterBorder':'#7d8b96','titleColor':'#7d8b96'}}}%%
+flowchart LR
+  F([🏭 Fornecedor<br/>catálogo real: planilha<br/>ou ficha do fabricante]):::nav
+  P[(🏛️ PNCP<br/>licitações, itens e anexos<br/>~1.100 pregões por dia)]:::nav
+  subgraph ON[" ObraNexo "]
+    direction LR
+    A1[🔎 Prospecção<br/>o agente decide o que<br/>buscar e o que abrir]:::ag
+    A2[📄 Leitura<br/>edital, TR e anexos,<br/>item a item]:::ag
+    A3[⚖️ Veredito verificável<br/>regras + prova literal]:::core
+    A4[📋 Dossiê<br/>prioridade, riscos,<br/>próximos passos]:::ag
+    A1 --> A2 --> A3 --> A4
+  end
+  F -- catálogo --> ON
+  P -- dados abertos --> ON
+  ON --> H{{👤 Decisão humana<br/>seguir · descartar · comentar}}:::hum
+  H -. feedback .-> ON
+  classDef nav fill:#0b2a3c,stroke:#0b2a3c,color:#ffffff
+  classDef ag fill:#e2f4f2,stroke:#00ab9f,color:#10222f
+  classDef core fill:#00ab9f,stroke:#00756c,color:#ffffff
+  classDef hum fill:#fdf3dc,stroke:#fab219,color:#10222f
