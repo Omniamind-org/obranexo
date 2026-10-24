@@ -173,7 +173,8 @@ def renderizar(analise: Analise, empresa: Empresa, resumo: str, proximos_passos:
     L.append("---")
     L.append(
         f"*ObraNexo v{__version__} · modo {analise.modo} · prompts {analise.versao_prompts} · "
-        f"{u.chamadas} chamada(s) LLM · {u.tokens_entrada + u.tokens_saida} tokens · custo estimado US$ {u.custo_usd:.4f} · "
+        f"{u.chamadas} chamada(s) LLM ({u.chamadas_cache} do cache) · {u.tokens_entrada + u.tokens_saida + u.tokens_raciocinio} tokens "
+        f"({u.tokens_raciocinio} de raciocínio) · custo estimado US$ {u.custo_usd:.4f} · espera pelos modelos {u.latencia_ms / 1000:.0f}s · "
         f"duração {dur:.0f}s · gerado em {analise.iniciada_em:%d/%m/%Y %H:%M}.*"
         if dur is not None
         else f"*ObraNexo v{__version__} · modo {analise.modo}.*"

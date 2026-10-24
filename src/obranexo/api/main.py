@@ -136,7 +136,11 @@ def _resumo_analise(a: Analise, caso: str | None = None) -> dict[str, Any]:
         "prioridade": q.prioridade if q else None,
         "llm": {
             "chamadas": a.uso_llm.chamadas,
-            "tokens": a.uso_llm.tokens_entrada + a.uso_llm.tokens_saida,
+            "chamadas_cache": a.uso_llm.chamadas_cache,
+            "chamadas_reserva": a.uso_llm.chamadas_reserva,
+            "tokens": a.uso_llm.tokens_entrada + a.uso_llm.tokens_saida + a.uso_llm.tokens_raciocinio,
+            "tokens_raciocinio": a.uso_llm.tokens_raciocinio,
+            "latencia_ms": a.uso_llm.latencia_ms,
             "custo_usd": a.uso_llm.custo_usd,
             "modelos": list(a.uso_llm.por_modelo),
         },
