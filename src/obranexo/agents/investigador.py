@@ -13,7 +13,7 @@ from typing import Any
 
 from obranexo.agents.contexto import Contexto
 from obranexo.agents.prompts import SYSTEM_INVESTIGADOR, VERSAO
-from obranexo.catalog.atributos import ATRIBUTOS, ATRIBUTOS_INVESTIGAVEIS, natureza, rotulo
+from obranexo.catalog.atributos import ATRIBUTOS, ATRIBUTOS_INVESTIGAVEIS, aplicavel, natureza, rotulo
 from obranexo.evidence.verify import verificar_evidencia
 from obranexo.models import Evidencia, ItemDemanda, Operador, Requisito
 from obranexo.observability.trilha import escopo
@@ -121,6 +121,9 @@ def _executar_ferramenta(ctx: Contexto, nome: str, entrada: dict[str, Any], acha
         item = next((i for i in ctx.analise.itens if i.numero_item == numero_item), None) if numero_item else None
         if numero_item and item is None:
             return f"ERRO: não existe item {numero_item} nesta contratação. Itens: {', '.join(str(i.numero_item) for i in ctx.analise.itens)}."
+        if item is not None and not aplicavel(atributo, item.categoria_inferida):
+            return (f"ERRO: {atributo} não se aplica ao item {numero_item} ({item.categoria_inferida}); esse trecho descreve outro produto. "
+                    "Registre só atributos do próprio item.")
         documento_id = str(entrada.get("documento_id"))
         if documento_id not in ctx.indice.paginas:
             return f"ERRO: documento '{documento_id}' não existe ou não tem texto. Use listar_documentos."

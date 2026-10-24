@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from obranexo.agents.contexto import Contexto
 from obranexo.agents.prompts import SYSTEM_EXTRATOR, VERSAO
-from obranexo.catalog.atributos import ATRIBUTOS
+from obranexo.catalog.atributos import ATRIBUTOS, aplicavel
 from obranexo.models import Conflito, ItemDemanda, Operador, Requisito, TipoAtributo
 from obranexo.observability.trilha import escopo
 from obranexo.rules.extrair import eh_acessorio, extrair_requisitos, inferir_categoria
@@ -185,6 +185,9 @@ def extrair_item(ctx: Contexto, item: ItemDemanda, doc_item_id: str, extracao: E
     novos = 0
     descartados: list[str] = []
     for r in extracao.requisitos:
+        if not aplicavel(r.atributo, item.categoria_inferida):
+            descartados.append(f"{r.atributo}: não se aplica a {item.categoria_inferida}")
+            continue
         valor, motivo = normalizar_valor(r.atributo, _valor_bruto_llm(r))
         if valor is None:
             descartados.append(f"{r.atributo}: {motivo}")

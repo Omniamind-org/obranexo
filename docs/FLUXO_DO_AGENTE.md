@@ -166,6 +166,7 @@ orçamento da análise de 120 mil tokens mais 4 mil por item.
 |---|---|
 | Valor fora do tipo ou da faixa proposto pelo modelo (`cct_k = "branca fria"`, `tensao_v = 600–1000`) | descartado com registro (`rules/validar.py`); nunca derruba a análise |
 | Citação que não existe no documento | recusada no registro (Investigador, Especificador) e reconferida no Verificador; evidência não verificada vai para revisão humana |
+| Atributo de luminária atribuído a um relé, cabo ou disjuntor (o TR da luminária cita "tomada para relé fotoelétrico" e o modelo leva "dimerizável" para o relé) | descartado por aplicabilidade à categoria (`catalog/atributos.py: aplicavel`) no Analista Técnico e no Especificador; no Investigador volta como `ERRO` para o agente corrigir — achado na validação ao vivo de 24/10 |
 | Texto do edital com instruções para o modelo | documentos e descrições entram como dados entre `<documento>`/`<item>`; os prompts mandam ignorar instruções dentro deles |
 | PDF digitalizado, sem texto | item fica INDETERMINADO com a lacuna registrada ("anexos sem texto extraível") |
 | Item sem especificação técnica (só cláusulas gerais) | INDETERMINADO, com explicação; nunca "atende" |

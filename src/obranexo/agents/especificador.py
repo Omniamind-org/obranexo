@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from obranexo.agents.contexto import Contexto
 from obranexo.agents.extrator import RequisitoLLM, _valor_bruto_llm
 from obranexo.agents.prompts import SYSTEM_ESPECIFICADOR, VERSAO
-from obranexo.catalog.atributos import ATRIBUTOS, ATRIBUTOS_INVESTIGAVEIS, natureza
+from obranexo.catalog.atributos import ATRIBUTOS, ATRIBUTOS_INVESTIGAVEIS, aplicavel, natureza
 from obranexo.documents.extract import normalizar_busca
 from obranexo.evidence.verify import verificar_evidencia
 from obranexo.models import ItemDemanda, Operador, Requisito
@@ -112,6 +112,9 @@ def especificar_pelo_tr(ctx: Contexto, itens: list[ItemDemanda]) -> list[Requisi
             for r in it.requisitos:
                 if r.atributo in ATRIBUTOS_INVESTIGAVEIS or natureza(r.atributo) != "produto":
                     continue  # cláusulas gerais ficam com o Investigador
+                if not aplicavel(r.atributo, item.categoria_inferida):
+                    rejeitados += 1  # atributo de luminária num relé/cabo: o modelo leu a especificação de outro item
+                    continue
                 valor, _ = normalizar_valor(r.atributo, _valor_bruto_llm(r))
                 if valor is None:
                     rejeitados += 1

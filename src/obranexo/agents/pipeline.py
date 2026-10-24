@@ -290,7 +290,11 @@ def _no_gerar_dossie(ctx: Contexto) -> None:
     a.status = "concluida"
     md = renderizar(a, ctx.empresa, resumo, passos, riscos)
     a.dossie = Dossie(analise_id=a.id, titulo=f"Dossiê — {a.contratacao.orgao_nome} — {a.contratacao.id}", resumo_executivo=resumo, conteudo_md=md)
-    ctx.evento("gerar_dossie", f"Dossiê gerado ({len(md)} caracteres) · {a.uso_llm.chamadas} chamada(s) de modelo · custo estimado US$ {a.uso_llm.custo_usd:.4f}")
+    u = a.uso_llm
+    ctx.evento(
+        "gerar_dossie",
+        f"Dossiê gerado ({len(md)} caracteres) · {u.chamadas + u.chamadas_cache} chamada(s) de modelo ({u.chamadas_cache} do cache) · custo estimado US$ {u.custo_usd:.4f}",
+    )
 
 
 ESTADO = {
