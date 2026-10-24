@@ -727,6 +727,15 @@ def chamadas_llm(analise_id: str) -> dict[str, Any]:
     return {"chamadas": chamadas, "resumo": agregar(chamadas)}
 
 
+@app.get("/api/conteudo/grafo", tags=["sistema"])
+def conteudo_grafo() -> dict[str, Any]:
+    """O grafo da análise como dado (agents/grafo.py): etapas em ordem, o que cada uma lê e escreve, quando roda,
+    e a descrição do estado compartilhado. É o mesmo objeto que executa a análise."""
+    from obranexo.agents.pipeline import GRAFO
+
+    return GRAFO.descrever()
+
+
 @app.get("/api/conteudo/fluxo", tags=["sistema"], response_class=PlainTextResponse)
 def conteudo_fluxo() -> PlainTextResponse:
     """Documentação do fluxo dos agentes (Markdown), exibida na página 'Como funciona'."""

@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from obranexo.config import Config, config
 from obranexo.documents.extract import IndiceDocumentos
 from obranexo.llm.client import LLMClient
-from obranexo.models import Analise, Empresa, EventoLog, Evidencia
+from obranexo.models import Analise, Documento, Empresa, EventoLog, Evidencia, ItemDemanda
 from obranexo.observability import logs
 
 OnEvento = Callable[[EventoLog], None]
@@ -17,12 +17,21 @@ OnEvento = Callable[[EventoLog], None]
 
 @dataclass
 class Contexto:
+    """Estado compartilhado da análise: os nós do grafo (agents/grafo.py) só se comunicam por aqui.
+
+    `analise` é o que fica salvo (itens, requisitos, evidências, correspondências, conflitos, dossiê, trilha);
+    `indice` é o texto dos documentos, por página, com busca; os demais campos são de trabalho, entre nós."""
+
     analise: Analise
     empresa: Empresa
     indice: IndiceDocumentos
     llm: LLMClient
     cfg: Config = field(default_factory=lambda: config)
     on_evento: OnEvento | None = None
+    documentos_entrada: list[Documento] = field(default_factory=list)  # anexos da contratação, antes da indexação
+    relevantes: list[ItemDemanda] = field(default_factory=list)  # itens nas categorias do catálogo (filtrar_relevantes)
+    afetados: list[ItemDemanda] = field(default_factory=list)  # itens que ganharam requisitos com o Investigador
+    plano: tuple[str, list[str], list[str]] | None = None  # (resumo executivo, próximos passos, riscos) do Planejador
     _seq: itertools.count = field(default_factory=itertools.count)
 
     def evento(self, no: str, mensagem: str, **dados) -> None:
