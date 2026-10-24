@@ -13,6 +13,7 @@ Versão 1.1 · 24/10/2026 · alinhado ao [README](../README.md) (cada item abaix
 5. Documentos entram como dados, nunca como instruções.
 6. A decisão final é humana e fica registrada.
 7. Sem chave de API, o núcleo roda em modo determinístico; a demo e os testes nunca dependem de cota de terceiros.
+8. A busca por significado (vetores) só encontra e ordena candidatos; nunca descarta sozinha e nunca decide compatibilidade.
 
 ---
 
@@ -77,7 +78,7 @@ Pré-requisito para qualquer piloto com catálogo real.
 |---|---|---|---|
 | a | `Dockerfile` (python 3.12-slim, `uv`), `docker-compose.yml` com `app` + `postgres:16` + volume para `data/` | `Dockerfile`, `docker-compose.yml`, `.dockerignore` | `docker compose up` sobe a aplicação com banco em < 2 min |
 | b | 🟡 CI no GitHub Actions: ruff, `pytest -m "not integracao"`, benchmark determinístico (PT-1.2d) ✅; build da imagem entra com o Dockerfile (PT-1.5a) | `.github/workflows/ci.yml` | badge real no README substitui o estático ✅ |
-| c | Deploy em uma VM ou serviço gerenciado simples (Fly.io, Railway ou EC2 única) com HTTPS; `OBRANEXO_LLM_CACHE` e `data/` em volume persistente | `infra/` (scripts), documentação em `docs/deploy.md` | URL pública estável para o piloto; healthcheck em `/api/status` |
+| c | Deploy mínimo na **AWS** (ver [Arquitetura em nuvem](#arquitetura-em-nuvem-aws--estudo-em-andamento)): a aplicação atual em ECS Fargate, RDS PostgreSQL pequeno, S3 para os pacotes de documentos, Secrets Manager para as chaves e alerta do AWS Budgets; HTTPS por ALB ou CloudFront | `infra/` (Terraform ou CDK), documentação em `docs/deploy.md` | URL pública estável para o piloto; healthcheck em `/api/status`; custo mensal medido e registrado |
 | d | `detect-secrets` ou `gitleaks` no pre-commit e no CI | `.pre-commit-config.yaml`, CI | commit com chave é bloqueado |
 
 ### PT-1.6 · Curador de catálogo 🟡 → ✅ (semana 4)
@@ -195,8 +196,8 @@ Ponto de partida em 24/10: o grafo já existe **como dado** (`agents/grafo.py`; 
 
 | # | Tarefa | Aceite |
 |---|---|---|
-| a | Coleta agendada: a cada 6 h, novas contratações nas UFs atendidas (todas as modalidades), com itens e lista de anexos; detecção de retificações | cobertura ≥ 99% das publicações do dia nas UFs monitoradas |
-| b | Índice de itens no Postgres com `pgvector`: embeddings dos itens (modelo multilíngue, `bge-m3` local ou API) + busca por texto (`tsvector`); busca híbrida com RRF | consulta "luminária LED 100 W IP66" devolve itens de pregões cujo objeto não cita iluminação |
+| a | Coleta agendada: a cada 6 h, novas contratações nas UFs atendidas (todas as modalidades), com itens e lista de anexos; detecção de retificações. **Guarda seguindo o funil**: metadados e itens de todas; PDFs e texto por página só das que passam no portão 1 da triagem (ou sob demanda); análise completa só das escolhidas. O gargalo é o limite de requisições do PNCP, o processamento e os tokens, não o disco | cobertura ≥ 99% das publicações do dia nas UFs monitoradas; nenhum HTTP 429 sem nova tentativa respeitando o portal |
+| b | Índice de itens no Postgres com `pgvector`: embeddings dos itens (modelo multilíngue com bom português, via Bedrock ou `bge-m3`) + busca por texto (`tsvector`); busca híbrida com RRF. **Princípio: a busca por significado só decide quem entra na fila e em que ordem; nunca descarta sozinha e nunca decide compatibilidade** — o veredito continua no motor de regras, com prova literal. A parte por palavra fica porque o setor depende de termos exatos (IP66, 100 W, NBR). Também pode sugerir a categoria quando a redação do item foge do comum | consulta "luminária LED 100 W IP66" devolve itens de pregões cujo objeto não cita iluminação; o retrato da demo não muda (nenhum veredito depende do índice) |
 | c | Alertas: por e-mail/WhatsApp quando um item novo é aderente ao catálogo (pré-filtro barato + análise completa automática dentro da cota do plano) | alerta chega em < 1 h da publicação |
 | d | PCA (planos anuais) como fonte de demanda PLANEJADA | tipo PLANEJADA passa a existir em análises reais |
 
@@ -238,7 +239,7 @@ Ponto de partida em 24/10: o grafo já existe **como dado** (`agents/grafo.py`; 
 
 | PT | Escopo | Aceite |
 |---|---|---|
-| 3.1 Infraestrutura como código | AWS: ECS Fargate (API e workers), RDS Postgres com pgvector, S3 para anexos com versionamento, CloudFront; Terraform; ambientes staging e produção; backups com restauração pontual | ambiente recriado do zero pelo Terraform em < 30 min; restauração testada |
+| 3.1 Infraestrutura como código | AWS, conforme o [estudo de arquitetura](#arquitetura-em-nuvem-aws--estudo-em-andamento): ECS Fargate (API e workers), Aurora PostgreSQL Serverless v2 ou RDS com pgvector, S3 com ciclo de vida que respeita a vigência das atas, SQS, EventBridge, Bedrock, Cognito, KMS, CloudFront e WAF; Terraform ou CDK; ambientes staging e produção; backups com restauração pontual | ambiente recriado do zero pelo Terraform em < 30 min; restauração testada |
 | 3.2 Gateway de modelos | roteamento por tarefa (extração em lote no modelo barato via Batch API; raciocínio no modelo forte), cache do catálogo no prompt, orçamento por cliente e por análise, troca de modelo só após execução em paralelo com comparação no benchmark; Bedrock como provedor | custo por análise medido e reportado por plano; troca de modelo sem regressão no benchmark |
 | 3.3 Isolamento e segurança | RLS no Postgres por `empresa_id`; segredos em gerenciador; trilha de auditoria das ações dos agentes e dos usuários; testes de ataque com editais hostis (prompt injection) no CI; pentest externo | relatório do pentest; suíte de injeção com 0 ações fora do esperado |
 | 3.4 LGPD | relatório de impacto; contratos com provedores que não treinam com dados do cliente (o nível gratuito do Gemini não serve); mascaramento de dados pessoais nos documentos (CPF, contatos de servidores); política de retenção | documentos publicados; mascaramento testado |
@@ -259,13 +260,71 @@ Ponto de partida em 24/10: o grafo já existe **como dado** (`agents/grafo.py`; 
 
 ---
 
+## Arquitetura em nuvem (AWS) — estudo em andamento
+
+> **Estudo em andamento (24/10/2026).** Primeira proposta, ainda **não implementada nem validada em custo**. Serviços, região e preços serão confirmados na calculadora da AWS e na tabela de serviços por região antes de qualquer decisão. Nasceu da comparação com uma proposta externa de armazenamento de editais (resumo da comparação abaixo).
+
+**Como a busca funciona hoje, e o que muda.** Encontrar licitações depende de palavra no **objeto** (o ponto cego dos 90% medidos); dentro de uma licitação, o cruzamento é por **categoria + atributos** (não texto exato), e a decisão é do motor de regras. O índice de itens (PT-2.4b) torna a etapa de encontrar **híbrida** — palavra exata e significado — sobre os itens, não sobre o objeto. O veredito continua determinístico (invariante 8).
+
+**Princípios**
+
+1. Serviços gerenciados e sem capacidade parada sempre que possível.
+2. Armazenar **seguindo o funil da triagem**, não "tudo": o gargalo é o limite de requisições do PNCP, o processamento dos PDFs e os tokens, não o disco.
+3. Um banco relacional para os dados estruturados **e** para o índice de itens (pgvector + busca por texto); vetores não substituem consultas como "abre em 7 dias, acima de R$ 500 mil, com item que eu atendo".
+4. Provas sempre acessíveis: o texto por página nunca vai para armazenamento de recuperação lenta; o PDF só vai para arquivo profundo depois que a ata de registro de preços vencer (vigência de 1 ano, prorrogável por igual período).
+5. Cota em reais na aplicação (sobre `GET /api/custos` e a trilha de custo real); AWS Budgets como rede de segurança.
+
+**Serviços**
+
+| Serviço | Papel | Fase |
+|---|---|---|
+| ECS Fargate | API e interface (a aplicação atual); depois, workers de documentos e de análise | F1 → F2 |
+| RDS PostgreSQL → Aurora PostgreSQL Serverless v2 | dados estruturados, índice de itens (`pgvector` + `tsvector`), cota, trilha de IA, chat | F1 (RDS) → F3 (Aurora) |
+| S3 | acervo: PDF pelo SHA-256 (sem duplicar retificações), texto por página, dossiês e propostas geradas | F1 |
+| EventBridge Scheduler + Lambda | coleta periódica de metadados e itens | F2 |
+| SQS | filas de documentos e de análises, com ritmo controlado para o PNCP | F2 |
+| Amazon Bedrock | Claude para os agentes; modelo de embeddings para o índice; lote noturno para extração | F2–F3 (hoje: Gemini, Groq e Anthropic direto) |
+| Cognito | login e empresas | F3 (substitui ou complementa o login do PT-1.4) |
+| KMS + Secrets Manager | chaves de API; criptografia de catálogos e propostas, que são sigilosos | F1 (Secrets) → F3 (KMS por empresa) |
+| CloudWatch + AWS Budgets | logs, métricas, alarmes; alerta de orçamento (F1) e Budgets Actions (F3) | F1 → F3 |
+| CloudFront + WAF | borda, HTTPS, proteção | F3 (no F1, ALB) |
+| Terraform ou CDK | infraestrutura como código, ambientes de teste e produção | F1 mínimo → F3 |
+
+**Armazenamento em camadas (segue o funil)**
+
+| Camada | O que guarda | Para quais licitações | Volume (medição própria) |
+|---|---|---|---|
+| 1 · Metadados e itens | contratação, itens (com benefício ME/EPP), lista de anexos com hash | todas das UFs atendidas (ou do país) | ~33 mil pregões eletrônicos/mês no país; ~450 abertos ao mesmo tempo em GO |
+| 2 · Documentos e texto | PDF no S3, texto por página, trechos por seção (objeto, habilitação, prazos, julgamento, TR) com documento, página e posição | as que passam no portão 1, ou sob demanda | 2 a 7 MB de anexos por pregão nos 8 casos congelados (~4 MB em média); obras chegam a centenas de MB |
+| 3 · Análise | requisitos, provas, dossiê, kit da proposta | as que passam no portão 2 ou são escolhidas pelo usuário | — |
+
+Ciclo de vida no S3: Standard → Standard-IA → Glacier Instant Retrieval; arquivo profundo só depois que a ata vencer.
+
+**O que não usar agora:** DynamoDB (as consultas são relacionais e com cruzamentos); OpenSearch Serverless (custo mínimo mesmo parado); AgentCore Memory (preferências do fornecedor são campos do perfil, usados pelas regras); Bedrock Knowledge Bases (fatiamento gerenciado perde o controle de página e posição que a citação literal exige); EKS (operação demais para o tamanho). **Opcional no futuro:** S3 Vectors, para busca semântica entre editais em grande volume (por exemplo, o assistente responder "quais editais pedem atestado de X"), atrás de uma interface para trocar sem reescrever.
+
+**Comparação com a proposta externa:** encaixam o S3 como acervo, o Bedrock, a cota em reais com Budgets Actions, os trechos por seção com metadados, a normalização na ingestão e evitar o OpenSearch Serverless. Divergem: busca vetorial em trechos como peça central (precisamos de itens e de busca híbrida); DynamoDB (relacional resolve melhor, e a própria proposta oferece Aurora PostgreSQL como alternativa); mandar para o Glacier e retirar do índice por encerramento (atas vigentes, provas e histórico de preços dependem de licitações encerradas); AgentCore Memory; guardar todos os documentos em vez de seguir o funil.
+
+**Decisões pendentes**
+
+| Decisão | Opções | O que decide |
+|---|---|---|
+| Região | São Paulo (latência, confiança do cliente, mais cara) × N. Virginia (mais barata, todos os modelos) × dados em São Paulo com inferência do Bedrock entre regiões | disponibilidade dos modelos Claude e de embeddings no Bedrock em São Paulo; custo na calculadora |
+| Banco na F1 | RDS pequeno × Aurora Serverless v2 desde o início | custo mínimo mensal e esforço de migração |
+| Modelo de embeddings | multilingue no Bedrock × `bge-m3` próprio | qualidade em português nos itens do benchmark; custo |
+| Infraestrutura como código | Terraform × CDK | familiaridade da equipe |
+| Números da proposta externa | preço do S3 em São Paulo, preço e limites do S3 Vectors, chegada do S3 Vectors e do AgentCore a São Paulo | conferência nas páginas oficiais da AWS (não verificados neste estudo) |
+
+**Próximos passos do estudo:** estimativa na calculadora da AWS para três cenários (piloto F1, beta com 10 distribuidores, 250 clientes); prova de conceito do índice de itens com pgvector sobre um mês de pregões de GO; medir o ritmo de requisições que o PNCP aceita sem HTTP 429.
+
 ## Riscos e mitigação
 
 | Risco | Mitigação |
 |---|---|
 | PNCP instável ou com mudança de API | ingestão própria (PT-2.4), cache com cópia antiga (já existe), testes com respostas gravadas |
 | Qualidade fora da amostra abaixo do esperado | PT-1.2 é a primeira tarefa; corrigir antes de escalar; benchmark como trava |
-| Custo de IA crescer com o volume | gateway com lote e cache (PT-3.2); cotas por plano; modo determinístico como piso |
+| Custo de IA crescer com o volume | gateway com lote e cache (PT-3.2); cotas por plano; modo determinístico como piso; AWS Budgets como rede de segurança |
+| Limite de requisições do PNCP (já houve HTTP 429) | coleta em fila com ritmo controlado e nova tentativa respeitando o portal; guardar seguindo o funil; cache com cópia antiga |
+| Serviço ou modelo indisponível na região escolhida | conferir na tabela de serviços por região e no Bedrock antes de fechar; inferência entre regiões como alternativa; decisão registrada no estudo de arquitetura |
 | Sigilo do catálogo e dos preços do cliente | isolamento por empresa (PT-1.4) antes de qualquer piloto; RLS em F3; provedores pagos |
 | LangGraph atrasar a equipe | o grafo próprio já roda e é declarado como dado; LangGraph só entra se os checkpoints duráveis compensarem, nó a nó, mantendo o `GRAFO` atual até passar no benchmark |
 | Escopo crescer | respeitar critérios de saída; nada de F2 antes de F1 fechar |
