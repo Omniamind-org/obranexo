@@ -1,6 +1,6 @@
 # Plano de desenvolvimento — ObraNexo
 
-Versão 1.0 · 24/10/2026 · alinhado ao [README](../README.md) (cada item abaixo corresponde a um selo ⬜ ou 🟡 de lá).
+Versão 1.1 · 24/10/2026 · alinhado ao [README](../README.md) (cada item abaixo corresponde a um selo ⬜ ou 🟡 de lá; os marcados ✅ foram concluídos no próprio dia 24/10, branch `feat/observabilidade`).
 
 **Como usar.** O plano está organizado por fase e por pacote de trabalho (PT). Cada PT tem objetivo, tarefas no nível de arquivo, critério de aceite verificável e dependências. A ordem dentro de cada fase é a ordem sugerida de execução. Um PT só está pronto quando cumpre a **Definição de Pronto** do fim do documento. Datas depois de 28/11/2026 são propostas e devem ser revistas no fim de cada fase.
 
@@ -22,18 +22,19 @@ Versão 1.0 · 24/10/2026 · alinhado ao [README](../README.md) (cada item abaix
 
 ### PT-1.1 · Correções da auditoria (semana 1)
 
-Defeitos encontrados em 24/10 que afetam resultado ou credibilidade. Pequenos, independentes, alto retorno.
+Defeitos encontrados em 24/10 que afetam resultado ou credibilidade. Pequenos, independentes, alto retorno. Os itens **c, f, g e i** foram concluídos ainda em 24/10 (120 testes passando; benchmark 100%); restam a, b, d, e, h.
 
 | # | Tarefa | Arquivos | Aceite |
 |---|---|---|---|
 | a | Busca em todas as modalidades relevantes: parâmetro `modalidades: list[int]` em `buscar_publicacoes` e `buscar_propostas_abertas`; padrão `[6, 7, 4, 5, 8]` (pregão eletrônico e presencial, concorrência eletrônica e presencial, dispensa); UI e ferramentas do Prospector e do Assistente expõem o filtro | `connectors/pncp.py`, `api/main.py` (`/api/pncp/buscar`), `agents/prospector.py`, `agents/assistente.py`, `web/js/views/demandas.js` | teste com resposta gravada por modalidade; `obranexo abertas --uf GO --modalidades 4,6` devolve concorrências |
 | b | Tela de busca lê todas as páginas: `max_paginas` deixa de ter teto 6 na UI; o backend pagina até `total_paginas` com limite de segurança 20 | `web/js/views/demandas.js`, `api/main.py` | busca em GO devolve as 9 páginas (hoje 6) |
-| c | Reprodutibilidade: `temperature=0` em Gemini e Anthropic (já existe no Groq); versão do prompt (`PROMPT_VERSION` em `prompts.py`) entra na chave do cache | `llm/client.py` (`GeminiClient._gerar`, `AnthropicClient`), `agents/prompts.py` | teste unitário confere o payload da chamada e a chave do cache |
+| c | ✅ **24/10** — Reprodutibilidade: `temperature=0` em Gemini e Anthropic (já existia no Groq); a versão dos prompts (`VERSAO` em `prompts.py`, hoje `v0.3`) fica rastreável na análise (`analise.versao_prompts`, impressa no rodapé do dossiê), em cada linha da trilha de chamadas (`versao_prompt`) e em `GET /api/status`. Nota: a chave do cache em disco já é o hash do payload completo (modelo, system, prompt e esquema), então mudar o texto de um prompt invalida o cache sem precisar da versão na chave | `llm/client.py`, `agents/prompts.py`, `agents/pipeline.py`, `observability/trilha.py` | `tests/test_observabilidade.py` (escopo, agente e versão gravados por chamada) |
 | d | Validação de categorias na importação de planilha: categoria fora de `CATEGORIAS` → erro 400 com sugestão (fuzzy) e lista válida; normalização de sinônimos simples ("Luminária pública" → `luminaria_publica_led`) | `catalog/loader.py`, `api/main.py` (`POST /api/catalogo`), `web/js/views/catalogo.js` | upload com categoria inválida é recusado com mensagem; teste em `tests/test_api.py` |
 | e | Prioridade recalibrada: prazo ABERTO vale +35, ENCERRADO com SRP +5 e sem SRP 0; cobertura de valor 0,5; pesos em constantes nomeadas no topo de `planejador.py` | `agents/planejador.py`, `tests/test_agentes_sem_llm.py` | Itaberaí (aberta, 51%) fica acima de Goianira (encerrada, 100%); benchmark continua 100% |
-| f | Preços reais dos modelos (tabela oficial out/2026) em `precos_usd`, incluindo Groq; custo por análise aparece na UI e no dossiê | `config.py`, `web/js/views/metricas.js` | `custo_usd > 0` numa análise com Gemini pago; teste unitário do cálculo |
-| g | Logs estruturados: `structlog` em JSON por evento (análise, nó, ferramenta, modelo, tokens, duração, erro); `EventoLog` passa a emitir também para o logger | `agents/contexto.py`, `api/jobs.py`, novo `observability/logging.py` | cada análise gera linhas JSON parseáveis; teste lê o log de uma análise determinística |
+| f | ✅ **24/10** — Preços reais dos modelos: tabela oficial consultada em 24/10/2026 em `PRECOS_USD` (US$ por 1M tokens: entrada, saída, leitura de cache) para Gemini, Groq (gpt-oss 120b/20b) e Anthropic; tokens de raciocínio lidos da resposta de cada API (`thoughts_token_count`, `reasoning_tokens`, `thinking_tokens`) e cobrados como saída; `UsoLLM` ganhou `tokens_raciocinio`, `chamadas_cache`, `chamadas_reserva`, `latencia_ms`. O custo aparece na UI (por chamada na aba Trilha do agente → Chamadas de IA; por análise e por modelo na tela Qualidade → Uso de modelos) e no rodapé do dossiê. É estimativa pela tabela paga: no nível gratuito do Gemini e do Groq a cobrança real é zero. O reserva do Groq passou de `llama-3.3-70b-versatile` para `openai/gpt-oss-20b` (o Llama 3.3 70B saiu do nível gratuito em 16/08/2026) | `config.py`, `models.py`, `llm/client.py`, `dossier/render.py`, `web/js/views/metricas.js`, `web/js/views/resultado.js` | `tests/test_observabilidade.py` (cálculo do custo e leitura do raciocínio nos três provedores) |
+| g | ✅ **24/10** — Logs estruturados com a biblioteca padrão (`logging`), não `structlog`: `observability/logs.py`; uma linha por etapa do fluxo (`Contexto.evento`) e por chamada de modelo (`Trilha.gravar`), com campos fixos; JSON por linha com `OBRANEXO_LOG_JSON=1` (ver `.env.example`), senão linhas legíveis; configurado uma vez no servidor e na CLI | `observability/logs.py`, `agents/contexto.py`, `api/main.py`, `cli.py` | cada etapa e cada chamada geram uma linha parseável; coberto indiretamente por `tests/test_observabilidade.py` |
 | h | Limites por licitação: paginar itens (>500) e anexos (>100) do PNCP | `connectors/pncp.py` | SEINFRA lista os 100+ anexos; teste com resposta gravada de 2 páginas |
+| i | ✅ **24/10** — Trilha de chamadas de modelo em SQLite (`data/obranexo.db`, tabela `chamadas_llm`): toda chamada lógica a um provedor vira uma linha com agente (por escopo `escopo(agente=...)`, um contextvar que vale também nos lotes em paralelo do Analista Técnico), origem (análise, prospecção, chat, importação), versão do prompt, operação, provedor, modelo pedido × usado, tokens de entrada/saída/raciocínio/cache, custo, latência, cache_hit, reserva, status/erro, resumo da entrada e da saída; falha na trilha nunca derruba a análise. Exposta em `GET /api/analises/{id}/chamadas` e `GET /api/metricas/llm` (custo, latência média/p95, taxas de cache/reserva/erro, por agente e por modelo) | `observability/trilha.py`, `llm/client.py`, `api/main.py`, `web/js/views/resultado.js`, `web/js/views/metricas.js` | `tests/test_observabilidade.py` (11 testes), `tests/test_grafo.py::test_api_expoe_grafo_trilha_e_metricas_de_llm` |
 
 ### PT-1.2 · Avaliação com gabarito duplo (semanas 1–3, em paralelo)
 
@@ -46,13 +47,16 @@ Defeitos encontrados em 24/10 que afetam resultado ou credibilidade. Pequenos, i
 
 ### PT-1.3 · PostgreSQL e persistência (semanas 2–3)
 
+Ponto de partida em 24/10: o SQLite já existe em `data/obranexo.db`, mas guarda **só a trilha de chamadas de modelo** (`observability/trilha.py`, SQL direto, sem ORM). As mensagens do chat também já estão nele (`storage/chat.py`, item d). Análises, prospecções e catálogo seguem em JSON (`storage/store.py`); jobs, em memória. Este PT leva o restante para o banco e unifica a trilha nele.
+
 | # | Tarefa | Arquivos | Aceite |
 |---|---|---|---|
 | a | Modelos SQLModel: `Empresa`, `Usuario`, `Produto`, `Analise` (JSONB para o corpo + colunas de índice: contratação, status, prioridade, empresa_id), `Prospeccao`, `Conversa`, `Decisao` (seguir/descartar/comentário, quem, quando) | novo `db/models.py`, `db/session.py` | `alembic upgrade head` cria o esquema do zero |
-| b | Alembic com migração inicial; `DATABASE_URL` no `.env`; SQLite continua como padrão local para desenvolvimento sem Docker | `alembic/`, `config.py` | testes rodam em SQLite em memória; produção em Postgres |
+| b | Alembic com migração inicial; `DATABASE_URL` no `.env`; SQLite continua como padrão local para desenvolvimento sem Docker (hoje `config.caminho_db`) | `alembic/`, `config.py` | testes rodam em SQLite em memória; produção em Postgres |
 | c | `storage/store.py` vira repositório sobre o banco, mantendo a mesma interface (`salvar`, `carregar`, `listar`, prospecções, catálogo ativo por empresa) | `storage/store.py` | todos os testes atuais passam sem alteração nas chamadas |
-| d | Chat persistido (hoje em memória): sessões e mensagens no banco | `agents/assistente.py` (`sessoes`) | conversa sobrevive a reinício do servidor |
+| d | ✅ 24/10 — Chat persistido: mensagens em `data/obranexo.db` (`storage/chat.py`); `Sessoes.obter` reconstrói a conversa fora da memória e o próximo turno parte do resumo das últimas mensagens | `agents/assistente.py`, `storage/chat.py` | conversa sobrevive a reinício do servidor (teste em `tests/test_assistente.py`) |
 | e | Script de migração dos JSONs existentes em `data/analises` e `data/prospeccoes` | `scripts/migrar_json.py` | análises antigas aparecem na interface após a migração |
+| f | Trilha de chamadas (`chamadas_llm`) passa a ser um modelo SQLModel no mesmo banco, com `empresa_id`; `Trilha.gravar/listar/resumo` mantêm a interface | `observability/trilha.py`, `db/models.py` | `tests/test_observabilidade.py` passa sem alteração; `/api/metricas/llm` filtra por empresa |
 
 ### PT-1.4 · Login e isolamento por empresa (semanas 3–4)
 
@@ -88,7 +92,7 @@ Pré-requisito para qualquer piloto com catálogo real.
 - Cronometragem manual × assistido em 3 editais por piloto; registro das decisões seguir/descartar.
 - BMC atualizado com dados reais; hipótese de preço testada.
 
-**Sequência sugerida de F1:** semana 1 (25–31/10): PT-1.1 completo, PT-1.2a iniciado · semana 2 (01–07/11): PT-1.3, PT-1.5a/b, PT-1.2b/c · semana 3 (08–14/11): PT-1.4, PT-1.2d, PT-1.5c/d · semana 4 (15–21/11): PT-1.6, pilotos, deploy · semana 5 (22–28/11): congelar em 24/11, `docs/avaliacao.md`, tag `v0.2-nacional`.
+**Sequência sugerida de F1:** semana 1 (25–31/10): PT-1.1 restante (a, b, d, e, h), PT-1.2a iniciado · semana 2 (01–07/11): PT-1.3, PT-1.5a/b, PT-1.2b/c · semana 3 (08–14/11): PT-1.4, PT-1.2d, PT-1.5c/d · semana 4 (15–21/11): PT-1.6, pilotos, deploy · semana 5 (22–28/11): congelar em 24/11, `docs/avaliacao.md`, tag `v0.2-nacional`.
 
 ---
 
@@ -98,9 +102,11 @@ Pré-requisito para qualquer piloto com catálogo real.
 
 ### PT-2.1 · Grafo durável de agentes
 
+Ponto de partida em 24/10: o grafo já existe **como dado** (`agents/grafo.py`; `GRAFO` em `agents/pipeline.py`, 13 nós com agente, modelo, condição e campos lidos/escritos do `Contexto`), é quem executa a análise e alimenta `GET /api/conteudo/grafo` e a tela "Como funciona" (`tests/test_grafo.py`). Sem LangChain/LangGraph por decisão de projeto (ver README, "Decisões de projeto"); LangGraph entra aqui só se os checkpoints duráveis e as interrupções compensarem.
+
 | # | Tarefa | Aceite |
 |---|---|---|
-| a | Migrar `agents/pipeline.py` para LangGraph: cada nó atual vira um nó do grafo; estado tipado (`AnaliseState`) a partir de `Contexto`; checkpointer no Postgres | análise interrompida (kill do worker) retoma do último nó concluído |
+| a | Checkpoints duráveis: estado do `Contexto` salvo no Postgres ao fim de cada nó do `GRAFO` (ou migração nó a nó para LangGraph, se for o caminho mais curto); estado tipado a partir de `Contexto` | análise interrompida (kill do worker) retoma do último nó concluído |
 | b | Interrupções para revisão humana: antes de `analisar_a_fundo` acima de um custo estimado; quando o Verificador marca confiança baixa em item de alto valor | UI mostra "aguardando revisão" e permite continuar ou cancelar |
 | c | Reexecução parcial: reexecutar só "casar_com_catalogo" após o usuário completar o catálogo, sem reler os documentos | reexecução parcial em < 10% do tempo da análise completa |
 | d | Prospector e Assistente como subgrafos que invocam o grafo de análise | trilha única por prospecção com os nós de cada análise aninhados |
@@ -136,7 +142,8 @@ Pré-requisito para qualquer piloto com catálogo real.
 
 ### PT-2.7 · Observabilidade
 
-- OpenTelemetry (traces por análise, spans por nó e por chamada de modelo) exportado para Langfuse self-hosted; painéis de custo, latência, tokens e taxa de INDETERMINADO por empresa e por agente; alertas de erro e de custo.
+- Ponto de partida em 24/10: a **trilha por chamada já existe** (`observability/trilha.py`, SQLite + `GET /api/analises/{id}/chamadas` + `GET /api/metricas/llm` + UI): agente, origem, versão do prompt, modelo pedido × usado, tokens com raciocínio, custo pela tabela oficial, latência, cache, reserva, erro, resumo da entrada e da saída; logs estruturados por etapa e por chamada (`observability/logs.py`, JSON com `OBRANEXO_LOG_JSON=1`).
+- Evolução: OpenTelemetry (traces por análise, spans por nó do `GRAFO` e por chamada de modelo, gerados a partir dos mesmos pontos que hoje alimentam a trilha) exportado para Langfuse self-hosted; painéis de custo, latência, tokens e taxa de INDETERMINADO por empresa e por agente; alertas de erro e de custo.
 - Aceite: qualquer análise pode ser inspecionada ponta a ponta no Langfuse com prompt, resposta e custo.
 
 ### PT-2.8 · Leitura de documentos
@@ -190,7 +197,7 @@ Pré-requisito para qualquer piloto com catálogo real.
 | Qualidade fora da amostra abaixo do esperado | PT-1.2 é a primeira tarefa; corrigir antes de escalar; benchmark como trava |
 | Custo de IA crescer com o volume | gateway com lote e cache (PT-3.2); cotas por plano; modo determinístico como piso |
 | Sigilo do catálogo e dos preços do cliente | isolamento por empresa (PT-1.4) antes de qualquer piloto; RLS em F3; provedores pagos |
-| LangGraph atrasar a equipe | nós já têm fronteiras claras; migração nó a nó; manter o pipeline atual até o grafo passar no benchmark |
+| LangGraph atrasar a equipe | o grafo próprio já roda e é declarado como dado; LangGraph só entra se os checkpoints duráveis compensarem, nó a nó, mantendo o `GRAFO` atual até passar no benchmark |
 | Escopo crescer | respeitar critérios de saída; nada de F2 antes de F1 fechar |
 
 ## Definição de Pronto (vale para todo item)

@@ -15,7 +15,7 @@ PROVEDORES = ("gemini", "groq", "anthropic")
 
 # Modelos padrão por provedor (cada um pode ser trocado no .env: OBRANEXO_<PROVEDOR>_MODEL_AGENTE etc.).
 # - Gemini: família 3.x para contas novas (gemini-2.5-flash já não é oferecido).
-# - Groq: gpt-oss tem saída estruturada por json_schema e bom uso de ferramentas; o reserva é Llama 3.3.
+# - Groq: gpt-oss tem saída estruturada por json_schema e bom uso de ferramentas.
 #   No nível gratuito o limite de tokens por minuto é baixo, por isso lotes menores de extração.
 #   O reserva do Groq é o gpt-oss-20b: o Llama 3.3 70B saiu do nível gratuito em 16/08/2026 (console.groq.com/docs/deprecations).
 MODELOS_PADRAO: dict[str, dict] = {

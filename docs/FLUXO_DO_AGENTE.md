@@ -180,10 +180,13 @@ orçamento da análise de 120 mil tokens mais 4 mil por item.
 
 - **Entre sessões o sistema lembra**: o catálogo ativo da empresa (`data/catalogo_ativo.json`), as análises e os
   dossiês (`data/analises/`), as prospecções, os pacotes congelados de licitações (`data/casos/`), a trilha de
-  chamadas (`data/obranexo.db`) e o cache de respostas dos modelos (`data/llm_cache/`, por hash da entrada: a mesma
-  pergunta devolve a mesma resposta, sem gastar cota).
-- **Não lembra**: a conversa do chat (fica em memória do processo e some ao reiniciar o servidor) — persistir é
-  item do plano de desenvolvimento.
+  chamadas e as mensagens do chat (`data/obranexo.db`) e o cache de respostas dos modelos (`data/llm_cache/`, por
+  hash da entrada: a mesma pergunta devolve a mesma resposta, sem gastar cota).
+- **Conversa do chat**: cada mensagem é gravada no SQLite; se o servidor reiniciar, a conversa é reconstruída e o
+  próximo turno parte do resumo das últimas 8 mensagens (o histórico no formato do provedor, com os resultados de
+  ferramenta, não é guardado). O que o assistente "viu" nas ferramentas vale só dentro do turno.
+- **Não há memória de longo prazo sobre o usuário**: o sistema não aprende preferências nem guarda decisões para
+  recalibrar a prioridade — isso é item do plano (feedback que recalibra).
 - **Dados pessoais**: a fonte são dados públicos do PNCP; o sistema não cadastra pessoas. Chaves de API ficam só no
   `.env`, nunca em log, resposta de API ou trilha. Para operar com catálogos reais de clientes, o plano prevê
   isolamento por empresa e provedores pagos (o nível gratuito do Gemini não serve para dados de cliente).
