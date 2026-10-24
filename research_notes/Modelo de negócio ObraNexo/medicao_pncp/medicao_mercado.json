@@ -1,0 +1,437 @@
+{
+ "metodo": "Mede no PNCP o nicho de material elétrico/iluminação em pregões eletrônicos (dado próprio para o BMC).\n\nFase A: lista todos os pregões eletrônicos publicados em duas janelas (últimos 30 dias e junho/2026) e\n        classifica pelo OBJETO (palavras-chave de material elétrico/iluminação).\nFase B: para pregões de junho (já concluídos em sua maioria), baixa os itens de uma amostra e classifica\n        cada ITEM com as regras de categoria do ObraNexo (inferir_categoria), medindo: fatia do valor em\n        itens elétricos, situação dos itens (homologado/deserto/fracassado), benefício ME/EPP.\nFase C: amostra de pregões cujo objeto NÃO cita material elétrico, para medir a demanda \"escondida\".\nTudo fica em cache em disco: rodar de novo não repete consultas.\n",
+ "janelas": {
+  "30d": [
+   "20260924",
+   "20261023"
+  ],
+  "jun": [
+   "20260601",
+   "20260630"
+  ]
+ },
+ "objetos_30d": {
+  "pregoes_total": 33406,
+  "valor_total": 267634065737.05,
+  "pregoes_objeto_eletrico": 815,
+  "pct_pregoes": 2.44,
+  "valor_objeto_eletrico": 1720042332.88,
+  "pct_valor": 0.64,
+  "orgaos_distintos": 624,
+  "municipios_distintos": 557,
+  "por_uf": [
+   [
+    "PR",
+    143
+   ],
+   [
+    "SP",
+    143
+   ],
+   [
+    "SC",
+    122
+   ],
+   [
+    "RS",
+    88
+   ],
+   [
+    "MG",
+    82
+   ],
+   [
+    "RJ",
+    30
+   ],
+   [
+    "GO",
+    27
+   ],
+   [
+    "BA",
+    23
+   ],
+   [
+    "PE",
+    18
+   ],
+   [
+    "MA",
+    14
+   ],
+   [
+    "PA",
+    14
+   ],
+   [
+    "CE",
+    13
+   ],
+   [
+    "RN",
+    12
+   ],
+   [
+    "MT",
+    12
+   ],
+   [
+    "PI",
+    11
+   ],
+   [
+    "MS",
+    10
+   ],
+   [
+    "DF",
+    10
+   ],
+   [
+    "RO",
+    9
+   ],
+   [
+    "SE",
+    8
+   ],
+   [
+    "ES",
+    8
+   ],
+   [
+    "PB",
+    6
+   ],
+   [
+    "AL",
+    5
+   ],
+   [
+    "TO",
+    4
+   ],
+   [
+    "AC",
+    2
+   ],
+   [
+    "AM",
+    1
+   ]
+  ],
+  "por_esfera": {
+   "F": 56,
+   "M": 653,
+   "E": 61,
+   "N": 43,
+   "D": 2
+  },
+  "GO": {
+   "pregoes": 27,
+   "valor": 32881488.54
+  },
+  "total_registros_pncp": 33406,
+  "paginas_falhas": 0
+ },
+ "objetos_jun": {
+  "pregoes_total": 26867,
+  "valor_total": 148081479209.8,
+  "pregoes_objeto_eletrico": 530,
+  "pct_pregoes": 1.97,
+  "valor_objeto_eletrico": 1577652022.81,
+  "pct_valor": 1.07,
+  "orgaos_distintos": 430,
+  "municipios_distintos": 375,
+  "por_uf": [
+   [
+    "SP",
+    94
+   ],
+   [
+    "PR",
+    85
+   ],
+   [
+    "MG",
+    81
+   ],
+   [
+    "RS",
+    53
+   ],
+   [
+    "SC",
+    37
+   ],
+   [
+    "RJ",
+    27
+   ],
+   [
+    "BA",
+    24
+   ],
+   [
+    "PI",
+    20
+   ],
+   [
+    "GO",
+    19
+   ],
+   [
+    "ES",
+    12
+   ],
+   [
+    "PE",
+    10
+   ],
+   [
+    "CE",
+    8
+   ],
+   [
+    "PA",
+    8
+   ],
+   [
+    "RO",
+    7
+   ],
+   [
+    "RN",
+    7
+   ],
+   [
+    "PB",
+    6
+   ],
+   [
+    "DF",
+    5
+   ],
+   [
+    "MT",
+    5
+   ],
+   [
+    "TO",
+    5
+   ],
+   [
+    "AM",
+    4
+   ],
+   [
+    "MA",
+    4
+   ],
+   [
+    "MS",
+    3
+   ],
+   [
+    "SE",
+    3
+   ],
+   [
+    "AL",
+    2
+   ],
+   [
+    "AP",
+    1
+   ]
+  ],
+  "por_esfera": {
+   "F": 31,
+   "M": 434,
+   "N": 22,
+   "E": 43
+  },
+  "GO": {
+   "pregoes": 19,
+   "valor": 18686654.47
+  },
+  "total_registros_pncp": 31067,
+  "paginas_falhas": 84
+ },
+ "itens_jun_objeto_eletrico": {
+  "pregoes_amostra": 530,
+  "pregoes_com_itens": 530,
+  "pregoes_com_item_eletrico": 236,
+  "pct_pregoes_com_item_eletrico": 44.53,
+  "itens_eletricos": 5469,
+  "itens_outros": 12600,
+  "valor_itens_eletricos": 358493623.62,
+  "valor_itens_total": 1610868771.08,
+  "pct_valor_eletrico": 22.25,
+  "itens_eletricos_por_pregao_mediana": 8.0,
+  "itens_eletricos_por_pregao_media": 23.2,
+  "situacao_itens_eletricos": {
+   "em_andamento": 2092,
+   "homologado": 3068,
+   "fracassado": 128,
+   "anulado_revogado": 127,
+   "deserto": 54
+  },
+  "situacao_itens_outros": {
+   "em_andamento": 4762,
+   "homologado": 7158,
+   "deserto": 75,
+   "fracassado": 269,
+   "anulado_revogado": 336
+  },
+  "taxa_deserto_fracassado_eletricos_pct": 5.6,
+  "taxa_deserto_fracassado_outros_pct": 4.59,
+  "beneficio_itens_eletricos": {
+   "sem_beneficio": 1957,
+   "exclusiva_me_epp": 2383,
+   "nao_se_aplica": 1088,
+   "cota_reservada": 41
+  },
+  "categorias": [
+   [
+    "cabo",
+    1306
+   ],
+   [
+    "disjuntor",
+    972
+   ],
+   [
+    "lampada",
+    806
+   ],
+   [
+    "dispositivos",
+    637
+   ],
+   [
+    "refletor_led",
+    375
+   ],
+   [
+    "luminaria_interna",
+    312
+   ],
+   [
+    "luminaria_publica_led",
+    294
+   ],
+   [
+    "eletroduto",
+    234
+   ],
+   [
+    "quadro",
+    143
+   ],
+   [
+    "braco_luminaria",
+    136
+   ],
+   [
+    "poste",
+    111
+   ],
+   [
+    "rele_fotoeletrico",
+    105
+   ],
+   [
+    "transformador",
+    38
+   ]
+  ]
+ },
+ "itens_jun_outros_objetos": {
+  "pregoes_amostra": 400,
+  "pregoes_com_itens": 400,
+  "pregoes_com_item_eletrico": 30,
+  "pct_pregoes_com_item_eletrico": 7.5,
+  "itens_eletricos": 476,
+  "itens_outros": 10435,
+  "valor_itens_eletricos": 3250651.01,
+  "valor_itens_total": 906376905.93,
+  "pct_valor_eletrico": 0.36,
+  "itens_eletricos_por_pregao_mediana": 2.0,
+  "itens_eletricos_por_pregao_media": 15.9,
+  "situacao_itens_eletricos": {
+   "em_andamento": 381,
+   "homologado": 79,
+   "fracassado": 11,
+   "anulado_revogado": 3,
+   "deserto": 2
+  },
+  "situacao_itens_outros": {
+   "homologado": 4633,
+   "em_andamento": 4942,
+   "deserto": 238,
+   "fracassado": 392,
+   "anulado_revogado": 230
+  },
+  "taxa_deserto_fracassado_eletricos_pct": 14.13,
+  "taxa_deserto_fracassado_outros_pct": 11.97,
+  "beneficio_itens_eletricos": {
+   "sem_beneficio": 331,
+   "exclusiva_me_epp": 137,
+   "nao_se_aplica": 7,
+   "cota_reservada": 1
+  },
+  "categorias": [
+   [
+    "cabo",
+    119
+   ],
+   [
+    "eletroduto",
+    105
+   ],
+   [
+    "dispositivos",
+    69
+   ],
+   [
+    "quadro",
+    56
+   ],
+   [
+    "disjuntor",
+    54
+   ],
+   [
+    "luminaria_interna",
+    27
+   ],
+   [
+    "refletor_led",
+    19
+   ],
+   [
+    "lampada",
+    12
+   ],
+   [
+    "rele_fotoeletrico",
+    8
+   ],
+   [
+    "braco_luminaria",
+    3
+   ],
+   [
+    "poste",
+    3
+   ],
+   [
+    "transformador",
+    1
+   ]
+  ]
+ },
+ "duracao_min": 205.6
+}

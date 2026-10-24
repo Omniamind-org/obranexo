@@ -1,0 +1,111 @@
+{
+ "jun_total_registros": 31067,
+ "paginas_falhas": 0,
+ "amostra_eletrico": {
+  "rotulo": "objeto_eletrico (amostra)",
+  "pregoes": 600,
+  "valor_itens": 1695103905,
+  "com_item_eletrico_estrito": 268,
+  "com_item_eletrico_amplo": 274,
+  "itens_estrito": 6108,
+  "itens_amplo": 7249,
+  "valor_estrito": 376371296,
+  "valor_amplo": 385527280,
+  "situacao_amplo": {
+   "homologado": 4100,
+   "em_andamento": 2736,
+   "fracassado": 205,
+   "anulado_revogado": 147,
+   "deserto": 61
+  },
+  "taxa_falha_amplo_pct": 6.09,
+  "anulado_revogado_pct": 2.03,
+  "beneficio_amplo": {
+   "nao_se_aplica": 1514,
+   "sem_beneficio": 2432,
+   "exclusiva_me_epp": 3257,
+   "cota_reservada": 46
+  },
+  "valor_por_categoria_estrito": {
+   "luminaria_interna": 112554897,
+   "luminaria_publica_led": 109646451,
+   "braco_luminaria": 45671406,
+   "cabo": 38613747,
+   "refletor_led": 16017412,
+   "lampada": 13533800,
+   "poste": 12070219,
+   "quadro": 6771917,
+   "transformador": 6755967,
+   "eletroduto": 5617294,
+   "disjuntor": 3630101,
+   "rele_fotoeletrico": 3437469,
+   "dispositivos": 2050616
+  }
+ },
+ "amostra_outros": {
+  "rotulo": "outros objetos (amostra)",
+  "pregoes": 400,
+  "valor_itens": 804561276,
+  "com_item_eletrico_estrito": 33,
+  "com_item_eletrico_amplo": 39,
+  "itens_estrito": 116,
+  "itens_amplo": 147,
+  "valor_estrito": 1667908,
+  "valor_amplo": 1819858,
+  "situacao_amplo": {
+   "homologado": 99,
+   "deserto": 5,
+   "em_andamento": 35,
+   "fracassado": 8
+  },
+  "taxa_falha_amplo_pct": 11.61,
+  "anulado_revogado_pct": 0.0,
+  "beneficio_amplo": {
+   "nao_se_aplica": 14,
+   "cota_reservada": 3,
+   "exclusiva_me_epp": 95,
+   "sem_beneficio": 35
+  },
+  "valor_por_categoria_estrito": {
+   "refletor_led": 688063,
+   "eletroduto": 280104,
+   "cabo": 216410,
+   "dispositivos": 171950,
+   "quadro": 170216,
+   "poste": 88982,
+   "transformador": 14825,
+   "rele_fotoeletrico": 14400,
+   "lampada": 13244,
+   "disjuntor": 9109,
+   "braco_luminaria": 309,
+   "luminaria_interna": 296
+  }
+ },
+ "extrapolacao_junho": {
+  "pregoes_jun_total": 31067,
+  "pregoes_jun_objeto_eletrico": 610,
+  "pregoes_jun_outros": 30457,
+  "fator_expansao_eletrico": 1.017,
+  "fator_expansao_outros": 76.14,
+  "estrito": {
+   "valor_mes_objeto_eletrico": 382644151,
+   "valor_mes_outros": 126998685,
+   "valor_mes_total": 509642836,
+   "valor_ano_x12": 6115714030,
+   "pregoes_mes_com_item_eletrico": 2785,
+   "pregoes_mes_objeto_eletrico_com_item": 272,
+   "pregoes_mes_escondidos": 2513,
+   "pct_escondidos": 90.2
+  },
+  "amplo": {
+   "valor_mes_objeto_eletrico": 391952735,
+   "valor_mes_outros": 138568538,
+   "valor_mes_total": 530521272,
+   "valor_ano_x12": 6366255269,
+   "pregoes_mes_com_item_eletrico": 3248,
+   "pregoes_mes_objeto_eletrico_com_item": 279,
+   "pregoes_mes_escondidos": 2970,
+   "pct_escondidos": 91.4
+  }
+ }
+}
