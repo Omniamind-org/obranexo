@@ -325,7 +325,7 @@ GRAFO = Grafo(
         No("filtrar_relevantes", "Filtrar relevantes", "Mantém os itens das categorias que o catálogo cobre; acessórios e o resto saem como fora do portfólio.",
            _no_filtrar_relevantes, "agents/pipeline.py", le=("analise.itens", "empresa.produtos"), escreve=("relevantes",)),
         No("especificador", "Especificador", "Para itens publicados só com o nome, localiza no TR as páginas que tratam deles e lê todas numa chamada; cada atributo entra com trecho conferido.",
-           _no_especificador, "agents/especificador.py", agente="especificador", modelo="extracao",
+           _no_especificador, "agents/especificador.py", agente="especificador", modelo="agente",
            condicao="há LLM e itens do portfólio com menos de 2 requisitos técnicos", quando=_precisa_especificador,
            le=("relevantes", "analise.requisitos", "indice"), escreve=("analise.requisitos", "analise.evidencias")),
         No("casar_com_catalogo", "Motor de regras", "Compara cada requisito com cada produto da categoria: ATENDE / NÃO ATENDE / INDETERMINADO, agregado por item; guarda os 3 melhores produtos. Nunca usa LLM.",

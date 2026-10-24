@@ -101,7 +101,9 @@ def especificar_pelo_tr(ctx: Contexto, itens: list[ItemDemanda]) -> list[Requisi
                   "Para cada item da lista cuja especificação aparece nestas páginas, extraia os requisitos técnicos.")
         try:
             with escopo(agente="especificador", versao_prompt=VERSAO):
-                resp = ctx.llm.extrair(ctx.cfg.model_extracao, SYSTEM_ESPECIFICADOR, prompt, EspecificacoesTR, max_tokens=24000)
+                # Modelo de agente, não o de extração: decidir A QUAL item pertence um trecho do TR é julgamento
+                # (o flash-lite levou a especificação da luminária para o relé que ela cita). Custa ~US$ 0,01 por análise.
+                resp = ctx.llm.extrair(ctx.cfg.model_agente, SYSTEM_ESPECIFICADOR, prompt, EspecificacoesTR, max_tokens=24000)
         except Exception as exc:
             ctx.evento("especificador", f"Leitura do TR indisponível ({exc})")
             continue
@@ -146,6 +148,6 @@ def especificar_pelo_tr(ctx: Contexto, itens: list[ItemDemanda]) -> list[Requisi
         "especificador",
         f"Especificador (TR): {len(especificados)}/{len(itens)} item(ns) especificado(s) a partir de {len(paginas)} página(s) "
         f"em {len(blocos)} chamada(s); {len(requisitos)} requisito(s) com citação conferida" + (f", {rejeitados} rejeitado(s)" if rejeitados else ""),
-        modelo=ctx.cfg.model_extracao,
+        modelo=ctx.cfg.model_agente,
     )
     return requisitos
