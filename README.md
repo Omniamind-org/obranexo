@@ -91,7 +91,7 @@
 
 ## O problema em números
 
-Medição própria feita com o conector do ObraNexo sobre **64.473 pregões eletrônicos do PNCP** (junho e setembro–outubro de 2026). Método e limitações em [`BMC_ObraNexo.txt`](BMC_ObraNexo.txt).
+Medição própria feita com o conector do ObraNexo sobre **64.473 pregões eletrônicos do PNCP** (junho e setembro–outubro de 2026). Método e limitações em [`bmc/BMC_ObraNexo.txt`](bmc/BMC_ObraNexo.txt).
 
 | Número | O que significa |
 |---|---|
@@ -387,7 +387,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as li
 
 ## Modelo de negócio e mercado
 
-Resumo do [Business Model Canvas](https://kauandivino.github.io/obranexo/) (versão interativa; texto completo com fontes em [`BMC_ObraNexo.txt`](BMC_ObraNexo.txt)) e do [relatório de modelo de negócio](reports/Modelo%20de%20negócio%20ObraNexo.md). Natureza de cada número: **[FATO]** publicado com fonte · **[DADO PRÓPRIO]** medido pela equipe no PNCP · **[ESTIMATIVA]** cálculo da equipe · **[PREMISSA]** hipótese a validar.
+Resumo do [Business Model Canvas](https://kauandivino.github.io/obranexo/) (versão interativa; texto completo com fontes em [`bmc/BMC_ObraNexo.txt`](bmc/BMC_ObraNexo.txt)) e do [relatório de modelo de negócio](bmc/BMC_ObraNexo.md). Natureza de cada número: **[FATO]** publicado com fonte · **[DADO PRÓPRIO]** medido pela equipe no PNCP · **[ESTIMATIVA]** cálculo da equipe · **[PREMISSA]** hipótese a validar.
 
 | | |
 |---|---|
@@ -716,7 +716,7 @@ eval/limiares.json       mínimos por métrica usados pela trava
 tests/                   157 testes (regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
 .github/workflows/ci.yml lint, testes e benchmark como trava em todo PR (Linux, modo determinístico e offline)
 pitch/                   planejamento, fala e slides do pitch
-BMC_ObraNexo.txt · reports/ · research_notes/   modelo de negócio e pesquisa
+bmc/                     modelo de negócio: BMC, pesquisa, medição no PNCP, canvas A3 e PM Canvas
 ```
 
 **Estrutura-alvo** (F1–F3, incremental sobre a atual): checkpoints duráveis e interrupções sobre `agents/grafo.py` · `tools/` (registro MCP) · `gateway/` (roteamento de modelos) · `ingest/` (coleta agendada, índice de itens) · `db/` (SQLModel + Alembic; a trilha migra do SQLite para o mesmo banco) · `observability/` ganha OpenTelemetry · `infra/` (Docker, Terraform).
@@ -729,7 +729,7 @@ BMC_ObraNexo.txt · reports/ · research_notes/   modelo de negócio e pesquisa
 - [`docs/PLANO_DESENVOLVIMENTO.md`](docs/PLANO_DESENVOLVIMENTO.md) — plano de desenvolvimento por fase
 - [`ROADMAP_MVP.txt`](ROADMAP_MVP.txt) — roadmap original do MVP (requisitos, stack, métricas, DoD)
 - [`docs/teste_cego_2026-10-23.md`](docs/teste_cego_2026-10-23.md) — teste cego em 5 pregões abertos
-- [`BMC_ObraNexo.txt`](BMC_ObraNexo.txt) · [`reports/`](reports/) · [`research_notes/`](research_notes/) — modelo de negócio, medição própria no PNCP, concorrentes, impacto
+- [`bmc/`](bmc/) ([relatório](bmc/BMC_ObraNexo.txt) · [pesquisa](bmc/pesquisa/) · [canvas A3](bmc/canvas/) · [PM Canvas](bmc/pmc/)) — modelo de negócio, medição própria no PNCP, concorrentes, impacto
 - [`pitch/`](pitch/) — planejamento e fala do pitch; [`demo_obranexo_90s.mp4`](pitch/demo_obranexo_90s.mp4) é a demo gravada (90 s, sem áudio) com a capa em [`demo_obranexo_90s.jpg`](pitch/demo_obranexo_90s.jpg)
 - [`ObraNexo_PreProjeto_Documento_Norteador_v0.1.pdf`](ObraNexo_PreProjeto_Documento_Norteador_v0.1.pdf) — documento norteador
 

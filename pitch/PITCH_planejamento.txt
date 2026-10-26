@@ -185,7 +185,7 @@ R: O motor de regras é genérico; a taxonomia muda. Construção civil e hidrá
 - Pausa de 1 segundo depois do "90% não citam isso no objeto" (é o momento-surpresa do pitch).
 - Se houver demo ao vivo nas perguntas: abrir a análise de Goianira (6 itens, 4 compatíveis) e clicar
   numa prova; não depender da internet para o pitch em si (os slides têm as telas).
-- Levar o canvas visual e o BMC_ObraNexo.txt como apoio para perguntas sobre números.
+- Levar o canvas visual e o bmc/BMC_ObraNexo.txt como apoio para perguntas sobre números.
 
 8. CHECKLIST ANTES DE SUBIR
 ---------------------------
