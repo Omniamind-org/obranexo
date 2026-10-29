@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from contextlib import asynccontextmanager
 from datetime import date, datetime
 from pathlib import Path
 from typing import Annotated, Any
@@ -20,7 +21,7 @@ from pydantic import BaseModel, Field
 from obranexo import __version__, contas
 from obranexo.agents.prompts import VERSAO as VERSAO_PROMPTS
 from obranexo.api import auth
-from obranexo.api.jobs import jobs
+from obranexo.api.jobs import Job, Tarefa, jobs, tarefa_de_analise
 from obranexo.catalog.atributos import ATRIBUTOS
 from obranexo.catalog.loader import carregar_catalogo_json, carregar_catalogo_tabela
 from obranexo.config import MODELOS_PADRAO, PROVEDORES, config
@@ -32,6 +33,22 @@ from obranexo.storage import store
 
 logs.configurar()
 
+
+def _preparar_retomada(job: Job) -> Tarefa | None:
+    """Depois de um reinício, só a análise recomeça sozinha: relê o caso congelado e não chama o PNCP.
+    Prospecção, chat e busca ficam como interrompidos (recomeçar gastaria cota de IA sem ninguém pedir)."""
+    if job.tipo != "analise":
+        return None
+    diretorio = store.caso(job.parametros.get("caso") or job.alvo)
+    return tarefa_de_analise(diretorio, empresa_atual()) if diretorio else None
+
+
+@asynccontextmanager
+async def _ciclo_de_vida(_app: FastAPI):
+    jobs.retomar(_preparar_retomada)
+    yield
+
+
 app = FastAPI(
     title="ObraNexo API",
     version=__version__,
@@ -39,6 +56,7 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url=None,
     openapi_url="/api/openapi.json",
+    lifespan=_ciclo_de_vida,
 )
 
 # Tudo em /api exige login, menos o que está em `app` diretamente (status, conteúdo da página "Como funciona")

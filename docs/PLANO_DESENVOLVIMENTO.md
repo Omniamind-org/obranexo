@@ -58,6 +58,7 @@ Ponto de partida em 24/10: o SQLite já existe em `data/obranexo.db`, mas guarda
 | c | `storage/store.py` vira repositório sobre o banco, mantendo a mesma interface (`salvar`, `carregar`, `listar`, prospecções, catálogo ativo por empresa) | `storage/store.py` | todos os testes atuais passam sem alteração nas chamadas |
 | d | ✅ 24/10 — Chat persistido: mensagens em `data/obranexo.db` (`storage/chat.py`); `Sessoes.obter` reconstrói a conversa fora da memória e o próximo turno parte do resumo das últimas mensagens | `agents/assistente.py`, `storage/chat.py` | conversa sobrevive a reinício do servidor (teste em `tests/test_assistente.py`) |
 | e | Script de migração dos JSONs existentes em `data/analises` e `data/prospeccoes` | `scripts/migrar_json.py` | análises antigas aparecem na interface após a migração |
+| f | ✅ **29/10** — Jobs duráveis: estado e eventos de cada job no SQLite (`jobs`, `job_eventos`); `/api/jobs/{id}` e o SSE respondem depois de um reinício; na subida, a análise em andamento recomeça com o mesmo id e prospecção, chat e busca ficam como interrompidos | `api/jobs.py`, `api/main.py` (lifespan) | `tests/test_jobs_duraveis.py` simula o reinício limpando a memória e subindo o app |
 | f | Trilha de chamadas (`chamadas_llm`) passa a ser um modelo SQLModel no mesmo banco, com `empresa_id`; `Trilha.gravar/listar/resumo` mantêm a interface | `observability/trilha.py`, `db/models.py` | `tests/test_observabilidade.py` passa sem alteração; `/api/metricas/llm` filtra por empresa |
 
 ### PT-1.4 · Login e isolamento por empresa (semanas 3–4)
