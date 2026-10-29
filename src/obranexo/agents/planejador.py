@@ -13,6 +13,16 @@ from obranexo.agents.prompts import SYSTEM_PLANEJADOR, VERSAO
 from obranexo.models import Qualificacao, ResultadoItem, TipoOportunidade
 from obranexo.observability.trilha import escopo
 
+# Pesos da prioridade (0-100). O prazo pesa mais que a cobertura: uma licitação aberta é uma venda possível agora,
+# uma encerrada no máximo uma ata para aderir. Uma encerrada chega no máximo a 55 (tudo compatível, com registro
+# de preços); uma aberta com 40% do valor compatível já empata.
+PESO_COBERTURA = 0.5  # fração do valor estimado em itens compatíveis/parciais
+PESO_INDETERMINADO = 0.15  # fração em itens que dependem de confirmar a especificação
+BONUS_PRAZO_ABERTO = 35
+BONUS_ENCERRADA_SRP = 5  # registro de preços: a ata pode permitir adesão
+FATOR_VENDA_INDIRETA = 0.6
+FATOR_FORA_DA_UF = 0.7
+
 _PALAVRAS_OBRA = r"\b(obra|obras|execu[cç][aã]o|constru[cç][aã]o|reforma|amplia[cç][aã]o|engenharia|empreitada|remanescente)\b"
 _PALAVRAS_SERVICO = r"\b(presta[cç][aã]o de servi[cç]os?|loca[cç][aã]o|manuten[cç][aã]o)\b"
 
@@ -77,18 +87,18 @@ def qualificar(ctx: Contexto) -> Qualificacao:
     cobertura = (valor_compat / valor_total) if valor_total else 0.0
     cobertura_indet = (valor_indet / valor_total) if valor_total else 0.0
 
-    prioridade = 100 * (0.6 * cobertura + 0.15 * cobertura_indet)
+    prioridade = 100 * (PESO_COBERTURA * cobertura + PESO_INDETERMINADO * cobertura_indet)
     just = [f"{cobertura:.0%} do valor estimado em itens compatíveis/parciais"]
     if cobertura_indet:
         just.append(f"{cobertura_indet:.0%} indeterminado")
     if prazo == "ABERTA":
-        prioridade += 25
+        prioridade += BONUS_PRAZO_ABERTO
         just.append("prazo de propostas aberto")
     elif prazo == "ENCERRADA":
-        prioridade += 5 if ct.srp else 0
+        prioridade += BONUS_ENCERRADA_SRP if ct.srp else 0
         just.append("prazo encerrado" + (" (registro de preços: ata pode permitir adesão/novas contratações)" if ct.srp else ""))
     if tipo == TipoOportunidade.INDIRETA:
-        prioridade *= 0.6
+        prioridade *= FATOR_VENDA_INDIRETA
         just.append("venda indireta (comprador é a contratada)")
         if a.insumos_indiretos:
             categorias = {i["categoria"] for i in a.insumos_indiretos}
@@ -96,7 +106,7 @@ def qualificar(ctx: Contexto) -> Qualificacao:
             just.append(f"{len(a.insumos_indiretos)} menção(ões) a {len(categorias)} categoria(s) do portfólio nos projetos")
     uf_ok = not ctx.empresa.ufs_atendidas or (ct.uf in ctx.empresa.ufs_atendidas)
     if not uf_ok:
-        prioridade *= 0.7
+        prioridade *= FATOR_FORA_DA_UF
         just.append(f"UF {ct.uf} fora das regiões atendidas")
     prioridade = round(min(100.0, prioridade), 1)
 
