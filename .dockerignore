@@ -1,0 +1,19 @@
+# Lista de permissão: só entra na imagem o que a aplicação usa em execução.
+# O .env (chaves), os dados locais (análises, contas, cache) e o .git ficam de fora por padrão.
+*
+!pyproject.toml
+!README.md
+!src/
+!web/
+!images/
+!docs/fluxo_agentes.md
+!docs/benchmark_resultado.json
+!data/casos/
+!data/catalogo_demo/
+
+# Dentro do que foi liberado: licitações coletadas localmente e anexos extraídos
+data/casos/[0-9]*_[0-9]*_[0-9]*
+data/casos/**/*_conteudo
+**/__pycache__
+**/*.pyc
+src/*.egg-info

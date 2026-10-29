@@ -94,3 +94,29 @@ jobs:
           name: benchmark
           path: benchmark.json
           if-no-files-found: ignore
+
+  docker:
+    name: Imagem Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir a imagem
+        run: docker build -t obranexo:ci .
+      - name: Subir o contêiner e esperar o healthcheck
+        run: |
+          docker run -d --name obranexo -p 8000:8000 -e OBRANEXO_LLM_PROVIDER=none -e OBRANEXO_OFFLINE=1 obranexo:ci
+          for _ in $(seq 1 45); do
+            estado=$(docker inspect -f '{{.State.Health.Status}}' obranexo)
+            [ "$estado" = healthy ] && break
+            sleep 2
+          done
+          docker logs obranexo
+          test "$estado" = healthy
+      - name: Interface, casos de demonstração e login dentro do contêiner
+        run: |
+          curl -fsS http://localhost:8000/ | grep -q 'js/app.js'
+          curl -fsS http://localhost:8000/api/status | python3 -c "import json, sys; d = json.load(sys.stdin); assert d['casos'] >= 9, d; print(d['casos'], 'casos')"
+          docker exec obranexo obranexo usuario criar ci@exemplo.com.br --empresa "CI" --senha senha-de-teste-ci
+          curl -fsS -X POST http://localhost:8000/api/auth/login -H 'Content-Type: application/json' \
+            -d '{"email": "ci@exemplo.com.br", "senha": "senha-de-teste-ci"}' > /dev/null
