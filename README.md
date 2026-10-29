@@ -14,14 +14,14 @@
 </p>
 
 <p align="center">
-  <a href="https://kauandivino.github.io/obranexo/"><img alt="Business Model Canvas: ver o canvas" src="https://img.shields.io/badge/Business%20Model%20Canvas-ver%20o%20canvas%20%E2%86%92-00ab9f?style=for-the-badge&labelColor=0b2a3c"></a>
+  <a href="https://omniamind-org.github.io/obranexo/"><img alt="Business Model Canvas: ver o canvas" src="https://img.shields.io/badge/Business%20Model%20Canvas-ver%20o%20canvas%20%E2%86%92-00ab9f?style=for-the-badge&labelColor=0b2a3c"></a>
 </p>
 
 <p align="center">
   <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-0b2a3c?style=flat-square&logo=python&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-API%20%2B%20SSE-00ab9f?style=flat-square">
   <img alt="Testes" src="https://img.shields.io/badge/testes-193%20passando-0ca30c?style=flat-square">
-  <a href="https://github.com/kauandivino/obranexo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/kauandivino/obranexo/ci.yml?branch=main&style=flat-square&label=CI"></a>
+  <a href="https://github.com/Omniamind-org/obranexo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Omniamind-org/obranexo/ci.yml?branch=main&style=flat-square&label=CI"></a>
   <img alt="Rastreabilidade" src="https://img.shields.io/badge/cita%C3%A7%C3%B5es%20conferidas-100%25-0ca30c?style=flat-square">
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.1%20%C2%B7%20MVP-7d8b96?style=flat-square">
   <img alt="AKCIT Camp 2026" src="https://img.shields.io/badge/AKCIT%20Camp-2026-fab219?style=flat-square">
@@ -373,7 +373,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as li
 
 | O quê | Resultado | Como conferir |
 |---|---|---|
-| Testes automatizados | **193 passando** (unitários + API, incluindo login e isolamento por empresa, observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/kauandivino/obranexo/actions/workflows/ci.yml) |
+| Testes automatizados | **193 passando** (unitários + API, incluindo login e isolamento por empresa, observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/Omniamind-org/obranexo/actions/workflows/ci.yml) |
 | Custo e latência medidos (24/10, Gemini) | Itaberaí, 21 itens, sem cache: 17 chamadas, 0 erros, 165 mil tokens (4,8 mil de raciocínio), **US$ 0,145 ≈ R$ 0,73** pela tabela paga, 78 s, latência média 4,9 s e p95 9,9 s por chamada, 73/73 evidências; o Investigador respondeu por 68% do custo | trilha em `data/obranexo.db` · `GET /api/analises/{id}/chamadas` · `GET /api/custos` · tela **Qualidade → Uso de modelos** |
 | Benchmark contra gabaritos revisados | 2 contratações, 9 itens e 8 pares item × produto: **100% de acerto por item, 100% nos pares, 100% de rastreabilidade** | `python eval/run_benchmark.py` · [`docs/benchmark_resultado.json`](docs/benchmark_resultado.json) |
 | Tempo | 5 s para os 2 casos em modo determinístico; 55 s com Gemini (2 chamadas) | idem |
@@ -387,7 +387,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as li
 
 ## Modelo de negócio e mercado
 
-Resumo do [Business Model Canvas](https://kauandivino.github.io/obranexo/) (versão interativa; texto completo com fontes em [`bmc/BMC_ObraNexo.txt`](bmc/BMC_ObraNexo.txt)) e do [relatório de modelo de negócio](bmc/BMC_ObraNexo.md). Natureza de cada número: **[FATO]** publicado com fonte · **[DADO PRÓPRIO]** medido pela equipe no PNCP · **[ESTIMATIVA]** cálculo da equipe · **[PREMISSA]** hipótese a validar.
+Resumo do [Business Model Canvas](https://omniamind-org.github.io/obranexo/) (versão interativa; texto completo com fontes em [`bmc/BMC_ObraNexo.txt`](bmc/BMC_ObraNexo.txt)) e do [relatório de modelo de negócio](bmc/BMC_ObraNexo.md). Natureza de cada número: **[FATO]** publicado com fonte · **[DADO PRÓPRIO]** medido pela equipe no PNCP · **[ESTIMATIVA]** cálculo da equipe · **[PREMISSA]** hipótese a validar.
 
 | | |
 |---|---|
