@@ -76,8 +76,8 @@ Pré-requisito para qualquer piloto com catálogo real.
 
 | # | Tarefa | Arquivos | Aceite |
 |---|---|---|---|
-| a | `Dockerfile` (python 3.12-slim, `uv`), `docker-compose.yml` com `app` + `postgres:16` + volume para `data/` | `Dockerfile`, `docker-compose.yml`, `.dockerignore` | `docker compose up` sobe a aplicação com banco em < 2 min |
-| b | 🟡 CI no GitHub Actions: ruff, `pytest -m "not integracao"`, benchmark determinístico (PT-1.2d) ✅; build da imagem entra com o Dockerfile (PT-1.5a) | `.github/workflows/ci.yml` | badge real no README substitui o estático ✅ |
+| a | ◐ **29/10** — `Dockerfile` (python 3.12-slim, pip), `docker-compose.yml` com `app` e volume nomeado para `data/`, `.dockerignore` por lista de permissão (o `.env` nunca entra); healthcheck em `/api/status`; o CI constrói a imagem, espera o healthcheck e faz login dentro do contêiner. Falta o `postgres:16`, que entra com a migração do banco. Original: `Dockerfile` (python 3.12-slim, `uv`), `docker-compose.yml` com `app` + `postgres:16` + volume para `data/` | `Dockerfile`, `docker-compose.yml`, `.dockerignore` | `docker compose up` sobe a aplicação com banco em < 2 min |
+| b | 🟡 CI no GitHub Actions: ruff, `pytest -m "not integracao"`, benchmark determinístico (PT-1.2d) ✅; build da imagem entra com o Dockerfile (PT-1.5a) ✅ **29/10** | `.github/workflows/ci.yml` | badge real no README substitui o estático ✅ |
 | c | Deploy mínimo na **AWS** (ver [Arquitetura em nuvem](#arquitetura-em-nuvem-aws--estudo-em-andamento)): a aplicação atual em ECS Fargate, RDS PostgreSQL pequeno, S3 para os pacotes de documentos, Secrets Manager para as chaves e alerta do AWS Budgets; HTTPS por ALB ou CloudFront | `infra/` (Terraform ou CDK), documentação em `docs/deploy.md` | URL pública estável para o piloto; healthcheck em `/api/status`; custo mensal medido e registrado |
 | d | `detect-secrets` ou `gitleaks` no pre-commit e no CI | `.pre-commit-config.yaml`, CI | commit com chave é bloqueado |
 

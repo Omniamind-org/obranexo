@@ -408,7 +408,7 @@ A visão é ampla; a execução começa pequena, verificável e orientada por re
 | Fase | Período | Objetivo | Entregas principais | Critério de saída |
 |---|---|---|---|---|
 | **F0 · v0.1** Prova de conceito | 22–24/10/2026 | demo de ponta a ponta com dados reais | 7 agentes, PNCP ao vivo, 9 casos reais, catálogo por ficha, assistente, 3 provedores, benchmark, teste cego, grafo explícito, trilha de chamadas de IA em SQLite com custo real e logs estruturados, CI com benchmark como trava, kit da proposta e proposta de preços em Word | os 7 critérios da demo rodam offline sem intervenção — **atingido ✅** |
-| **F1 · v0.2** MVP robusto | 25/10–28/11/2026 | confiabilidade e primeira prova de valor | gabarito duplo em 10+ contratações; PostgreSQL + Alembic; login e isolamento por empresa ✅; Docker; CI com benchmark como trava ✅; busca em todas as modalidades; recalibração da prioridade; 5 entrevistas e 1–2 pilotos | roda na nuvem (AWS) com Postgres; benchmark ≥ 10 contratações; ≥ 1 piloto com fornecedor real |
+| **F1 · v0.2** MVP robusto | 25/10–28/11/2026 | confiabilidade e primeira prova de valor | gabarito duplo em 10+ contratações; PostgreSQL + Alembic; login e isolamento por empresa ✅; Docker ✅ (o Postgres entra com a migração); CI com benchmark como trava ✅; busca em todas as modalidades ✅; recalibração da prioridade ✅; 5 entrevistas e 1–2 pilotos | roda na nuvem (AWS) com Postgres; benchmark ≥ 10 contratações; ≥ 1 piloto com fornecedor real |
 | **F2 · v0.3** Beta fechado | dez/2026–fev/2027 | plataforma agêntica e piloto em escala | grafo durável com checkpoints e pausas para revisão; registro MCP de ferramentas; Monitor (ingestão contínua, índice híbrido com pgvector, alertas); Habilitação; feedback que recalibra; fila com workers; OTel + Langfuse; PCA, OCR e tabelas; **piloto de 60 dias com 10 distribuidores** | precisão ≥ 95% fora da amostra; rastreabilidade 100%; custo medido < R$ 1/análise; 95% das análises em < 3 min |
 | **F3 · v1.0** Produção | mar–jun/2027 | operar com clientes pagantes | AWS como código (ECS Fargate, Aurora/RDS PostgreSQL + pgvector, S3, SQS, Bedrock, Cognito — [estudo em andamento](#arquitetura-em-nuvem-aws--estudo-em-andamento)); gateway de modelos com roteamento, lote e orçamento por cliente; RLS e anexos versionados; Rastreador de obras; planos e cobrança; LGPD documentada, pentest, trilha de auditoria; avaliação contínua em produção | 30 dias cumprindo as metas de serviço (99,5%, p95 < 90 s); margem 75–85% |
 | **F4 · v1.x** Escala | 2º sem/2027 → | novas fontes, segmentos e agentes | Obrasgov e portais estaduais; Precificação com histórico de preços; grafo órgão–objeto–item–fornecedor; API pública e servidor MCP para CRM e assessorias; novos segmentos (hidráulica, climatização, incêndio) | churn < 3%/mês; LTV/CAC ≥ 3 |
@@ -555,12 +555,20 @@ obranexo usuario criar voce@empresa.com.br --empresa "Sua Empresa" --admin   # p
 obranexo usuario listar                                                        # também: senha, desativar, ativar
 ```
 
+**Com Docker** (não precisa de Python na máquina): a imagem traz a interface, a API e os casos de demonstração; contas, análises, catálogos e a trilha de IA ficam no volume `dados` e sobrevivem a reinícios. As chaves vêm do `.env`, que não entra na imagem.
+
+```bash
+docker compose up -d --build                                       # http://localhost:8000
+docker compose exec app obranexo usuario criar voce@empresa.com.br --empresa "Sua Empresa" --admin
+docker compose logs -f app                                         # acompanhar
+```
+
 Na interface: **Licitações → Goianira → Analisar** mostra a análise ao vivo com a trilha dos agentes; na análise, clique numa prova. Com chave de IA, **Prospecção → Buscar oportunidades** roda o agente contra o PNCP ao vivo.
 
 ```powershell
 obranexo casos                            # as 9 licitações reais congeladas
 obranexo analisar goianira_pe038_2026     # análise completa pela linha de comando (2,8 s sem IA)
-obranexo abertas --uf GO                  # pregões com propostas abertas, ao vivo no PNCP
+obranexo abertas --uf GO                  # licitações com propostas abertas, ao vivo no PNCP (--modalidades 6,4)
 obranexo coletar 01291707000167 2026 75 meu_caso   # baixa e congela uma contratação
 
 pytest -m "not integracao"                # 193 testes, sem chamar o LLM (inclui o retrato da demo)
@@ -720,7 +728,8 @@ docs/
 eval/run_benchmark.py    benchmark contra gabaritos (com --limiares, trava de qualidade)
 eval/limiares.json       mínimos por métrica usados pela trava
 tests/                   201 testes (login e isolamento por empresa, regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
-.github/workflows/ci.yml lint, testes e benchmark como trava em todo PR (Linux, modo determinístico e offline)
+.github/workflows/ci.yml lint, testes, benchmark como trava e build da imagem Docker em todo PR (Linux, modo determinístico e offline)
+Dockerfile · docker-compose.yml  imagem da aplicação e volume `dados` para o estado (contas, análises, catálogos, trilha)
 .github/workflows/pages.yml publica bmc/site/ no GitHub Pages, só quando bmc/site/ muda
 pitch/                   planejamento, fala e slides do pitch
 bmc/                     modelo de negócio: BMC, pesquisa, medição no PNCP, canvas A3 e PM Canvas
