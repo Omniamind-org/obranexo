@@ -30,3 +30,6 @@ data/casos/[0-9]*_[0-9]*_[0-9]*/
 # Configuração local do editor
 .claude/
 .DS_Store
+
+# Notas locais
+A_lembrar.md
