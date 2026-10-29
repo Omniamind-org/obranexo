@@ -20,7 +20,7 @@
 <p align="center">
   <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-0b2a3c?style=flat-square&logo=python&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-API%20%2B%20SSE-00ab9f?style=flat-square">
-  <img alt="Testes" src="https://img.shields.io/badge/testes-166%20passando-0ca30c?style=flat-square">
+  <img alt="Testes" src="https://img.shields.io/badge/testes-185%20passando-0ca30c?style=flat-square">
   <a href="https://github.com/kauandivino/obranexo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/kauandivino/obranexo/ci.yml?branch=main&style=flat-square&label=CI"></a>
   <img alt="Rastreabilidade" src="https://img.shields.io/badge/cita%C3%A7%C3%B5es%20conferidas-100%25-0ca30c?style=flat-square">
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.1%20%C2%B7%20MVP-7d8b96?style=flat-square">
@@ -373,7 +373,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as li
 
 | O quê | Resultado | Como conferir |
 |---|---|---|
-| Testes automatizados | **166 passando** (unitários + API, incluindo login e isolamento por empresa, observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/kauandivino/obranexo/actions/workflows/ci.yml) |
+| Testes automatizados | **185 passando** (unitários + API, incluindo login e isolamento por empresa, observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/kauandivino/obranexo/actions/workflows/ci.yml) |
 | Custo e latência medidos (24/10, Gemini) | Itaberaí, 21 itens, sem cache: 17 chamadas, 0 erros, 165 mil tokens (4,8 mil de raciocínio), **US$ 0,145 ≈ R$ 0,73** pela tabela paga, 78 s, latência média 4,9 s e p95 9,9 s por chamada, 73/73 evidências; o Investigador respondeu por 68% do custo | trilha em `data/obranexo.db` · `GET /api/analises/{id}/chamadas` · `GET /api/custos` · tela **Qualidade → Uso de modelos** |
 | Benchmark contra gabaritos revisados | 2 contratações, 9 itens e 8 pares item × produto: **100% de acerto por item, 100% nos pares, 100% de rastreabilidade** | `python eval/run_benchmark.py` · [`docs/benchmark_resultado.json`](docs/benchmark_resultado.json) |
 | Tempo | 5 s para os 2 casos em modo determinístico; 55 s com Gemini (2 chamadas) | idem |
@@ -563,7 +563,7 @@ obranexo analisar goianira_pe038_2026     # análise completa pela linha de coma
 obranexo abertas --uf GO                  # pregões com propostas abertas, ao vivo no PNCP
 obranexo coletar 01291707000167 2026 75 meu_caso   # baixa e congela uma contratação
 
-pytest -m "not integracao"                # 166 testes, sem chamar o LLM (inclui o retrato da demo)
+pytest -m "not integracao"                # 185 testes, sem chamar o LLM (inclui o retrato da demo)
 pytest -m integracao -v                   # chama o provedor configurado (usa cota)
 python eval/run_benchmark.py              # benchmark contra os gabaritos
 python eval/run_benchmark.py --limiares eval/limiares.json   # a mesma trava de qualidade do CI
@@ -586,12 +586,10 @@ Encontradas em auditoria do código em 24/10/2026; todas têm item no plano de d
 
 | Limitação | Efeito | Correção |
 |---|---|---|
-| Busca só em pregão eletrônico (modalidade 6) | concorrências (obras), pregões presenciais e dispensas não entram na prospecção | parâmetro de modalidades · F1 |
-| Tela de busca lê até 6 páginas; GO tinha 9 | cerca de um terço dos pregões abertos não aparece na interface (o Prospector lê 12) | limite dinâmico · F1 |
+| Prospector e Assistente buscam só em pregão eletrônico (modalidade 6) | na prospecção automática, concorrências (obras), pregões presenciais e dispensas não entram; a tela de busca já escolhe a modalidade | parâmetro de modalidades nos agentes · F1 |
 | Descoberta pela palavra no objeto, por substring | licitações com itens elétricos sob objeto genérico ("material de consumo") não aparecem; e há ruído: "faróis em **LED**" num SUV, "controle de **lumin**osidade" em persianas | índice de itens com busca híbrida · F2 |
 | Pacotes de licitações coletados (`data/casos`) são compartilhados entre as empresas | os editais são públicos e as análises ficam isoladas, mas uma empresa vê quais licitações outra coletou | casos por empresa, com os de demonstração em comum · F1 |
 | Contas e sessões no SQLite, criadas por convite pelo terminal | sem recuperação de senha por e-mail nem convite pela interface | e-mail transacional e tela de convites · F1–F2 |
-| Categoria do produto precisa ser a chave exata (`luminaria_publica_led`) | planilha com "Luminária pública" não casa com nada, sem aviso | validação e sugestão na importação · F1 |
 | Pesos da prioridade não calibrados | licitação encerrada (SRP) pode ficar acima de uma aberta | prazo aberto pesa mais; feedback recalibra · F1–F2 |
 | Benchmark só com 2 casos internos | precisão fora da amostra ainda desconhecida | gabarito duplo dos 5 casos cegos + 3 novos · F1 |
 | Custo de IA é estimativa a preço de tabela, com uma única análise medida (Itaberaí, R$ 0,73) | no nível gratuito do Gemini e do Groq a cobrança real é zero; a meta de R$ 1 por análise só se valida com volume e chave paga | acompanhar em `GET /api/custos` e na tela Qualidade; medir no piloto · F1–F2 |
@@ -635,7 +633,7 @@ O frontend não tem dependências externas nem etapa de build: o próprio FastAP
 | POST | `/api/prospeccoes` | `{ufs, horizonte_dias, max_analises}` → inicia o Agente de Prospecção (202, devolve o job) |
 | GET | `/api/prospeccoes` · `/api/prospeccoes/{id}` | histórico · ranking, buscas, candidatos e trilha de decisões do agente |
 | GET | `/api/casos` · `/api/casos/{caso}` | casos congelados · itens, anexos e análises de um caso |
-| GET | `/api/pncp/buscar?uf&palavras&abertas&dias&max_paginas` | busca ao vivo no PNCP |
+| GET | `/api/pncp/buscar?uf&palavras&abertas&dias&modalidades&max_paginas` | busca ao vivo no PNCP, nas modalidades pedidas, lendo todas as páginas (até 20 por modalidade) |
 | POST | `/api/pncp/coletar` | `{cnpj, ano, sequencial, max_mb}` → baixa e congela uma contratação |
 | POST | `/api/analises` | `{caso}` → inicia a análise em segundo plano (202, devolve o job) |
 | GET | `/api/jobs/{id}` · `/api/jobs/{id}/eventos` | estado do job · stream SSE (`log` a cada passo, `fim` com `analise_id`) |
@@ -721,7 +719,7 @@ docs/
   benchmark_resultado.json
 eval/run_benchmark.py    benchmark contra gabaritos (com --limiares, trava de qualidade)
 eval/limiares.json       mínimos por métrica usados pela trava
-tests/                   166 testes (login e isolamento por empresa, regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
+tests/                   185 testes (login e isolamento por empresa, regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
 .github/workflows/ci.yml lint, testes e benchmark como trava em todo PR (Linux, modo determinístico e offline)
 pitch/                   planejamento, fala e slides do pitch
 bmc/                     modelo de negócio: BMC, pesquisa, medição no PNCP, canvas A3 e PM Canvas
