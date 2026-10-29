@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from obranexo.catalog.atributos import ATRIBUTOS
+from obranexo.catalog.categorias import resolver_categoria
 from obranexo.models import Atributo, Empresa, Produto, TipoAtributo
 
 
@@ -49,14 +50,18 @@ def _texto_ou_none(v: Any) -> str | None:
     return str(v).strip() or None if v is not None else None
 
 
-def produto_de_dict(d: dict[str, Any]) -> Produto:
+def produto_de_dict(d: dict[str, Any], avisos: list[str] | None = None) -> Produto:
+    """Produto normalizado; o que foi corrigido ou não reconhecido (categoria) vai para `avisos`."""
+    categoria, aviso = resolver_categoria(d.get("categoria"))
+    if aviso and avisos is not None:
+        avisos.append(f"{d.get('sku') or d.get('id') or d.get('nome')}: {aviso}")
     atributos = {k: _parse_valor(k, v) for k, v in (d.get("atributos") or {}).items() if v is not None and v != ""}
     # Colunas ausentes em CSV/XLSX chegam como None: normaliza para os padrões do modelo
     return Produto(
         id=str(d.get("id") or d.get("sku")),
         sku=str(d.get("sku") or d.get("id")),
         nome=str(d.get("nome") or ""),
-        categoria=str(d.get("categoria") or "outro"),
+        categoria=categoria,
         subcategoria=d.get("subcategoria"),
         fabricante=_texto_ou_none(d.get("fabricante")),
         marca=_texto_ou_none(d.get("marca")),
@@ -71,10 +76,10 @@ def produto_de_dict(d: dict[str, Any]) -> Produto:
     )
 
 
-def carregar_catalogo_json(caminho: Path) -> Empresa:
+def carregar_catalogo_json(caminho: Path, avisos: list[str] | None = None) -> Empresa:
     dados = json.loads(Path(caminho).read_text(encoding="utf-8"))
     empresa = dados.get("empresa", {})
-    produtos = [produto_de_dict(p) for p in dados.get("produtos", [])]
+    produtos = [produto_de_dict(p, avisos) for p in dados.get("produtos", [])]
     return Empresa(
         id=empresa.get("id", "empresa-demo"),
         nome=empresa.get("nome", "Fornecedor"),
@@ -88,7 +93,7 @@ def carregar_catalogo_json(caminho: Path) -> Empresa:
     )
 
 
-def carregar_catalogo_tabela(caminho: Path, empresa: Empresa | None = None) -> Empresa:
+def carregar_catalogo_tabela(caminho: Path, empresa: Empresa | None = None, avisos: list[str] | None = None) -> Empresa:
     """CSV/XLSX com uma linha por produto. Colunas fixas: sku, nome, categoria, subcategoria, fabricante,
     marca, modelo, descricao, normas, certificacoes, preco_ref, prazo_entrega_dias. Demais colunas cujo
     nome coincide com um atributo canônico viram atributos (ex.: potencia_w, ip, cct_k)."""
@@ -105,6 +110,6 @@ def carregar_catalogo_tabela(caminho: Path, empresa: Empresa | None = None) -> E
         for campo in ("normas", "certificacoes"):
             if isinstance(reg.get(campo), str):
                 reg[campo] = [s.strip() for s in re.split(r"[;|,]", reg[campo]) if s.strip()]
-        produtos.append(produto_de_dict({**{k: reg.get(k) for k in fixas}, "atributos": atributos}))
+        produtos.append(produto_de_dict({**{k: reg.get(k) for k in fixas}, "atributos": atributos}, avisos))
     base = empresa or Empresa(id="empresa-upload", nome="Fornecedor (upload)")
     return base.model_copy(update={"produtos": produtos})

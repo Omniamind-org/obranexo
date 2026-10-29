@@ -114,6 +114,13 @@ export async function render_(el) {
       toast(`Catálogo carregado: ${r.produtos} produtos de ${r.empresa}`);
       atualizarStatus();
       render_(el);
+      if (r.avisos?.length) {
+        abrirModal({
+          titulo: 'Revise as categorias',
+          subtitulo: 'Só produtos com categoria reconhecida são comparados com os itens das licitações.',
+          corpo: html`<ul class="stack small">${r.avisos.map((a) => html`<li>${a}</li>`)}</ul>`,
+        });
+      }
     } catch (err) { toast(err.message, 'erro'); }
   });
   el.querySelector('#importar-ficha').addEventListener('click', () => importarFicha(() => render_(el)));
