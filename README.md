@@ -20,7 +20,7 @@
 <p align="center">
   <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-0b2a3c?style=flat-square&logo=python&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-API%20%2B%20SSE-00ab9f?style=flat-square">
-  <img alt="Testes" src="https://img.shields.io/badge/testes-193%20passando-0ca30c?style=flat-square">
+  <img alt="Testes" src="https://img.shields.io/badge/testes-198%20passando-0ca30c?style=flat-square">
   <a href="https://github.com/Omniamind-org/obranexo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Omniamind-org/obranexo/ci.yml?branch=main&style=flat-square&label=CI"></a>
   <img alt="Rastreabilidade" src="https://img.shields.io/badge/cita%C3%A7%C3%B5es%20conferidas-100%25-0ca30c?style=flat-square">
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.1%20%C2%B7%20MVP-7d8b96?style=flat-square">
@@ -373,7 +373,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as li
 
 | O quê | Resultado | Como conferir |
 |---|---|---|
-| Testes automatizados | **193 passando** (unitários + API, incluindo login e isolamento por empresa, observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/Omniamind-org/obranexo/actions/workflows/ci.yml) |
+| Testes automatizados | **198 passando** (unitários + API, incluindo login e isolamento por empresa, observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/Omniamind-org/obranexo/actions/workflows/ci.yml) |
 | Custo e latência medidos (24/10, Gemini) | Itaberaí, 21 itens, sem cache: 17 chamadas, 0 erros, 165 mil tokens (4,8 mil de raciocínio), **US$ 0,145 ≈ R$ 0,73** pela tabela paga, 78 s, latência média 4,9 s e p95 9,9 s por chamada, 73/73 evidências; o Investigador respondeu por 68% do custo | trilha em `data/obranexo.db` · `GET /api/analises/{id}/chamadas` · `GET /api/custos` · tela **Qualidade → Uso de modelos** |
 | Benchmark contra gabaritos revisados | 2 contratações, 9 itens e 8 pares item × produto: **100% de acerto por item, 100% nos pares, 100% de rastreabilidade** | `python eval/run_benchmark.py` · [`docs/benchmark_resultado.json`](docs/benchmark_resultado.json) |
 | Tempo | 5 s para os 2 casos em modo determinístico; 55 s com Gemini (2 chamadas) | idem |
@@ -548,7 +548,7 @@ cp .env.example .env       # opcional: idem
 obranexo servidor
 ```
 
-A interface pede login. As contas são por convite: crie a sua (e a empresa) pelo terminal; `--admin` libera a troca do provedor de IA e as métricas internas de custo. Cada empresa tem o próprio catálogo, análises, prospecções e conversas, em `data/empresas/<id>/`.
+A interface pede login. As contas são por convite: crie a sua (e a empresa) pelo terminal; `--admin` libera a troca do provedor de IA e as métricas internas de custo. Cada empresa tem o próprio catálogo, análises, prospecções, conversas e as licitações que baixou do PNCP, em `data/empresas/<id>/`; os casos de demonstração de `data/casos` são comuns a todas.
 
 ```bash
 obranexo usuario criar voce@empresa.com.br --empresa "Sua Empresa" --admin   # pede a senha no terminal
@@ -571,7 +571,7 @@ obranexo analisar goianira_pe038_2026     # análise completa pela linha de coma
 obranexo abertas --uf GO                  # licitações com propostas abertas, ao vivo no PNCP (--modalidades 6,4)
 obranexo coletar 01291707000167 2026 75 meu_caso   # baixa e congela uma contratação
 
-pytest -m "not integracao"                # 193 testes, sem chamar o LLM (inclui o retrato da demo)
+pytest -m "not integracao"                # 198 testes, sem chamar o LLM (inclui o retrato da demo)
 pytest -m integracao -v                   # chama o provedor configurado (usa cota)
 python eval/run_benchmark.py              # benchmark contra os gabaritos
 python eval/run_benchmark.py --limiares eval/limiares.json   # a mesma trava de qualidade do CI
@@ -595,7 +595,6 @@ Encontradas em auditoria do código em 24/10/2026; todas têm item no plano de d
 | Limitação | Efeito | Correção |
 |---|---|---|
 | Descoberta pela palavra no objeto, por substring | licitações com itens elétricos sob objeto genérico ("material de consumo") não aparecem; e há ruído: "faróis em **LED**" num SUV, "controle de **lumin**osidade" em persianas | índice de itens com busca híbrida · F2 |
-| Pacotes de licitações coletados (`data/casos`) são compartilhados entre as empresas | os editais são públicos e as análises ficam isoladas, mas uma empresa vê quais licitações outra coletou | casos por empresa, com os de demonstração em comum · F1 |
 | Contas e sessões no SQLite, criadas por convite pelo terminal | sem recuperação de senha por e-mail nem convite pela interface | e-mail transacional e tela de convites · F1–F2 |
 | Pesos da prioridade ajustados à mão | o prazo aberto já pesa mais que a cobertura (uma encerrada chega no máximo a 55), mas os pesos não aprendem com o resultado real das licitações | feedback recalibra · F2 |
 | Benchmark só com 2 casos internos | precisão fora da amostra ainda desconhecida | gabarito duplo dos 5 casos cegos + 3 novos · F1 |
@@ -715,6 +714,7 @@ web/
   js/views/              início, catálogo, demandas, prospecção, caso (execução ao vivo), análises, resultado, métricas, sobre
 data/
   casos/<caso>/          pacotes congelados (contratacao.json, itens.json, documentos.json, arquivos/, gabarito.json)
+  empresas/<id>/         estado de cada empresa: catálogo, análises, prospecções e casos/ com as licitações que ela coletou
   catalogo_demo/         catálogo demonstrativo (41 SKUs fictícios, com atributos completos e incompletos de propósito)
   obranexo.db            SQLite com a tabela chamadas_llm (criado na primeira chamada de IA)
 docs/
@@ -727,7 +727,7 @@ docs/
   benchmark_resultado.json
 eval/run_benchmark.py    benchmark contra gabaritos (com --limiares, trava de qualidade)
 eval/limiares.json       mínimos por métrica usados pela trava
-tests/                   201 testes (login e isolamento por empresa, regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
+tests/                   206 testes (login e isolamento por empresa, regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
 .github/workflows/ci.yml lint, testes, benchmark como trava e build da imagem Docker em todo PR (Linux, modo determinístico e offline)
 Dockerfile · docker-compose.yml  imagem da aplicação e volume `dados` para o estado (contas, análises, catálogos, trilha)
 .github/workflows/pages.yml publica bmc/site/ no GitHub Pages, só quando bmc/site/ muda

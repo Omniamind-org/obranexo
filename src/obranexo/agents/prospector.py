@@ -252,7 +252,7 @@ class Prospector:
             return f"ERRO: {exc}"
         from obranexo.agents.pipeline import executar_caso
 
-        destino = self.cfg.dir_casos / f"{cnpj}_{ano}_{seq}"
+        destino = store.dir_casos() / f"{cnpj}_{ano}_{seq}"
         self.evento("analisar", f"Análise completa de {contratacao_id} — {motivo[:140]}")
         if not (destino / "contratacao.json").exists():
             self.pncp.coletar_caso(cnpj, ano, seq, destino, max_mb=15)
