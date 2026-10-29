@@ -123,7 +123,7 @@ Os nós não se chamam entre si nem trocam mensagens: cada um lê e escreve no m
 
 | Agente | Ferramenta | Input | Output (o que o código devolve) |
 |---|---|---|---|
-| Prospecção | `buscar_licitacoes_abertas(uf, termos)` | UF e radicais escolhidos pelo agente a partir do catálogo | até 30 pregões abertos cujo objeto contém os termos (id, órgão, município, objeto, valor, prazo); vem do PNCP ao vivo, com cache de 30 min |
+| Prospecção | `buscar_licitacoes_abertas(uf, termos)` | UF e radicais escolhidos pelo agente a partir do catálogo | até 30 licitações abertas (pregões, concorrências e dispensas) cujo objeto contém os termos (id, órgão, município, objeto, valor, prazo); vem do PNCP ao vivo, com cache de 30 min |
 | Prospecção · Assistente | `ver_itens(contratacao_id)` | id de uma licitação | itens com descrição, quantidade, valor e categoria provável |
 | Prospecção · Assistente | `analisar_a_fundo(contratacao_id, motivo)` | id e justificativa | baixa edital e anexos, roda o grafo da seção 3 e devolve o resultado por item, prioridade e id da análise; limitado por prospecção |
 | Prospecção | `concluir(ranking, resumo)` | ranking com nota 0–100 e justificativa | só aceita ids que vieram das ferramentas; nota alta sem item compatível/parcial confirmado volta como erro com os fatos |
