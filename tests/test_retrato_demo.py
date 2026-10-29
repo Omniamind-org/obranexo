@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
@@ -22,6 +23,8 @@ from obranexo.config import config
 
 RETRATO = Path(__file__).parent / "dados" / "retrato_demo.json"
 HOJE = datetime(2026, 10, 24, 12, 0)
+# Licitações baixadas pelo Prospector (CNPJ_ANO_SEQ) ficam fora do git (.gitignore) e variam de máquina para máquina
+COLETADO_LOCALMENTE = re.compile(r"^\d+_\d+_\d+$")
 ORDEM = {"COMPATIVEL": 3, "PARCIAL": 2, "INDETERMINADO": 1, "INCOMPATIVEL": 0}
 
 
@@ -41,7 +44,7 @@ def _retrato_atual(monkeypatch) -> dict:
     empresa = carregar_catalogo_json(config.catalogo_demo)
     skus = {p.id: p.sku for p in empresa.produtos}
     retrato = {}
-    for caso in listar_casos():
+    for caso in (c for c in listar_casos() if not COLETADO_LOCALMENTE.match(c.name)):
         a = pipeline.executar_caso(caso, empresa, cfg=cfg, salvar=False)
         melhor: dict[int, str] = {}
         for c in sorted(a.correspondencias, key=lambda c: (ORDEM[c.resultado.value], c.score), reverse=True):
