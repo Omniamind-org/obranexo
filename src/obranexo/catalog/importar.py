@@ -14,15 +14,12 @@ from pydantic import BaseModel, Field
 
 from obranexo.agents.prompts import VERSAO
 from obranexo.catalog.atributos import ATRIBUTOS
+from obranexo.catalog.categorias import CATEGORIAS
 from obranexo.llm.client import LLMClient
 from obranexo.models import Atributo, Produto
 from obranexo.observability.trilha import escopo
 from obranexo.rules.validar import normalizar_valor
 
-CATEGORIAS = (
-    "luminaria_publica_led", "luminaria_interna", "refletor_led", "lampada", "rele_fotoeletrico", "braco_luminaria",
-    "poste", "cabo", "disjuntor", "eletroduto", "quadro", "dispositivos", "transformador", "bateria", "outro",
-)
 MAX_CHARS = 60_000
 
 

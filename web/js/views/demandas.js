@@ -58,6 +58,13 @@ function abaPncp(alvo) {
       <label class="field" style="flex:1;min-width:240px">Palavras no objeto
         <input class="input" name="palavras" value="lumin,led,refletor,ilumina,material elétrico,material eletrico" data-tip="Separe por vírgula"></label>
       <label class="field">Publicadas há<select name="dias"><option value="15">15 dias</option><option value="30" selected>30 dias</option><option value="60">60 dias</option><option value="90">90 dias</option></select></label>
+      <label class="field">Modalidade<select name="modalidades">
+        <option value="6" selected>Pregão eletrônico</option>
+        <option value="6,7">Pregões (eletrônico e presencial)</option>
+        <option value="4,5">Concorrências (obras)</option>
+        <option value="8">Dispensas</option>
+        <option value="6,7,4,5,8">Todas as anteriores</option>
+      </select></label>
       <label class="check"><input type="checkbox" name="abertas" checked> Só com propostas abertas</label>
       <button class="btn btn-primary" type="submit">${icon('search')} Buscar</button>
     </form>
@@ -70,13 +77,13 @@ function abaPncp(alvo) {
     const f = new FormData(form);
     render(res, carregando('Consultando o PNCP…'));
     try {
-      const r = await api.buscarPncp({ uf: f.get('uf').toUpperCase(), palavras: f.get('palavras'), dias: f.get('dias'), abertas: f.get('abertas') === 'on', max_paginas: 6 });
+      const r = await api.buscarPncp({ uf: f.get('uf').toUpperCase(), palavras: f.get('palavras'), dias: f.get('dias'), abertas: f.get('abertas') === 'on', modalidades: f.get('modalidades') });
       if (!r.resultados.length) {
         render(res, vazio('Nada encontrado', 'Tente outras palavras ou um período maior.'));
         return;
       }
       render(res, html`
-        <p class="muted small" style="margin-bottom:10px">${r.resultados.length} licitação(ões) encontrada(s)</p>
+        <p class="muted small" style="margin-bottom:10px">${r.resultados.length} licitação(ões) encontrada(s) em ${r.paginas_consultadas} página(s) do PNCP${r.truncada ? ' · a busca atingiu o limite de páginas: reduza o período ou a modalidade para ver todas' : ''}</p>
         <div class="linhas">${r.resultados.map((c, i) => html`
           <div class="linha" style="grid-template-columns:minmax(0,1fr) 110px 160px 190px">
             <div style="min-width:0">

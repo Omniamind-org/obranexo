@@ -24,7 +24,7 @@ from obranexo.api.jobs import jobs
 from obranexo.catalog.atributos import ATRIBUTOS
 from obranexo.catalog.loader import carregar_catalogo_json, carregar_catalogo_tabela
 from obranexo.config import MODELOS_PADRAO, PROVEDORES, config
-from obranexo.connectors.pncp import PNCPClient, PNCPError, carregar_caso, listar_casos
+from obranexo.connectors.pncp import MODALIDADE_PREGAO_ELETRONICO, MODALIDADES, PNCPClient, PNCPError, carregar_caso, listar_casos
 from obranexo.models import Analise, Contratacao, Empresa, Produto, ResultadoItem, StatusRevisao
 from obranexo.observability import logs
 from obranexo.observability.trilha import agregar, escopo, trilha
@@ -264,14 +264,15 @@ async def enviar_catalogo(arquivo: Annotated[UploadFile, File()]) -> dict[str, A
     config.dir_cache.mkdir(parents=True, exist_ok=True)
     destino = config.dir_cache / f"upload_{datetime.now():%Y%m%d%H%M%S}_{nome}"
     destino.write_bytes(await arquivo.read())
+    avisos: list[str] = []
     try:
-        empresa = carregar_catalogo_json(destino) if sufixo == ".json" else carregar_catalogo_tabela(destino)
+        empresa = carregar_catalogo_json(destino, avisos) if sufixo == ".json" else carregar_catalogo_tabela(destino, avisos=avisos)
     except Exception as exc:
         raise HTTPException(400, f"não foi possível ler o catálogo: {exc}") from exc
     if not empresa.produtos:
         raise HTTPException(400, "o arquivo não contém produtos")
     _definir_empresa(empresa)
-    return {"empresa": empresa.nome, "produtos": len(empresa.produtos)}
+    return {"empresa": empresa.nome, "produtos": len(empresa.produtos), "avisos": avisos}
 
 
 @api.delete("/api/catalogo", tags=["catálogo"])
@@ -405,37 +406,58 @@ def caso(nome: str) -> dict[str, Any]:
     }
 
 
+# Teto por modalidade: o portal devolve 50 por página e GO tem ~9 páginas de pregões abertos
+MAX_PAGINAS_BUSCA = 20
+
+
 @api.get("/api/pncp/buscar", tags=["demandas"])
 def buscar_pncp(
     uf: str = "GO",
     palavras: str = "lumin,led,refletor,ilumina,material elétrico,material eletrico",
     abertas: bool = True,
     dias: int = Query(30, ge=1, le=365),
-    max_paginas: int = Query(5, ge=1, le=20),
+    modalidades: str = Query(str(MODALIDADE_PREGAO_ELETRONICO), description="códigos do PNCP separados por vírgula (6 pregão eletrônico, 7 presencial, 4/5 concorrência, 8 dispensa)"),
+    max_paginas: int | None = Query(None, ge=1, le=MAX_PAGINAS_BUSCA, description="sem valor, lê todas as páginas (até o teto)"),
 ) -> dict[str, Any]:
-    """Busca contratações (pregão eletrônico) no PNCP e filtra pelo objeto."""
+    """Busca contratações das modalidades pedidas no PNCP e filtra pelo objeto."""
     if config.offline:
         raise HTTPException(503, "modo offline ativo (OBRANEXO_OFFLINE=1)")
+    try:
+        codigos = list(dict.fromkeys(int(m) for m in modalidades.split(",") if m.strip()))
+    except ValueError as exc:
+        raise HTTPException(422, "modalidades: use os códigos numéricos do PNCP separados por vírgula") from exc
+    if not codigos or any(m not in MODALIDADES for m in codigos):
+        raise HTTPException(422, f"modalidades válidas: {', '.join(f'{k} ({v})' for k, v in MODALIDADES.items())}")
+    teto = max_paginas or MAX_PAGINAS_BUSCA
     cli = PNCPClient()
     lista_pal = [p.strip() for p in palavras.split(",") if p.strip()]
-    achados: list[Contratacao] = []
-    pagina, total = 1, 1
+    achados: dict[str, Contratacao] = {}
+    consultadas = total_geral = 0
+    truncada = False
     try:
-        while pagina <= total and pagina <= max_paginas:
-            if abertas:
-                lote, total = cli.buscar_propostas_abertas(uf=uf or None, pagina=pagina, horizonte_dias=max(dias, 30))
-            else:
-                fim = datetime.now()
-                lote, total = cli.buscar_publicacoes((fim - timedelta(days=dias)).strftime("%Y%m%d"), fim.strftime("%Y%m%d"), uf=uf or None, pagina=pagina)
-            achados += cli.filtrar_por_palavras(lote, lista_pal) if lista_pal else lote
-            pagina += 1
+        for modalidade in codigos:
+            pagina, total = 1, 1
+            while pagina <= total and pagina <= teto:
+                if abertas:
+                    lote, total = cli.buscar_propostas_abertas(uf=uf or None, modalidade=modalidade, pagina=pagina, horizonte_dias=max(dias, 30))
+                else:
+                    fim = datetime.now()
+                    lote, total = cli.buscar_publicacoes((fim - timedelta(days=dias)).strftime("%Y%m%d"), fim.strftime("%Y%m%d"), uf=uf or None,
+                                                         modalidade=modalidade, pagina=pagina)
+                for c in cli.filtrar_por_palavras(lote, lista_pal) if lista_pal else lote:
+                    achados.setdefault(c.id, c)
+                pagina += 1
+            consultadas += pagina - 1
+            total_geral += total
+            truncada = truncada or total > teto
     except PNCPError as exc:
         raise HTTPException(502, f"PNCP indisponível: {exc}") from exc
     congelados = _casos_por_contratacao()
     return {
-        "paginas_consultadas": pagina - 1,
-        "total_paginas": total,
-        "resultados": [{**_resumo_contratacao(c), "caso": congelados.get(c.id)} for c in achados],
+        "paginas_consultadas": consultadas,
+        "total_paginas": total_geral,
+        "truncada": truncada,
+        "resultados": [{**_resumo_contratacao(c), "caso": congelados.get(c.id)} for c in achados.values()],
     }
 
 
