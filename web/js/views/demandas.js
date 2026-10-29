@@ -1,4 +1,4 @@
-import { api } from '../api.js';
+import { acompanharJob, api } from '../api.js';
 import { prazo } from '../charts.js';
 import { local, moedaCompacta, nomeProprio } from '../format.js';
 import { carregando, erroBox, html, icon, render, toast, vazio } from '../ui.js';
@@ -59,11 +59,11 @@ function abaPncp(alvo) {
         <input class="input" name="palavras" value="lumin,led,refletor,ilumina,material elétrico,material eletrico" data-tip="Separe por vírgula"></label>
       <label class="field">Publicadas há<select name="dias"><option value="15">15 dias</option><option value="30" selected>30 dias</option><option value="60">60 dias</option><option value="90">90 dias</option></select></label>
       <label class="field">Modalidade<select name="modalidades">
-        <option value="6" selected>Pregão eletrônico</option>
+        <option value="6">Pregão eletrônico</option>
         <option value="6,7">Pregões (eletrônico e presencial)</option>
         <option value="4,5">Concorrências (obras)</option>
         <option value="8">Dispensas</option>
-        <option value="6,7,4,5,8">Todas as anteriores</option>
+        <option value="6,7,4,5,8" selected>Todas as anteriores</option>
       </select></label>
       <label class="check"><input type="checkbox" name="abertas" checked> Só com propostas abertas</label>
       <button class="btn btn-primary" type="submit">${icon('search')} Buscar</button>
@@ -72,12 +72,43 @@ function abaPncp(alvo) {
 
   const form = alvo.querySelector('#form-busca');
   const res = alvo.querySelector('#resultados');
+  let parar = null;
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    parar?.();
     const f = new FormData(form);
-    render(res, carregando('Consultando o PNCP…'));
+    const botao = form.querySelector('button[type=submit]');
+    botao.disabled = true;
+    render(res, html`
+      <div class="agora"><span class="spinner"></span><span id="busca-agora">Consultando o PNCP…</span></div>
+      <div class="barra-progresso"><div id="busca-barra"></div></div>`);
     try {
-      const r = await api.buscarPncp({ uf: f.get('uf').toUpperCase(), palavras: f.get('palavras'), dias: f.get('dias'), abertas: f.get('abertas') === 'on', modalidades: f.get('modalidades') });
+      const job = await api.iniciarBuscaPncp({ uf: f.get('uf').toUpperCase(), palavras: f.get('palavras'), dias: Number(f.get('dias')), abertas: f.get('abertas') === 'on', modalidades: f.get('modalidades') });
+      parar = acompanharJob(job.id, {
+        onEvento: (ev) => {
+          const agora = res.querySelector('#busca-agora');
+          if (agora) agora.textContent = ev.mensagem;
+          const d = ev.dados || {};
+          const barra = res.querySelector('#busca-barra');
+          // Cada modalidade é uma fatia igual da barra; dentro dela, a fração de páginas lidas
+          if (barra && d.modalidades) barra.style.width = `${Math.round(100 * ((d.posicao - 1) + d.pagina / d.paginas) / d.modalidades)}%`;
+        },
+        onFim: (fim) => {
+          parar = null;
+          botao.disabled = false;
+          if (fim.status === 'concluida' && fim.dados) mostrar(fim.dados);
+          else render(res, erroBox(fim.erro || 'Falha na busca'));
+        },
+        onErro: (err) => { botao.disabled = false; render(res, erroBox(err.message)); },
+      });
+    } catch (err) {
+      botao.disabled = false;
+      render(res, erroBox(err.message));
+    }
+  });
+
+  function mostrar(r) {
+    try {
       if (!r.resultados.length) {
         render(res, vazio('Nada encontrado', 'Tente outras palavras ou um período maior.'));
         return;
@@ -116,7 +147,7 @@ function abaPncp(alvo) {
     } catch (err) {
       render(res, erroBox(err.message));
     }
-  });
+  }
 }
 
 export { render_ as render };

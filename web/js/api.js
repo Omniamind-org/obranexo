@@ -58,6 +58,7 @@ export const api = {
   casos: () => req('GET', '/api/casos'),
   caso: (nome) => req('GET', `/api/casos/${encodeURIComponent(nome)}`),
   buscarPncp: (params) => req('GET', `/api/pncp/buscar?${q(params)}`),
+  iniciarBuscaPncp: (pedido) => req('POST', '/api/pncp/buscas', pedido),
   coletarPncp: (pedido) => req('POST', '/api/pncp/coletar', pedido),
 
   iniciarAnalise: (caso) => req('POST', '/api/analises', { caso }),
