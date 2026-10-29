@@ -696,3 +696,19 @@ body.chat-aberto .toasts { right: 464px; }
 .tema-btn:hover { color: var(--ink); border-color: var(--line-strong); }
 .tema-btn svg.i { width: 18px; height: 18px; }
 .topo-dir { display: flex; align-items: center; gap: 10px; flex: none; }
+
+/* Conta no topo e tela de entrada (sessao.js) */
+.conta { display: flex; align-items: center; gap: 4px; flex: none; font-size: 13px; }
+.conta-nome { color: var(--ink-2); font-weight: 600; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sem-sessao .nav, .sem-sessao #status-sistema, .sem-sessao #conta, .sem-sessao #chat-abrir { display: none; }
+.entrada { display: grid; place-items: center; min-height: calc(100vh - 160px); padding: 24px 0; }
+.entrada-cartao { width: 100%; max-width: 400px; padding: 32px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow); }
+.entrada-cartao h1 { font-size: 22px; margin-top: 12px; }
+.entrada-cartao .sub { color: var(--ink-2); margin: 6px 0 20px; font-size: 14px; }
+.entrada-cartao .aviso { margin-bottom: 14px; }
+.entrada-emblema { width: 40px; height: 40px; object-fit: contain; }
+.entrada-troca { margin-top: 16px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+@media (max-width: 760px) {
+  .entrada-cartao { padding: 24px 16px; }
+  .conta-nome { display: none; }
+}

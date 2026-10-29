@@ -12,13 +12,14 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, PlainTextResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from obranexo import __version__
+from obranexo import __version__, contas
 from obranexo.agents.prompts import VERSAO as VERSAO_PROMPTS
+from obranexo.api import auth
 from obranexo.api.jobs import jobs
 from obranexo.catalog.atributos import ATRIBUTOS
 from obranexo.catalog.loader import carregar_catalogo_json, carregar_catalogo_tabela
@@ -40,19 +41,26 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
-_estado: dict[str, Any] = {"empresa": None}
+# Tudo em /api exige login, menos o que está em `app` diretamente (status, conteúdo da página "Como funciona")
+# e as rotas de auth.py. O que muda a plataforma inteira (provedor de IA, custos) exige administrador.
+api = APIRouter(dependencies=[Depends(auth.exige_login)])
+admin = [Depends(auth.exige_admin)]
+
+# Catálogo ativo de cada empresa (chave: contas.empresa_ativa), em memória para não reler o disco a cada requisição
+_estado: dict[str | None, Empresa] = {}
 
 
 def empresa_atual() -> Empresa:
-    """Catálogo ativo: o último salvo pelo usuário (sobrevive a reinícios) ou o demonstrativo."""
-    if _estado["empresa"] is None:
+    """Catálogo ativo da empresa logada: o último salvo por ela (sobrevive a reinícios) ou o demonstrativo."""
+    chave = contas.empresa_ativa()
+    if chave not in _estado:
         ativo = store.caminho_catalogo_ativo()
-        _estado["empresa"] = carregar_catalogo_json(ativo if ativo.exists() else config.catalogo_demo)
-    return _estado["empresa"]
+        _estado[chave] = carregar_catalogo_json(ativo if ativo.exists() else config.catalogo_demo)
+    return _estado[chave]
 
 
 def _definir_empresa(empresa: Empresa) -> None:
-    _estado["empresa"] = empresa
+    _estado[contas.empresa_ativa()] = empresa
     store.salvar_catalogo(empresa)
 
 
@@ -169,7 +177,7 @@ def _caso_dir(nome: str) -> Path:
 
 @app.get("/api/status", tags=["sistema"])
 def status() -> dict[str, Any]:
-    """Versão, provedor de LLM, modelos e contadores — usado no rodapé da interface."""
+    """Versão, provedor de LLM e modelos — usado no topo da interface. Público: não diz nada de nenhuma empresa."""
     return {
         "versao": __version__,
         "llm": {
@@ -184,8 +192,7 @@ def status() -> dict[str, Any]:
         "llm_cache": config.llm_cache,
         "versao_prompt": VERSAO_PROMPTS,
         "casos": len(listar_casos()),
-        "analises": len(list(config.dir_analises.glob("*.json"))) if config.dir_analises.exists() else 0,
-        "empresa": empresa_atual().nome,
+        "cadastro_aberto": config.cadastro_aberto,
     }
 
 
@@ -202,7 +209,7 @@ class TrocaProvedor(BaseModel):
     provedor: str | None = Field(description="gemini, groq, anthropic ou null (modo determinístico)")
 
 
-@app.post("/api/config/llm", tags=["sistema"])
+@api.post("/api/config/llm", tags=["sistema"], dependencies=admin)
 def trocar_provedor(corpo: TrocaProvedor) -> dict[str, Any]:
     """Escolhe o provedor de LLM usado pelas próximas análises e prospecções (a chave precisa estar no .env)."""
     try:
@@ -212,7 +219,7 @@ def trocar_provedor(corpo: TrocaProvedor) -> dict[str, Any]:
     return status()["llm"]
 
 
-@app.post("/api/config/llm/testar", tags=["sistema"])
+@api.post("/api/config/llm/testar", tags=["sistema"], dependencies=admin)
 def testar_provedor() -> dict[str, Any]:
     """Faz uma chamada mínima ao provedor ativo (sem cache) para conferir chave, rede e modelo."""
     _exige_llm("O teste do provedor")
@@ -236,7 +243,7 @@ def testar_provedor() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-@app.get("/api/catalogo", tags=["catálogo"])
+@api.get("/api/catalogo", tags=["catálogo"])
 def catalogo() -> dict[str, Any]:
     """Empresa ativa e seus produtos (catálogo demonstrativo ou o último enviado)."""
     e = empresa_atual()
@@ -247,7 +254,7 @@ def catalogo() -> dict[str, Any]:
     }
 
 
-@app.post("/api/catalogo", tags=["catálogo"])
+@api.post("/api/catalogo", tags=["catálogo"])
 async def enviar_catalogo(arquivo: Annotated[UploadFile, File()]) -> dict[str, Any]:
     """Substitui o catálogo ativo por um JSON (formato do demo), CSV ou XLSX."""
     nome = Path(arquivo.filename or "catalogo").name
@@ -267,15 +274,16 @@ async def enviar_catalogo(arquivo: Annotated[UploadFile, File()]) -> dict[str, A
     return {"empresa": empresa.nome, "produtos": len(empresa.produtos)}
 
 
-@app.delete("/api/catalogo", tags=["catálogo"])
+@api.delete("/api/catalogo", tags=["catálogo"])
 def restaurar_catalogo() -> dict[str, Any]:
     """Volta para o catálogo demonstrativo (descarta o catálogo salvo)."""
     store.remover_catalogo_ativo()
-    _estado["empresa"] = carregar_catalogo_json(config.catalogo_demo)
-    return {"empresa": _estado["empresa"].nome, "produtos": len(_estado["empresa"].produtos)}
+    _estado.pop(contas.empresa_ativa(), None)
+    e = empresa_atual()
+    return {"empresa": e.nome, "produtos": len(e.produtos)}
 
 
-@app.post("/api/catalogo/importar", tags=["catálogo"])
+@api.post("/api/catalogo/importar", tags=["catálogo"])
 async def importar_ficha_tecnica(
     arquivo: Annotated[UploadFile | None, File()] = None,
     texto: Annotated[str | None, Form()] = None,
@@ -328,7 +336,7 @@ class PedidoProdutos(BaseModel):
     produtos: list[Produto]
 
 
-@app.post("/api/catalogo/produtos", tags=["catálogo"])
+@api.post("/api/catalogo/produtos", tags=["catálogo"])
 def adicionar_produtos(pedido: PedidoProdutos) -> dict[str, Any]:
     """Adiciona produtos ao catálogo ativo (o mesmo SKU é substituído). O catálogo fica salvo em disco."""
     e = empresa_atual()
@@ -338,7 +346,7 @@ def adicionar_produtos(pedido: PedidoProdutos) -> dict[str, Any]:
     return {"adicionados": len(novos), "produtos": len(empresa_atual().produtos)}
 
 
-@app.delete("/api/catalogo/produtos/{sku}", tags=["catálogo"])
+@api.delete("/api/catalogo/produtos/{sku}", tags=["catálogo"])
 def remover_produto(sku: str) -> dict[str, Any]:
     e = empresa_atual()
     restantes = [p for p in e.produtos if p.sku != sku]
@@ -363,7 +371,7 @@ def _analises_por_caso() -> dict[str, list[dict[str, Any]]]:
     return por_caso
 
 
-@app.get("/api/casos", tags=["demandas"])
+@api.get("/api/casos", tags=["demandas"])
 def casos() -> list[dict[str, Any]]:
     """Pacotes de contratações congelados em data/casos (demo reproduzível)."""
     analises = _analises_por_caso()
@@ -384,7 +392,7 @@ def casos() -> list[dict[str, Any]]:
     return saida
 
 
-@app.get("/api/casos/{nome}", tags=["demandas"])
+@api.get("/api/casos/{nome}", tags=["demandas"])
 def caso(nome: str) -> dict[str, Any]:
     d = _caso_dir(nome)
     c, itens, docs = carregar_caso(d)
@@ -397,7 +405,7 @@ def caso(nome: str) -> dict[str, Any]:
     }
 
 
-@app.get("/api/pncp/buscar", tags=["demandas"])
+@api.get("/api/pncp/buscar", tags=["demandas"])
 def buscar_pncp(
     uf: str = "GO",
     palavras: str = "lumin,led,refletor,ilumina,material elétrico,material eletrico",
@@ -438,7 +446,7 @@ class PedidoColeta(BaseModel):
     max_mb: float | None = Field(15, description="anexos maiores ficam listados sem download")
 
 
-@app.post("/api/pncp/coletar", tags=["demandas"])
+@api.post("/api/pncp/coletar", tags=["demandas"])
 def coletar_pncp(pedido: PedidoColeta) -> dict[str, Any]:
     """Baixa itens e anexos de uma contratação e congela em data/casos/<cnpj>_<ano>_<seq>."""
     if config.offline:
@@ -460,7 +468,7 @@ class PedidoAnalise(BaseModel):
     caso: str
 
 
-@app.post("/api/analises", status_code=202, tags=["análises"])
+@api.post("/api/analises", status_code=202, tags=["análises"])
 def iniciar_analise(pedido: PedidoAnalise) -> dict[str, Any]:
     """Dispara o fluxo agêntico em segundo plano. Acompanhe em /api/jobs/{id}/eventos (SSE)."""
     job = jobs.iniciar(pedido.caso, _caso_dir(pedido.caso), empresa_atual())
@@ -473,7 +481,7 @@ class PedidoProspeccao(BaseModel):
     max_analises: int = Field(2, ge=0, le=5, description="quantas licitações o agente pode analisar a fundo")
 
 
-@app.post("/api/prospeccoes", status_code=202, tags=["prospecção"])
+@api.post("/api/prospeccoes", status_code=202, tags=["prospecção"])
 def iniciar_prospeccao(pedido: PedidoProspeccao) -> dict[str, Any]:
     """Dispara o Agente de Prospecção: ele busca licitações abertas no PNCP, examina itens, escolhe o que
     analisar a fundo e devolve um ranking justificado. Acompanhe em /api/jobs/{id}/eventos."""
@@ -502,12 +510,12 @@ def _resumo_prospeccao(p) -> dict[str, Any]:
     }
 
 
-@app.get("/api/prospeccoes", tags=["prospecção"])
+@api.get("/api/prospeccoes", tags=["prospecção"])
 def prospeccoes() -> list[dict[str, Any]]:
     return [_resumo_prospeccao(p) for p in store.listar_prospeccoes()]
 
 
-@app.get("/api/prospeccoes/{prospeccao_id}", tags=["prospecção"])
+@api.get("/api/prospeccoes/{prospeccao_id}", tags=["prospecção"])
 def prospeccao(prospeccao_id: str) -> dict[str, Any]:
     p = store.carregar_prospeccao(prospeccao_id)
     if p is None:
@@ -529,7 +537,7 @@ def _sessao_ou_404(sessao_id: str):
     return s
 
 
-@app.post("/api/chat", status_code=201, tags=["assistente"])
+@api.post("/api/chat", status_code=201, tags=["assistente"])
 def criar_conversa() -> dict[str, Any]:
     """Abre uma conversa com o assistente (usa o provedor de IA e o catálogo ativos)."""
     _exige_llm("O assistente")
@@ -539,7 +547,7 @@ def criar_conversa() -> dict[str, Any]:
     return {"sessao_id": s.id, "mensagens": s.mensagens}
 
 
-@app.get("/api/chat/{sessao_id}", tags=["assistente"])
+@api.get("/api/chat/{sessao_id}", tags=["assistente"])
 def conversa(sessao_id: str) -> dict[str, Any]:
     s = _sessao_ou_404(sessao_id)
     return {"sessao_id": s.id, "mensagens": s.mensagens}
@@ -549,7 +557,7 @@ class MensagemChat(BaseModel):
     texto: str = Field(min_length=1, max_length=4000)
 
 
-@app.post("/api/chat/{sessao_id}/mensagens", status_code=202, tags=["assistente"])
+@api.post("/api/chat/{sessao_id}/mensagens", status_code=202, tags=["assistente"])
 def enviar_mensagem(sessao_id: str, corpo: MensagemChat) -> dict[str, Any]:
     """Envia uma pergunta. A resposta chega no evento `fim` de /api/jobs/{id}/eventos (campo `dados.mensagem`);
     os eventos `log` mostram o que o assistente está consultando."""
@@ -562,7 +570,7 @@ def enviar_mensagem(sessao_id: str, corpo: MensagemChat) -> dict[str, Any]:
     return jobs.iniciar_tarefa("chat", s.id, tarefa).resumo()
 
 
-@app.get("/api/jobs/{job_id}", tags=["análises"])
+@api.get("/api/jobs/{job_id}", tags=["análises"])
 def job(job_id: str) -> dict[str, Any]:
     j = jobs.obter(job_id)
     if j is None:
@@ -570,7 +578,7 @@ def job(job_id: str) -> dict[str, Any]:
     return {**j.resumo(), "log": j.eventos}
 
 
-@app.get("/api/jobs/{job_id}/eventos", tags=["análises"])
+@api.get("/api/jobs/{job_id}/eventos", tags=["análises"])
 async def eventos_job(job_id: str) -> StreamingResponse:
     """Server-Sent Events: `log` para cada passo do fluxo e `fim` com o id da análise."""
     j = jobs.obter(job_id)
@@ -591,13 +599,13 @@ async def eventos_job(job_id: str) -> StreamingResponse:
     return StreamingResponse(gerar(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
-@app.get("/api/analises", tags=["análises"])
+@api.get("/api/analises", tags=["análises"])
 def analises() -> list[dict[str, Any]]:
     mapa = _casos_por_contratacao()
     return [_resumo_analise(a, mapa.get(a.contratacao.id)) for a in store.listar()]
 
 
-@app.get("/api/analises/{analise_id}", tags=["análises"])
+@api.get("/api/analises/{analise_id}", tags=["análises"])
 def analise(analise_id: str) -> dict[str, Any]:
     """Análise completa (itens, requisitos, correspondências, evidências, qualificação, dossiê)."""
     a = _analise_ou_404(analise_id)
@@ -612,7 +620,7 @@ def analise(analise_id: str) -> dict[str, Any]:
     return {"resumo": _resumo_analise(a, caso_nome), "analise": a.model_dump(mode="json"), "produtos": produtos, "atributos": rotulos}
 
 
-@app.get("/api/analises/{analise_id}/dossie.md", tags=["análises"], response_class=PlainTextResponse)
+@api.get("/api/analises/{analise_id}/dossie.md", tags=["análises"], response_class=PlainTextResponse)
 def dossie_md(analise_id: str, download: bool = False) -> PlainTextResponse:
     a = _analise_ou_404(analise_id)
     if not a.dossie:
@@ -635,7 +643,7 @@ def _kit(analise_id: str):
     return a, montar_kit(a, empresa_atual())
 
 
-@app.get("/api/analises/{analise_id}/proposta", tags=["proposta"])
+@api.get("/api/analises/{analise_id}/proposta", tags=["proposta"])
 def proposta(analise_id: str) -> dict[str, Any]:
     """Kit da proposta montado a partir da análise e do catálogo do fornecedor ativo: situação de cada item
     (ofertar, ofertar com ressalva, resolver antes, não ofertar), produto com fabricante, marca e modelo, descrição
@@ -644,7 +652,7 @@ def proposta(analise_id: str) -> dict[str, Any]:
     return kit.model_dump(mode="json")
 
 
-@app.get("/api/analises/{analise_id}/proposta.md", tags=["proposta"], response_class=PlainTextResponse)
+@api.get("/api/analises/{analise_id}/proposta.md", tags=["proposta"], response_class=PlainTextResponse)
 def proposta_md(analise_id: str, download: bool = False) -> PlainTextResponse:
     from obranexo.proposta import kit_markdown
 
@@ -653,7 +661,7 @@ def proposta_md(analise_id: str, download: bool = False) -> PlainTextResponse:
     return PlainTextResponse(kit_markdown(kit, a), media_type="text/markdown; charset=utf-8", headers=headers)
 
 
-@app.get("/api/analises/{analise_id}/proposta.docx", tags=["proposta"])
+@api.get("/api/analises/{analise_id}/proposta.docx", tags=["proposta"])
 def proposta_docx(analise_id: str) -> Response:
     """Proposta de preços em Word para revisar, precificar e assinar: itens ofertáveis com especificação, marca, modelo e
     fabricante, condições do edital, declarações e assinatura. Preços e campos desconhecidos saem como "[preencher]"."""
@@ -664,7 +672,7 @@ def proposta_docx(analise_id: str) -> Response:
                     headers={"Content-Disposition": f'attachment; filename="proposta_de_precos_{a.id}.docx"'})
 
 
-@app.get("/api/analises/{analise_id}/proposta.xlsx", tags=["proposta"])
+@api.get("/api/analises/{analise_id}/proposta.xlsx", tags=["proposta"])
 def proposta_xlsx(analise_id: str) -> Response:
     """Planilha para preencher a proposta no portal de compras (uma linha por item; prazos em outra aba)."""
     from obranexo.proposta import kit_planilha
@@ -679,7 +687,7 @@ class PedidoRevisao(BaseModel):
     comentario: str = ""
 
 
-@app.patch("/api/analises/{analise_id}/revisao", tags=["análises"])
+@api.patch("/api/analises/{analise_id}/revisao", tags=["análises"])
 def revisar(analise_id: str, pedido: PedidoRevisao) -> dict[str, Any]:
     """Registra a decisão humana sobre o dossiê (feedback para o benchmark)."""
     a = _analise_ou_404(analise_id)
@@ -703,7 +711,7 @@ def _documento_local(a: Analise, documento_id: str) -> tuple[Any, Path | None]:
     return doc, caminho
 
 
-@app.get("/api/analises/{analise_id}/evidencias/{evidencia_id}", tags=["análises"])
+@api.get("/api/analises/{analise_id}/evidencias/{evidencia_id}", tags=["análises"])
 def evidencia(analise_id: str, evidencia_id: str) -> dict[str, Any]:
     """Trecho citado + texto da página de origem, para conferência humana."""
     a = _analise_ou_404(analise_id)
@@ -730,7 +738,7 @@ def evidencia(analise_id: str, evidencia_id: str) -> dict[str, Any]:
     }
 
 
-@app.get("/api/analises/{analise_id}/documentos/{documento_id}/arquivo", tags=["análises"])
+@api.get("/api/analises/{analise_id}/documentos/{documento_id}/arquivo", tags=["análises"])
 def arquivo_documento(analise_id: str, documento_id: str) -> FileResponse:
     """Arquivo original do anexo (PDF), servido a partir do pacote congelado."""
     a = _analise_ou_404(analise_id)
@@ -741,7 +749,7 @@ def arquivo_documento(analise_id: str, documento_id: str) -> FileResponse:
     return FileResponse(caminho, media_type=media, filename=caminho.name, content_disposition_type="inline")
 
 
-@app.get("/api/metricas", tags=["análises"])
+@api.get("/api/metricas", tags=["análises"])
 def metricas() -> dict[str, Any]:
     """Agregados de todas as análises registradas."""
     lista = analises()
@@ -763,7 +771,7 @@ def metricas() -> dict[str, Any]:
     }
 
 
-@app.get("/api/metricas/llm", tags=["análises"])
+@api.get("/api/metricas/llm", tags=["análises"], dependencies=admin)
 def metricas_llm() -> dict[str, Any]:
     """Agregados de todas as chamadas de modelo (análises, prospecções, chat): custo, latência, cache, reserva e erro,
     por agente e por modelo — a trilha de observability/trilha.py vista de cima."""
@@ -776,13 +784,13 @@ def metricas_llm() -> dict[str, Any]:
     return resumo
 
 
-@app.get("/api/custos", tags=["interno"])
+@api.get("/api/custos", tags=["interno"], dependencies=admin)
 def custos(
     desde: Annotated[date | None, Query(description="primeiro dia (AAAA-MM-DD), pela data de início da análise")] = None,
     ate: Annotated[date | None, Query(description="último dia (AAAA-MM-DD), inclusive")] = None,
     limite: Annotated[int, Query(ge=0, le=500, description="quantas análises recentes listar")] = 50,
 ) -> dict[str, Any]:
-    """Custo de IA por análise e por prospecção, em US$ e R$, contra a meta do BMC (R$ 1 por análise).
+    """Custo de IA por análise e por prospecção, em US$ e R$, contra a meta do BMC (R$ 1 por análise), somando todas as empresas.
 
     Métrica INTERNA de margem e de cotas: estimativa pelos tokens × preço de tabela, não a fatura do provedor.
     Não deve ser exibida ao cliente final, que vê cota de análises."""
@@ -790,10 +798,15 @@ def custos(
 
     if desde and ate and desde > ate:
         raise HTTPException(400, "'desde' é posterior a 'ate'")
-    return resumo_custos(store.listar(), store.listar_prospeccoes(), config, desde=desde, ate=ate, limite=limite)
+    todas, prospeccoes = [], []
+    for empresa_id in [None, *(e["id"] for e in contas.listar_empresas())]:  # None: dados gravados sem login (linha de comando)
+        with contas.na_empresa(empresa_id):
+            todas += store.listar()
+            prospeccoes += store.listar_prospeccoes()
+    return resumo_custos(todas, prospeccoes, config, desde=desde, ate=ate, limite=limite)
 
 
-@app.get("/api/analises/{analise_id}/chamadas", tags=["análises"])
+@api.get("/api/analises/{analise_id}/chamadas", tags=["análises"])
 def chamadas_llm(analise_id: str) -> dict[str, Any]:
     """Trilha de chamadas de modelo da análise: quem chamou, que modelo respondeu, tokens, custo, latência, cache e erro."""
     _analise_ou_404(analise_id)
@@ -815,6 +828,9 @@ def conteudo_fluxo() -> PlainTextResponse:
     """Documentação do fluxo dos agentes (Markdown), exibida na página 'Como funciona'."""
     return PlainTextResponse((config.raiz / "docs" / "fluxo_agentes.md").read_text(encoding="utf-8"), media_type="text/markdown; charset=utf-8")
 
+
+app.include_router(auth.rotas)
+app.include_router(api)
 
 # ---------------------------------------------------------------------------
 # Frontend estático (montado por último para não sombrear /api)

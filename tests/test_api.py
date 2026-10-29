@@ -14,16 +14,17 @@ pytestmark = pytest.mark.skipif(not (config.dir_casos / CASO / "contratacao.json
 
 
 @pytest.fixture()
-def client(tmp_path, monkeypatch):
+def client(tmp_path, monkeypatch, entrar):
     monkeypatch.setattr(config, "dir_analises", tmp_path / "analises")
     monkeypatch.setattr(config, "dir_dados", tmp_path)  # catálogo ativo e prospecções num diretório temporário
     monkeypatch.setattr(config, "llm_provider", None)  # rápido e sem cota
     from obranexo.api import main
 
-    main._estado["empresa"] = None
+    main._estado.clear()
     with TestClient(main.app) as c:
+        c.usuario = entrar(c)
         yield c
-    main._estado["empresa"] = None
+    main._estado.clear()
 
 
 def _executar(client: TestClient, caso: str = CASO) -> str:
@@ -86,14 +87,15 @@ def test_catalogo_editavel_e_persistido(client, tmp_path):
                "atributos": {"potencia_w": {"valor": 120, "unidade": "W", "tipo": "numero"}}}
     r = client.post("/api/catalogo/produtos", json={"produtos": [produto]})
     assert r.status_code == 200 and r.json()["adicionados"] == 1
-    assert (tmp_path / "catalogo_ativo.json").exists()
-    main._estado["empresa"] = None  # simula reinício do servidor: recarrega do disco
+    salvo = tmp_path / "empresas" / client.usuario.empresa_id / "catalogo_ativo.json"
+    assert salvo.exists()
+    main._estado.clear()  # simula reinício do servidor: recarrega do disco
     skus = [p["sku"] for p in client.get("/api/catalogo").json()["produtos"]]
     assert "NOVO-1" in skus
     assert client.delete("/api/catalogo/produtos/NOVO-1").status_code == 200
     assert client.delete("/api/catalogo/produtos/NOVO-1").status_code == 404
     client.delete("/api/catalogo")
-    assert not (tmp_path / "catalogo_ativo.json").exists()
+    assert not salvo.exists()
 
 
 def test_funcoes_de_ia_exigem_llm(client):

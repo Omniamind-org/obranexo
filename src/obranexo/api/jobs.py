@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextvars
 import threading
 import uuid
 from collections.abc import Callable
@@ -11,6 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from obranexo import contas
 from obranexo.models import Empresa, EventoLog
 
 _EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="tarefa")
@@ -30,6 +32,7 @@ class Job:
     iniciado_em: datetime = field(default_factory=datetime.now)
     finalizado_em: datetime | None = None
     dados: dict[str, Any] | None = None  # resultado inline (ex.: a resposta do assistente)
+    empresa_id: str | None = field(default_factory=contas.empresa_ativa)  # dona do job: só ela o acompanha
 
     def registrar(self, ev: EventoLog) -> None:
         self.eventos.append(ev.model_dump(mode="json"))
@@ -61,13 +64,17 @@ class GerenciadorJobs:
         self._lock = threading.Lock()
 
     def obter(self, job_id: str) -> Job | None:
-        return self._jobs.get(job_id)
+        """O job, se for da empresa ativa."""
+        job = self._jobs.get(job_id)
+        return job if job is not None and job.empresa_id == contas.empresa_ativa() else None
 
     def iniciar_tarefa(self, tipo: str, alvo: str, tarefa: Tarefa) -> Job:
         job = Job(id=uuid.uuid4().hex[:12], tipo=tipo, alvo=alvo)
         with self._lock:
             self._jobs[job.id] = job
-        (_EXECUTOR_CHAT if tipo == "chat" else _EXECUTOR).submit(self._executar, job, tarefa)
+        # A thread herda o contexto da requisição: a empresa ativa (onde a análise é gravada) e o escopo da trilha
+        contexto = contextvars.copy_context()
+        (_EXECUTOR_CHAT if tipo == "chat" else _EXECUTOR).submit(contexto.run, self._executar, job, tarefa)
         return job
 
     def iniciar(self, caso: str, diretorio: Path, empresa: Empresa) -> Job:

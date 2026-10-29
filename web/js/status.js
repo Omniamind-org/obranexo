@@ -1,6 +1,8 @@
-// Provedor de IA no topo: indicador + seletor entre os provedores com chave no .env.
+// Provedor de IA no topo: indicador para todos; seletor entre os provedores com chave no .env só para administradores
+// (a troca vale para a plataforma inteira).
 
 import { api } from './api.js';
+import { usuario } from './sessao.js';
 import { html, render, toast } from './ui.js';
 
 export const NOMES_IA = { gemini: 'Gemini', groq: 'Groq', anthropic: 'Claude' };
@@ -13,6 +15,9 @@ function seletorLlm(s) {
     ? `Agentes: ${s.llm.modelo_agente} · extração: ${s.llm.modelo_extracao}`
     : 'Contingência: veredito só pelas regras, sem leitura dos anexos pela IA';
   if (!configurados.length) return html`<span class="dot"></span><span data-tip="${dica}">Só regras (contingência)</span>`;
+  if (!usuario()?.admin) {
+    return html`<span class="dot ${atual ? 'on' : ''}"></span><span data-tip="${dica}">${atual ? `IA: ${NOMES_IA[atual] || atual}` : 'Só regras (contingência)'}</span>`;
+  }
   return html`
     <span class="dot ${atual ? 'on' : ''}"></span>
     <select id="seletor-llm" aria-label="Provedor de IA" data-tip="${dica}">

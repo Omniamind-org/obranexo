@@ -62,13 +62,14 @@ def test_nomes_repetidos_sao_recusados():
 
 
 @pytest.fixture
-def client(tmp_path, monkeypatch):
+def client(tmp_path, monkeypatch, entrar):
     monkeypatch.setattr(config, "dir_analises", tmp_path / "analises")
     monkeypatch.setattr(config, "dir_dados", tmp_path)  # a trilha (obranexo.db) também vai para o diretório temporário
     monkeypatch.setattr(config, "llm_provider", None)
     from obranexo.api.main import app
 
     with TestClient(app) as c:
+        c.usuario = entrar(c, admin=True)  # /api/metricas/llm é só para administradores
         yield c
 
 
@@ -79,10 +80,12 @@ def test_api_expoe_grafo_trilha_e_metricas_de_llm(client):
     assert client.get("/api/status").json()["versao_prompt"]
     assert client.get("/api/analises/nao-existe/chamadas").status_code == 404
 
+    from obranexo import contas
     from obranexo.agents.pipeline import executar_caso
     from obranexo.catalog.loader import carregar_catalogo_json
 
-    analise = executar_caso(config.dir_casos / "goianira_pe038_2026", carregar_catalogo_json(config.catalogo_demo))
+    with contas.na_empresa(client.usuario.empresa_id):  # gravada na empresa logada, como faria a API
+        analise = executar_caso(config.dir_casos / "goianira_pe038_2026", carregar_catalogo_json(config.catalogo_demo))
     assert analise.status == "concluida" and analise.versao_prompts
     pulados = [ev.mensagem for ev in analise.log if ev.mensagem.startswith("Etapa não se aplica")]
     assert pulados, "sem LLM o Especificador não roda e isso fica na trilha"

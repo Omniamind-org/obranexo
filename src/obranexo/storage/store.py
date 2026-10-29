@@ -1,17 +1,28 @@
-"""Persistência simples em JSON (v0.1): análises, prospecções e catálogo ativo. Na v0.2 migra para PostgreSQL."""
+"""Persistência simples em JSON (v0.1): análises, prospecções e catálogo ativo. Na v0.2 migra para PostgreSQL.
+
+Com uma empresa ativa (contas.empresa_ativa, definida pelo login na API), tudo fica em data/empresas/<id>/ e uma
+empresa não enxerga os arquivos da outra; sem empresa ativa (linha de comando, testes), nos diretórios de sempre.
+"""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
+from obranexo import contas
 from obranexo.config import config
 from obranexo.models import Analise, Empresa, Prospeccao
 
 
+def _base() -> Path:
+    empresa_id = contas.empresa_ativa()
+    return contas.dir_empresa(empresa_id) if empresa_id else config.dir_dados
+
+
 def _dir() -> Path:
-    config.dir_analises.mkdir(parents=True, exist_ok=True)
-    return config.dir_analises
+    d = _base() / "analises" if contas.empresa_ativa() else config.dir_analises
+    d.mkdir(parents=True, exist_ok=True)
+    return d
 
 
 def salvar(analise: Analise) -> Path:
@@ -41,7 +52,7 @@ def listar() -> list[Analise]:
 
 
 def _dir_prospeccoes() -> Path:
-    d = config.dir_dados / "prospeccoes"
+    d = _base() / "prospeccoes"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -73,12 +84,13 @@ def listar_prospeccoes() -> list[Prospeccao]:
 
 
 def caminho_catalogo_ativo() -> Path:
-    return config.dir_dados / "catalogo_ativo.json"
+    return _base() / "catalogo_ativo.json"
 
 
 def salvar_catalogo(empresa: Empresa) -> Path:
     """Grava no mesmo formato do catálogo demonstrativo (relido por carregar_catalogo_json)."""
     caminho = caminho_catalogo_ativo()
+    caminho.parent.mkdir(parents=True, exist_ok=True)
     dados = {
         "empresa": empresa.model_dump(mode="json", exclude={"produtos"}),
         "produtos": [p.model_dump(mode="json") for p in empresa.produtos],

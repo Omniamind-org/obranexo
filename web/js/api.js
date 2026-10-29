@@ -8,6 +8,8 @@ async function req(method, url, body) {
     init.body = JSON.stringify(body);
   }
   const r = await fetch(url, init);
+  // Sessão expirada ou encerrada no meio do uso: a casca volta para a tela de entrada (sessao.js)
+  if (r.status === 401 && !url.startsWith('/api/auth/')) window.dispatchEvent(new CustomEvent('sessao-encerrada'));
   if (!r.ok) {
     let msg = `${r.status} ${r.statusText}`;
     try {
@@ -23,6 +25,11 @@ async function req(method, url, body) {
 const q = (params) => new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== null)).toString();
 
 export const api = {
+  eu: () => req('GET', '/api/auth/eu'),
+  login: (email, senha) => req('POST', '/api/auth/login', { email, senha }),
+  cadastro: (dados) => req('POST', '/api/auth/cadastro', dados),
+  logout: () => req('POST', '/api/auth/logout'),
+
   status: () => req('GET', '/api/status'),
   trocarProvedor: (provedor) => req('POST', '/api/config/llm', { provedor }),
   testarProvedor: () => req('POST', '/api/config/llm/testar'),

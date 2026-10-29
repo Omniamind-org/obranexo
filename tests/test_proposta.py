@@ -181,22 +181,26 @@ def test_importacao_de_ficha_traz_marca_e_modelo():
 
 
 @pytest.fixture()
-def client(tmp_path, monkeypatch):
+def client(tmp_path, monkeypatch, entrar):
     monkeypatch.setattr(config, "dir_analises", tmp_path / "analises")
     monkeypatch.setattr(config, "dir_dados", tmp_path)
     monkeypatch.setattr(config, "llm_provider", None)
     from obranexo.api import main
 
-    main._estado["empresa"] = None
+    main._estado.clear()
     with TestClient(main.app) as c:
+        c.usuario = entrar(c)
         yield c
-    main._estado["empresa"] = None
+    main._estado.clear()
 
 
 def test_endpoints_do_kit(client, goianira):
+    from obranexo import contas
     from obranexo.storage import store
 
-    store.salvar(goianira)
+    with contas.na_empresa(client.usuario.empresa_id):
+        store.salvar(goianira)
+        store.salvar(goianira.model_copy(update={"id": "com-erro", "status": "erro"}))
     base = f"/api/analises/{goianira.id}/proposta"
     r = client.get(base)
     assert r.status_code == 200 and r.json()["resumo"]["ofertaveis"] == 6
@@ -206,5 +210,4 @@ def test_endpoints_do_kit(client, goianira):
     w = client.get(base + ".docx")
     assert w.status_code == 200 and "wordprocessingml" in w.headers["content-type"] and "proposta_de_precos" in w.headers["content-disposition"]
     assert client.get("/api/analises/nao-existe/proposta").status_code == 404
-    store.salvar(goianira.model_copy(update={"id": "com-erro", "status": "erro"}))
     assert client.get("/api/analises/com-erro/proposta").status_code == 409

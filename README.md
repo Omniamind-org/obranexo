@@ -20,7 +20,7 @@
 <p align="center">
   <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-0b2a3c?style=flat-square&logo=python&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-API%20%2B%20SSE-00ab9f?style=flat-square">
-  <img alt="Testes" src="https://img.shields.io/badge/testes-157%20passando-0ca30c?style=flat-square">
+  <img alt="Testes" src="https://img.shields.io/badge/testes-166%20passando-0ca30c?style=flat-square">
   <a href="https://github.com/kauandivino/obranexo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/kauandivino/obranexo/ci.yml?branch=main&style=flat-square&label=CI"></a>
   <img alt="Rastreabilidade" src="https://img.shields.io/badge/cita%C3%A7%C3%B5es%20conferidas-100%25-0ca30c?style=flat-square">
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.1%20%C2%B7%20MVP-7d8b96?style=flat-square">
@@ -373,7 +373,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as li
 
 | O quê | Resultado | Como conferir |
 |---|---|---|
-| Testes automatizados | **157 passando** (unitários + API, incluindo observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/kauandivino/obranexo/actions/workflows/ci.yml) |
+| Testes automatizados | **166 passando** (unitários + API, incluindo login e isolamento por empresa, observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/kauandivino/obranexo/actions/workflows/ci.yml) |
 | Custo e latência medidos (24/10, Gemini) | Itaberaí, 21 itens, sem cache: 17 chamadas, 0 erros, 165 mil tokens (4,8 mil de raciocínio), **US$ 0,145 ≈ R$ 0,73** pela tabela paga, 78 s, latência média 4,9 s e p95 9,9 s por chamada, 73/73 evidências; o Investigador respondeu por 68% do custo | trilha em `data/obranexo.db` · `GET /api/analises/{id}/chamadas` · `GET /api/custos` · tela **Qualidade → Uso de modelos** |
 | Benchmark contra gabaritos revisados | 2 contratações, 9 itens e 8 pares item × produto: **100% de acerto por item, 100% nos pares, 100% de rastreabilidade** | `python eval/run_benchmark.py` · [`docs/benchmark_resultado.json`](docs/benchmark_resultado.json) |
 | Tempo | 5 s para os 2 casos em modo determinístico; 55 s com Gemini (2 chamadas) | idem |
@@ -408,7 +408,7 @@ A visão é ampla; a execução começa pequena, verificável e orientada por re
 | Fase | Período | Objetivo | Entregas principais | Critério de saída |
 |---|---|---|---|---|
 | **F0 · v0.1** Prova de conceito | 22–24/10/2026 | demo de ponta a ponta com dados reais | 7 agentes, PNCP ao vivo, 9 casos reais, catálogo por ficha, assistente, 3 provedores, benchmark, teste cego, grafo explícito, trilha de chamadas de IA em SQLite com custo real e logs estruturados, CI com benchmark como trava, kit da proposta e proposta de preços em Word | os 7 critérios da demo rodam offline sem intervenção — **atingido ✅** |
-| **F1 · v0.2** MVP robusto | 25/10–28/11/2026 | confiabilidade e primeira prova de valor | gabarito duplo em 10+ contratações; PostgreSQL + Alembic; login e isolamento por empresa; Docker; CI com benchmark como trava ✅; busca em todas as modalidades; recalibração da prioridade; 5 entrevistas e 1–2 pilotos | roda na nuvem (AWS) com Postgres; benchmark ≥ 10 contratações; ≥ 1 piloto com fornecedor real |
+| **F1 · v0.2** MVP robusto | 25/10–28/11/2026 | confiabilidade e primeira prova de valor | gabarito duplo em 10+ contratações; PostgreSQL + Alembic; login e isolamento por empresa ✅; Docker; CI com benchmark como trava ✅; busca em todas as modalidades; recalibração da prioridade; 5 entrevistas e 1–2 pilotos | roda na nuvem (AWS) com Postgres; benchmark ≥ 10 contratações; ≥ 1 piloto com fornecedor real |
 | **F2 · v0.3** Beta fechado | dez/2026–fev/2027 | plataforma agêntica e piloto em escala | grafo durável com checkpoints e pausas para revisão; registro MCP de ferramentas; Monitor (ingestão contínua, índice híbrido com pgvector, alertas); Habilitação; feedback que recalibra; fila com workers; OTel + Langfuse; PCA, OCR e tabelas; **piloto de 60 dias com 10 distribuidores** | precisão ≥ 95% fora da amostra; rastreabilidade 100%; custo medido < R$ 1/análise; 95% das análises em < 3 min |
 | **F3 · v1.0** Produção | mar–jun/2027 | operar com clientes pagantes | AWS como código (ECS Fargate, Aurora/RDS PostgreSQL + pgvector, S3, SQS, Bedrock, Cognito — [estudo em andamento](#arquitetura-em-nuvem-aws--estudo-em-andamento)); gateway de modelos com roteamento, lote e orçamento por cliente; RLS e anexos versionados; Rastreador de obras; planos e cobrança; LGPD documentada, pentest, trilha de auditoria; avaliação contínua em produção | 30 dias cumprindo as metas de serviço (99,5%, p95 < 90 s); margem 75–85% |
 | **F4 · v1.x** Escala | 2º sem/2027 → | novas fontes, segmentos e agentes | Obrasgov e portais estaduais; Precificação com histórico de preços; grafo órgão–objeto–item–fornecedor; API pública e servidor MCP para CRM e assessorias; novos segmentos (hidráulica, climatização, incêndio) | churn < 3%/mês; LTV/CAC ≥ 3 |
@@ -425,7 +425,7 @@ flowchart LR
   end
   subgraph APP[" Aplicação · AWS: mínima no F1, completa no F3 ⬜ "]
     direction TB
-    G[🚪 API FastAPI ✅<br/>login e isolamento por empresa ⬜ F1]:::inf
+    G[🚪 API FastAPI ✅<br/>login e isolamento por empresa ✅]:::inf
     Q[📬 Fila e workers ⬜ F2<br/>hoje: threads ✅]:::plan
     OR[🕸️ Orquestrador de agentes ⬜ F2<br/>grafo durável · checkpoints · pausas para revisão<br/>hoje: grafo explícito em Python, declarado como dado ✅]:::plan
     GW[🔀 Gateway de modelos ✅<br/>roteamento, lote, cache,<br/>orçamento por cliente ⬜ F3]:::inf
@@ -548,6 +548,13 @@ cp .env.example .env       # opcional: idem
 obranexo servidor
 ```
 
+A interface pede login. As contas são por convite: crie a sua (e a empresa) pelo terminal; `--admin` libera a troca do provedor de IA e as métricas internas de custo. Cada empresa tem o próprio catálogo, análises, prospecções e conversas, em `data/empresas/<id>/`.
+
+```bash
+obranexo usuario criar voce@empresa.com.br --empresa "Sua Empresa" --admin   # pede a senha no terminal
+obranexo usuario listar                                                        # também: senha, desativar, ativar
+```
+
 Na interface: **Licitações → Goianira → Analisar** mostra a análise ao vivo com a trilha dos agentes; na análise, clique numa prova. Com chave de IA, **Prospecção → Buscar oportunidades** roda o agente contra o PNCP ao vivo.
 
 ```powershell
@@ -556,7 +563,7 @@ obranexo analisar goianira_pe038_2026     # análise completa pela linha de coma
 obranexo abertas --uf GO                  # pregões com propostas abertas, ao vivo no PNCP
 obranexo coletar 01291707000167 2026 75 meu_caso   # baixa e congela uma contratação
 
-pytest -m "not integracao"                # 157 testes, sem chamar o LLM (inclui o retrato da demo)
+pytest -m "not integracao"                # 166 testes, sem chamar o LLM (inclui o retrato da demo)
 pytest -m integracao -v                   # chama o provedor configurado (usa cota)
 python eval/run_benchmark.py              # benchmark contra os gabaritos
 python eval/run_benchmark.py --limiares eval/limiares.json   # a mesma trava de qualidade do CI
@@ -582,7 +589,8 @@ Encontradas em auditoria do código em 24/10/2026; todas têm item no plano de d
 | Busca só em pregão eletrônico (modalidade 6) | concorrências (obras), pregões presenciais e dispensas não entram na prospecção | parâmetro de modalidades · F1 |
 | Tela de busca lê até 6 páginas; GO tinha 9 | cerca de um terço dos pregões abertos não aparece na interface (o Prospector lê 12) | limite dinâmico · F1 |
 | Descoberta pela palavra no objeto, por substring | licitações com itens elétricos sob objeto genérico ("material de consumo") não aparecem; e há ruído: "faróis em **LED**" num SUV, "controle de **lumin**osidade" em persianas | índice de itens com busca híbrida · F2 |
-| Um catálogo ativo por servidor | dois fornecedores na mesma instalação veriam o catálogo um do outro | login e isolamento por empresa · F1 |
+| Pacotes de licitações coletados (`data/casos`) são compartilhados entre as empresas | os editais são públicos e as análises ficam isoladas, mas uma empresa vê quais licitações outra coletou | casos por empresa, com os de demonstração em comum · F1 |
+| Contas e sessões no SQLite, criadas por convite pelo terminal | sem recuperação de senha por e-mail nem convite pela interface | e-mail transacional e tela de convites · F1–F2 |
 | Categoria do produto precisa ser a chave exata (`luminaria_publica_led`) | planilha com "Luminária pública" não casa com nada, sem aviso | validação e sugestão na importação · F1 |
 | Pesos da prioridade não calibrados | licitação encerrada (SRP) pode ficar acima de uma aberta | prazo aberto pesa mais; feedback recalibra · F1–F2 |
 | Benchmark só com 2 casos internos | precisão fora da amostra ainda desconhecida | gabarito duplo dos 5 casos cegos + 3 novos · F1 |
@@ -713,7 +721,7 @@ docs/
   benchmark_resultado.json
 eval/run_benchmark.py    benchmark contra gabaritos (com --limiares, trava de qualidade)
 eval/limiares.json       mínimos por métrica usados pela trava
-tests/                   157 testes (regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
+tests/                   166 testes (login e isolamento por empresa, regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
 .github/workflows/ci.yml lint, testes e benchmark como trava em todo PR (Linux, modo determinístico e offline)
 pitch/                   planejamento, fala e slides do pitch
 bmc/                     modelo de negócio: BMC, pesquisa, medição no PNCP, canvas A3 e PM Canvas

@@ -88,13 +88,14 @@ def test_resumo_vazio_nao_quebra():
 
 
 @pytest.fixture()
-def client(tmp_path, monkeypatch):
+def client(tmp_path, monkeypatch, entrar):
     monkeypatch.setattr(config, "dir_analises", tmp_path / "analises")
     monkeypatch.setattr(config, "dir_dados", tmp_path)
     monkeypatch.setattr(config, "llm_provider", None)
     from obranexo.api import main
 
     with TestClient(main.app) as c:
+        entrar(c, admin=True)  # custos são métrica interna: só administradores
         yield c
 
 

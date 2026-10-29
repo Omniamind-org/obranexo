@@ -6,6 +6,8 @@
   obranexo coletar <cnpj> <ano> <seq> <nome>   baixa uma contratação do PNCP e congela em data/casos/<nome>
   obranexo buscar [--uf GO] [--dias 30] [--palavras lumin,led]   busca contratações recentes no PNCP
   obranexo abertas [--uf GO] [--palavras lumin,led]              contratações com propostas em aberto
+  obranexo usuario criar <email> --empresa "Nome" [--admin]      cria a conta (e a empresa) para entrar na interface
+  obranexo usuario listar | senha <email> | desativar <email> | ativar <email>
 """
 
 from __future__ import annotations
@@ -110,6 +112,50 @@ def cmd_abertas(args) -> int:
     return 0
 
 
+def _ler_senha(senha: str | None) -> str:
+    if senha:
+        return senha
+    from getpass import getpass
+
+    senha = getpass("Senha: ")
+    if getpass("Repita a senha: ") != senha:
+        raise ValueError("as senhas não conferem")
+    return senha
+
+
+def cmd_usuario(args) -> int:
+    from obranexo import contas
+
+    try:
+        if args.acao == "listar":
+            for u in contas.listar_usuarios():
+                marcas = " ".join(m for m, v in (("admin", u["admin"]), ("desativado", not u["ativo"])) if v)
+                print(f"{u['email']:36} {u['empresa'][:30]:30} {u['empresa_id']:16} {marcas}")
+            return 0
+        if not args.email:
+            raise ValueError("informe o e-mail")
+        if args.acao == "criar":
+            if bool(args.empresa) == bool(args.empresa_id):
+                raise ValueError("informe --empresa (cria uma empresa nova) ou --empresa-id (entra numa existente)")
+            contas.validar_email(args.email)
+            if contas.buscar_usuario(args.email):
+                raise ValueError(f"já existe uma conta com o e-mail {args.email}")
+            senha = _ler_senha(args.senha)
+            empresa_id = args.empresa_id or contas.criar_empresa(args.empresa, args.cnpj)
+            u = contas.criar_usuario(args.email, senha, empresa_id, args.nome or "", admin=args.admin)
+            print(f"Conta criada: {u.email} · empresa {u.empresa_nome} ({u.empresa_id}){' · administrador' if u.admin else ''}")
+        elif args.acao == "senha":
+            contas.definir_senha(args.email, _ler_senha(args.senha))
+            print("Senha trocada; as sessões abertas foram encerradas.")
+        else:
+            contas.definir_ativo(args.email, args.acao == "ativar")
+            print(f"Conta {'ativada' if args.acao == 'ativar' else 'desativada'}: {args.email}")
+    except ValueError as exc:
+        print(f"erro: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def cmd_servidor(args) -> int:
     import uvicorn
 
@@ -151,6 +197,16 @@ def main(argv: list[str] | None = None) -> int:
         # buscar: publicadas nos últimos N dias · abertas: que encerram nos próximos N dias
         p.add_argument("--dias", default=30 if nome == "buscar" else 60)
         p.set_defaults(fn=fn)
+    p = sub.add_parser("usuario", help="contas de acesso à interface (o cadastro é por convite)")
+    p.add_argument("acao", choices=("criar", "listar", "senha", "desativar", "ativar"))
+    p.add_argument("email", nargs="?")
+    p.add_argument("--empresa", help="nome da empresa nova (criar)")
+    p.add_argument("--empresa-id", help="id de uma empresa existente, para outro usuário dela (criar)")
+    p.add_argument("--cnpj", help="CNPJ da empresa nova, só dígitos (criar)")
+    p.add_argument("--nome", help="nome da pessoa (criar)")
+    p.add_argument("--admin", action="store_true", help="administra a plataforma: provedor de IA, custos e trilha (criar)")
+    p.add_argument("--senha", help="sem ela, a senha é pedida no terminal (recomendado: não fica no histórico)")
+    p.set_defaults(fn=cmd_usuario)
     p = sub.add_parser("grafo", help="imprime o grafo da análise (o mesmo que executa a análise) para a documentação")
     p.add_argument("--formato", choices=("md", "mermaid", "json"), default="md")
     p.set_defaults(fn=cmd_grafo)

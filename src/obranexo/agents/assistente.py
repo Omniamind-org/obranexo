@@ -15,6 +15,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+from obranexo import contas
 from obranexo.agents.prompts import SYSTEM_ASSISTENTE, VERSAO
 from obranexo.agents.prospector import _compacto, _resumo_catalogo, melhor_por_item, partes_id, resumir_analise
 from obranexo.config import Config, config
@@ -106,6 +107,7 @@ class Assistente:
     def __init__(self, empresa: Empresa, cfg: Config | None = None):
         self.cfg = cfg or config
         self.empresa = empresa
+        self.empresa_id = contas.empresa_ativa()  # a conta dona da conversa
         self.id = uuid.uuid4().hex[:12]
         self.criado_em = datetime.now()
         self.uso = UsoLLM()
@@ -469,7 +471,10 @@ class Sessoes:
         return self._registrar(Assistente(empresa))
 
     def obter(self, sessao_id: str, empresa: Empresa | None = None) -> Assistente | None:
+        """A conversa, se for da empresa ativa."""
         a = self._s.get(sessao_id)
+        if a is not None and a.empresa_id != contas.empresa_ativa():
+            return None
         if a is None and empresa is not None:
             a = Assistente.restaurar(sessao_id, empresa)
             if a is not None:

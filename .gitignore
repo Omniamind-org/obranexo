@@ -16,6 +16,8 @@ data/casos/**/*_conteudo/
 # Catálogo ativo e prospecções (estado local do servidor)
 data/catalogo_ativo.json
 data/prospeccoes/
+# Dados de cada empresa cliente (catálogo, análises, prospecções) e o banco com contas e sessões
+data/empresas/
 *.db
 
 # Ferramentas

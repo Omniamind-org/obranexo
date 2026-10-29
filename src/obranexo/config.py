@@ -103,6 +103,12 @@ class Config:
     # Logs estruturados em JSON por linha (observability/logs.py); sem a variável, linhas legíveis no terminal
     log_json: bool = field(default_factory=lambda: _env_bool("OBRANEXO_LOG_JSON", False))
 
+    # Login (contas.py): validade da sessão, cookie só por HTTPS (ligue em produção) e cadastro pela própria tela.
+    # Sem cadastro aberto, as contas são criadas por convite: `obranexo usuario criar`.
+    sessao_horas: int = field(default_factory=lambda: _env_int("OBRANEXO_SESSAO_HORAS", 168))
+    cookie_seguro: bool = field(default_factory=lambda: _env_bool("OBRANEXO_COOKIE_SEGURO", False))
+    cadastro_aberto: bool = field(default_factory=lambda: _env_bool("OBRANEXO_CADASTRO_ABERTO", False))
+
     # Preço de tabela (US$ por 1M tokens: entrada, saída, leitura de cache) para estimar o custo de cada chamada — métrica
     # interna de margem, não a fatura (nível gratuito custa 0; lote e cache dão desconto). Tabela e fontes em PRECOS_USD.
     precos_usd: dict[str, tuple[float, float, float]] = field(default_factory=lambda: dict(PRECOS_USD))

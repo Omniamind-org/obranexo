@@ -1,6 +1,7 @@
 // Roteador (hash) e casca da aplicação.
 
 import { iniciarChat } from './chat.js';
+import { aoPerderSessao, carregarSessao, desenharConta, mostrarEntrada } from './sessao.js';
 import { atualizarStatus } from './status.js';
 import { iniciarTema } from './tema.js';
 import { ativarDicas, carregando, erroBox, html, render } from './ui.js';
@@ -70,11 +71,18 @@ async function navegar() {
 
 iniciarTema();
 ativarDicas();
-iniciarChat();
-window.addEventListener('hashchange', navegar);
-// Telas que mostram o provedor de LLM (início e prospecção) são redesenhadas quando ele é trocado no seletor
-window.addEventListener('provedor-llm', () => {
-  if (/^#?\/?(inicio|agente)?$/.test(location.hash)) navegar();
-});
-atualizarStatus();
-navegar();
+aoPerderSessao(view);
+// Sem sessão, só a tela de entrada; depois do login a página recarrega e a aplicação sobe daqui
+if (!(await carregarSessao())) {
+  await mostrarEntrada(view);
+} else {
+  desenharConta();
+  iniciarChat();
+  window.addEventListener('hashchange', navegar);
+  // Telas que mostram o provedor de LLM (início e prospecção) são redesenhadas quando ele é trocado no seletor
+  window.addEventListener('provedor-llm', () => {
+    if (/^#?\/?(inicio|agente)?$/.test(location.hash)) navegar();
+  });
+  atualizarStatus();
+  navegar();
+}

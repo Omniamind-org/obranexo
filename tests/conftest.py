@@ -12,6 +12,22 @@ import pytest
 from obranexo.config import config
 
 
+def _entrar(client, *, admin: bool = False, email: str = "fornecedor@exemplo.com.br", empresa: str = "Fornecedor Teste"):
+    """Cria empresa e usuário no banco do teste e faz login no TestClient (o cookie de sessão fica no cliente)."""
+    from obranexo import contas
+
+    usuario = contas.criar_usuario(email, "senha-de-teste", contas.criar_empresa(empresa), admin=admin)
+    r = client.post("/api/auth/login", json={"email": email, "senha": "senha-de-teste"})
+    assert r.status_code == 200, r.text
+    return usuario
+
+
+@pytest.fixture()
+def entrar():
+    """Login na API: `usuario = entrar(client, admin=True)`."""
+    return _entrar
+
+
 @pytest.fixture(autouse=True)
 def _dados_isolados(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "dir_dados", tmp_path)
