@@ -38,7 +38,8 @@ def test_categoria_ambigua_ou_desconhecida_vira_outro_com_aviso(bruto):
 
 
 def test_sugestao_quando_ha_categoria_parecida():
-    assert "você quis dizer" in resolver_categoria("Luminária")[1]
+    assert resolver_categoria("Luminária")[1].endswith("você quis dizer luminaria_publica_led ou luminaria_interna?")
+    assert resolver_categoria("Transformadr de força")[1].endswith("você quis dizer transformador?")
 
 
 def test_planilha_corrige_categoria_e_avisa(tmp_path):

@@ -64,5 +64,8 @@ def resolver_categoria(bruto: object) -> tuple[str, str | None]:
     (melhor, nota, _), segunda = candidatos[0], (candidatos[1][1] if len(candidatos) > 1 else 0)
     if nota >= LIMIAR_AUTOMATICO and nota - segunda >= MARGEM:
         return melhor, f'categoria "{bruto}" entendida como {melhor}'
-    sugestao = f"; você quis dizer {melhor}?" if nota >= LIMIAR_SUGESTAO else ""
+    # Prefixo antes da semelhança: "Luminária" sugere as duas luminárias, não braco_luminaria (que só é mais parecida no total)
+    prefixo = [c for c in CATEGORIAS if c.startswith(chave)] if len(chave) >= 3 else []
+    opcoes = prefixo or ([melhor] if nota >= LIMIAR_SUGESTAO else [])
+    sugestao = f"; você quis dizer {' ou '.join(opcoes)}?" if opcoes else ""
     return "outro", f'categoria "{bruto}" não reconhecida, o produto ficou como "outro" e não será comparado com os itens{sugestao}'
