@@ -1,0 +1,101 @@
+[
+ {
+  "id": "doc-1",
+  "contratacao_id": "27064964000150-1-000079/2026",
+  "nome": "1_13.1_EDITAL_CONC__001_2026_ILUM_LED.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/27064964000150/compras/2026/79/arquivos/1",
+  "sha256": "56b7c90c7b3abfd4167548b6276db16db65dd48bc20348f1a67ec6e3e3e57658",
+  "caminho_local": "arquivos/1_13.1_EDITAL_CONC__001_2026_ILUM_LED.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-2",
+  "contratacao_id": "27064964000150-1-000079/2026",
+  "nome": "2_PLANILHA_LOTE_01.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/27064964000150/compras/2026/79/arquivos/2",
+  "sha256": "3aa0be05109750a37e6ac37fdfa8dd0d41d49d1639f308ff621016f911bc4a65",
+  "caminho_local": "arquivos/2_PLANILHA_LOTE_01.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-3",
+  "contratacao_id": "27064964000150-1-000079/2026",
+  "nome": "3_PROJETOS_LOTE_01.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/27064964000150/compras/2026/79/arquivos/3",
+  "sha256": "aeaddc25ca5a8bbec3a74f7fbfd699d87b936f68aeefade31b99f814eb1e0750",
+  "caminho_local": "arquivos/3_PROJETOS_LOTE_01.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-4",
+  "contratacao_id": "27064964000150-1-000079/2026",
+  "nome": "4_PLANILHA_LOTE_02.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/27064964000150/compras/2026/79/arquivos/4",
+  "sha256": "4e5731e91846f21acc196d25718f43cc1218bed150b92c78062bedd3e2b7948c",
+  "caminho_local": "arquivos/4_PLANILHA_LOTE_02.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-5",
+  "contratacao_id": "27064964000150-1-000079/2026",
+  "nome": "5_PROJETOS_LOTE_02.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/27064964000150/compras/2026/79/arquivos/5",
+  "sha256": "4860b7a2e937b3facfeb0ddeeec4babf102851ce2b3fbff54e5e6a521ac4392b",
+  "caminho_local": "arquivos/5_PROJETOS_LOTE_02.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-6",
+  "contratacao_id": "27064964000150-1-000079/2026",
+  "nome": "6_PLANIHA_LOTE_03.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/27064964000150/compras/2026/79/arquivos/6",
+  "sha256": "067f9c1e1fb61d236d6a96873500f5929350b80327466a9edd2996a63b6ab521",
+  "caminho_local": "arquivos/6_PLANIHA_LOTE_03.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-7",
+  "contratacao_id": "27064964000150-1-000079/2026",
+  "nome": "7_PROJETOS_LOTE_03.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/27064964000150/compras/2026/79/arquivos/7",
+  "sha256": "49810c62f8fb4cf551e54c43c7faf608e8e3871a3aa783071467dd1f3f67d0a0",
+  "caminho_local": "arquivos/7_PROJETOS_LOTE_03.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-8",
+  "contratacao_id": "27064964000150-1-000079/2026",
+  "nome": "8_MEMORIAL_DESCRITIVO.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/27064964000150/compras/2026/79/arquivos/8",
+  "sha256": "aee85cf99c54f71c71faef96417ede884c3b8ee426d8514074b31ebae9b65fd9",
+  "caminho_local": "arquivos/8_MEMORIAL_DESCRITIVO.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-9",
+  "contratacao_id": "27064964000150-1-000079/2026",
+  "nome": "9_13.2_PROJETO_BASICO.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/27064964000150/compras/2026/79/arquivos/9",
+  "sha256": "8061f1157e74a27fede6b980e8eca1dd5eba1c87e0fce5f6de5e9e5a37cfeea9",
+  "caminho_local": "arquivos/9_13.2_PROJETO_BASICO.pdf",
+  "paginas": 0,
+  "extraivel": true
+ }
+]

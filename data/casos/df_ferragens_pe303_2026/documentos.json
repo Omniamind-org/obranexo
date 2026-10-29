@@ -1,0 +1,13 @@
+[
+ {
+  "id": "doc-1",
+  "contratacao_id": "00488478000102-1-000303/2026",
+  "nome": "1_pe23426edital.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/00488478000102/compras/2026/303/arquivos/1",
+  "sha256": "222a84701295b56b465ff6608215f4d076ab9f811bb032eb47213e9745957f5a",
+  "caminho_local": "arquivos/1_pe23426edital.pdf",
+  "paginas": 0,
+  "extraivel": true
+ }
+]

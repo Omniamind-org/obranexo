@@ -1,0 +1,35 @@
+[
+ {
+  "id": "doc-1",
+  "contratacao_id": "37465143000189-1-000024/2026",
+  "nome": "1_Capa-Licitacao.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/37465143000189/compras/2026/24/arquivos/1",
+  "sha256": "7ee6de7360db1544843ce253b02918263e81b3a3da04b1933cab390dc3a27d98",
+  "caminho_local": "arquivos/1_Capa-Licitacao.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-2",
+  "contratacao_id": "37465143000189-1-000024/2026",
+  "nome": "2_EDITAL-PE010RP.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/37465143000189/compras/2026/24/arquivos/2",
+  "sha256": "9dc21062bec0f2c03689465109b97734bdf3a018d95e4fa3e3d236e50fec82d6",
+  "caminho_local": "arquivos/2_EDITAL-PE010RP.pdf",
+  "paginas": 0,
+  "extraivel": true
+ },
+ {
+  "id": "doc-3",
+  "contratacao_id": "37465143000189-1-000024/2026",
+  "nome": "3_EDITAL-RETIFICADO-PE010RP.pdf",
+  "tipo_doc": "Edital",
+  "url_origem": "https://pncp.gov.br/pncp-api/v1/orgaos/37465143000189/compras/2026/24/arquivos/3",
+  "sha256": "25f5305966926ead5e7fa4308160e780935ec2be551c882f71792102aced181b",
+  "caminho_local": "arquivos/3_EDITAL-RETIFICADO-PE010RP.pdf",
+  "paginas": 0,
+  "extraivel": true
+ }
+]

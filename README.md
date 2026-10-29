@@ -20,7 +20,7 @@
 <p align="center">
   <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-0b2a3c?style=flat-square&logo=python&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-API%20%2B%20SSE-00ab9f?style=flat-square">
-  <img alt="Testes" src="https://img.shields.io/badge/testes-216%20passando-0ca30c?style=flat-square">
+  <img alt="Testes" src="https://img.shields.io/badge/testes-226%20passando-0ca30c?style=flat-square">
   <a href="https://github.com/Omniamind-org/obranexo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Omniamind-org/obranexo/ci.yml?branch=main&style=flat-square&label=CI"></a>
   <img alt="Rastreabilidade" src="https://img.shields.io/badge/cita%C3%A7%C3%B5es%20conferidas-100%25-0ca30c?style=flat-square">
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.1%20%C2%B7%20MVP-7d8b96?style=flat-square">
@@ -85,7 +85,7 @@
 | **O que é** | Uma plataforma de inteligência comercial agêntica para contratações públicas. O fornecedor carrega o catálogo; os agentes buscam no PNCP, leem edital, termo de referência e anexos, e dizem, **item a item**, se cada produto atende, não atende, atende em parte ou se falta informação. Todo veredito vem com a prova. Quando o fornecedor decide disputar, o ObraNexo monta o kit da proposta que ele entrega ao órgão: cada item com o produto, a marca e o modelo ofertados, já conferidos contra as exigências do edital, os prazos com prova, os documentos técnicos e a **proposta de preços em Word**, pronta para precificar e assinar. Quem revisa, precifica e envia é sempre o fornecedor. A lista de habilitação e declarações do edital está *em construção*. |
 | **Para quem** | Distribuidores e atacadistas de material elétrico e iluminação, em geral micro e pequenas empresas sem analista de licitação. Depois: varejo elétrico, fabricantes, assessorias de licitação e construtoras. |
 | **Por que importa** | O PNCP publica cerca de **1.100 pregões eletrônicos por dia**. Cerca de **90% dos pregões com itens elétricos não dizem isso no objeto**, então escapam de qualquer alerta por palavra-chave. Quem lê tudo, acha a licitação certa e acerta a especificação disputa contra poucos; quem erra uma especificação é desclassificado. |
-| **O que já funciona** | Prospecção autônoma no PNCP ao vivo, análise completa de 9 licitações reais congeladas, 7 agentes (a análise roda num grafo explícito, declarado como dado), assistente em linguagem natural, catálogo por ficha técnica do fabricante, dossiê com prova, kit da proposta com a proposta de preços em Word, 3 provedores de IA com reserva automática, trilha de cada chamada de IA com agente, modelo, tokens, custo e latência. Sem chave de API, a análise, o dossiê e o kit da proposta rodam em modo determinístico; prospecção, assistente e importação de fichas usam um provedor de IA. |
+| **O que já funciona** | Prospecção autônoma no PNCP ao vivo, análise completa de 12 licitações reais congeladas (GO, DF, MT e TO), 7 agentes (a análise roda num grafo explícito, declarado como dado), assistente em linguagem natural, catálogo por ficha técnica do fabricante, dossiê com prova, kit da proposta com a proposta de preços em Word, 3 provedores de IA com reserva automática, trilha de cada chamada de IA com agente, modelo, tokens, custo e latência. Sem chave de API, a análise, o dossiê e o kit da proposta rodam em modo determinístico; prospecção, assistente e importação de fichas usam um provedor de IA. |
 
 > **Princípio de projeto.** A IA decide o que buscar, o que abrir, o que ler e o que investigar. Um núcleo verificável — validação por tipo e faixa, motor de regras e citação conferida no documento — garante que o veredito final seja auditável. Sem prova, o sistema diz **indeterminado** em vez de inventar.
 
@@ -373,13 +373,13 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as li
 
 | O quê | Resultado | Como conferir |
 |---|---|---|
-| Testes automatizados | **216 passando** (unitários + API, incluindo login e isolamento por empresa, observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/Omniamind-org/obranexo/actions/workflows/ci.yml) |
+| Testes automatizados | **226 passando** (unitários + API, incluindo login e isolamento por empresa, observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/Omniamind-org/obranexo/actions/workflows/ci.yml) |
 | Custo e latência medidos (24/10, Gemini) | Itaberaí, 21 itens, sem cache: 17 chamadas, 0 erros, 165 mil tokens (4,8 mil de raciocínio), **US$ 0,145 ≈ R$ 0,73** pela tabela paga, 78 s, latência média 4,9 s e p95 9,9 s por chamada, 73/73 evidências; o Investigador respondeu por 68% do custo | trilha em `data/obranexo.db` · `GET /api/analises/{id}/chamadas` · `GET /api/custos` · tela **Qualidade → Uso de modelos** |
 | Benchmark contra gabaritos revisados | 2 contratações, 9 itens e 8 pares item × produto: **100% de acerto por item, 100% nos pares, 100% de rastreabilidade** | `python eval/run_benchmark.py` · [`docs/benchmark_resultado.json`](docs/benchmark_resultado.json) |
 | Tempo | 5 s para os 2 casos em modo determinístico; 55 s com Gemini (2 chamadas) | idem |
 | Teste cego | **5 pregões abertos nunca vistos**, 133 itens, rodados sem ajuste prévio; 10 defeitos encontrados e corrigidos, cada um virou teste de regressão; rastreabilidade 100% nas duas rodadas | [`docs/teste_cego_2026-10-23.md`](docs/teste_cego_2026-10-23.md) · `tests/test_regressao_teste_cego.py` |
 | Busca ao vivo no PNCP | 24/10/2026: 9 páginas, ~450 pregões abertos em GO em 44 s; 18 candidatos pelos termos de iluminação; detalhe de uma licitação com 206 itens em 1,4 s | `obranexo abertas --uf GO` |
-| Casos reais congelados | 9 contratações do PNCP (R$ 1,4 mi a R$ 32 mi), 343 itens, 170 anexos | `obranexo casos` |
+| Casos reais congelados | 12 contratações do PNCP em GO, DF, MT e TO (R$ 0,2 mi a R$ 32 mi), 473 itens, 183 anexos | `obranexo casos` |
 
 **Limites honestos desses números.** O benchmark de 100% é **dentro da amostra**: os 2 casos rotulados foram usados no desenvolvimento e o gabarito é da própria equipe. Os 5 casos do teste cego estão rotulados pelo sistema, com **gabarito humano pendente** em [`docs/teste_cego_rotulagem.csv`](docs/teste_cego_rotulagem.csv) — não foram rotulados pela mesma pessoa que corrigiu o código, para o benchmark não virar circular. O custo em US$ é **estimado pela tabela oficial de preços** a partir dos tokens que cada API devolve (raciocínio incluído), por chamada na trilha e por análise em `GET /api/custos` (métrica interna); no nível gratuito do Gemini e do Groq a cobrança real é zero. A única análise medida até agora é a de Itaberaí: **R$ 0,73**, acima da faixa estimada na pesquisa (R$ 0,02 a R$ 0,48, calculada para modelos baratos) porque usou o modelo mais forte em todos os agentes, e ainda dentro da meta de R$ 1 por análise. O Investigador respondeu por 68% desse custo: é ali que o roteamento por tarefa (F3) atua para trazer o custo para a faixa.
 
@@ -566,12 +566,12 @@ docker compose logs -f app                                         # acompanhar
 Na interface: **Licitações → Goianira → Analisar** mostra a análise ao vivo com a trilha dos agentes; na análise, clique numa prova. Com chave de IA, **Prospecção → Buscar oportunidades** roda o agente contra o PNCP ao vivo.
 
 ```powershell
-obranexo casos                            # as 9 licitações reais congeladas
+obranexo casos                            # as 12 licitações reais congeladas
 obranexo analisar goianira_pe038_2026     # análise completa pela linha de comando (2,8 s sem IA)
 obranexo abertas --uf GO                  # licitações com propostas abertas, ao vivo no PNCP (--modalidades 6,4)
 obranexo coletar 01291707000167 2026 75 meu_caso   # baixa e congela uma contratação
 
-pytest -m "not integracao"                # 216 testes, sem chamar o LLM (inclui o retrato da demo)
+pytest -m "not integracao"                # 226 testes, sem chamar o LLM (inclui o retrato da demo)
 pytest -m integracao -v                   # chama o provedor configurado (usa cota)
 python eval/run_benchmark.py              # benchmark contra os gabaritos
 python eval/run_benchmark.py --limiares eval/limiares.json   # a mesma trava de qualidade do CI
@@ -596,7 +596,7 @@ Encontradas em auditoria do código em 24/10/2026; todas têm item no plano de d
 |---|---|---|
 | Descoberta pela palavra no objeto, por substring | licitações com itens elétricos sob objeto genérico ("material de consumo") não aparecem; e há ruído: "faróis em **LED**" num SUV, "controle de **lumin**osidade" em persianas | índice de itens com busca híbrida · F2 |
 | Pesos da prioridade ajustados à mão | o prazo aberto já pesa mais que a cobertura (uma encerrada chega no máximo a 55), mas os pesos não aprendem com o resultado real das licitações | feedback recalibra · F2 |
-| Benchmark só com 2 casos internos | precisão fora da amostra ainda desconhecida | gabarito duplo dos 5 casos cegos + 3 novos · F1 |
+| Benchmark só com 2 casos internos rotulados | precisão fora da amostra ainda desconhecida; 8 contratações (257 itens) já estão coletadas e prontas para rotular | duas pessoas rotulam as planilhas (`docs/rotulagem.md`), `eval/gabarito_da_planilha.py` gera os gabaritos · F1 |
 | Custo de IA é estimativa a preço de tabela, com uma única análise medida (Itaberaí, R$ 0,73) | no nível gratuito do Gemini e do Groq a cobrança real é zero; a meta de R$ 1 por análise só se valida com volume e chave paga | acompanhar em `GET /api/custos` e na tela Qualidade; medir no piloto · F1–F2 |
 | 32 atributos, quase todos de iluminação | número de condutores, comprimento de braço, classe de encordoamento ficam de fora | taxonomia por categoria · F2 |
 | Sem OCR, sem PCA, sem tabelas de PDF | editais digitalizados e demanda planejada não são lidos | F2 |
@@ -726,7 +726,7 @@ docs/
   benchmark_resultado.json
 eval/run_benchmark.py    benchmark contra gabaritos (com --limiares, trava de qualidade)
 eval/limiares.json       mínimos por métrica usados pela trava
-tests/                   224 testes (login e isolamento por empresa, regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
+tests/                   234 testes (login e isolamento por empresa, regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
 .github/workflows/ci.yml lint, testes, benchmark como trava e build da imagem Docker em todo PR (Linux, modo determinístico e offline)
 Dockerfile · docker-compose.yml  imagem da aplicação, PostgreSQL e os volumes `dados` e `banco`
 src/obranexo/db.py · migracoes/  esquema do banco (SQLAlchemy) e migrações Alembic; `alembic upgrade head` (o app aplica sozinho)
@@ -744,6 +744,8 @@ bmc/                     modelo de negócio: BMC, pesquisa, medição no PNCP, c
 - [`docs/FLUXO_DO_AGENTE.md`](docs/FLUXO_DO_AGENTE.md) — Documentação do fluxo do agente (inputs, lógica, outputs)
 - [`docs/fluxo_agentes.md`](docs/fluxo_agentes.md) — fluxo dos agentes, ferramentas, guardrails, orquestração e observabilidade
 - [`docs/PLANO_DESENVOLVIMENTO.md`](docs/PLANO_DESENVOLVIMENTO.md) — plano de desenvolvimento por fase
+- [`docs/avaliacao.md`](docs/avaliacao.md) — benchmark: métricas-alvo, precisão e recall por classe, matriz de confusão e consistência
+- [`docs/rotulagem.md`](docs/rotulagem.md) — como rotular o gabarito com dois revisores e gerar os `gabarito.json`
 - [`ROADMAP_MVP.txt`](ROADMAP_MVP.txt) — roadmap original do MVP (requisitos, stack, métricas, DoD)
 - [`docs/teste_cego_2026-10-23.md`](docs/teste_cego_2026-10-23.md) — teste cego em 5 pregões abertos
 - [`bmc/`](bmc/) ([relatório](bmc/BMC_ObraNexo.txt) · [pesquisa](bmc/pesquisa/) · [canvas A3](bmc/canvas/) · [PM Canvas](bmc/pmc/)) — modelo de negócio, medição própria no PNCP, concorrentes, impacto

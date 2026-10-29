@@ -1,4 +1,4 @@
-"""Retrato da demonstração: os 9 casos congelados, sem IA, têm de dar sempre o mesmo resultado.
+"""Retrato da demonstração: os casos congelados versionados, sem IA, têm de dar sempre o mesmo resultado.
 
 Qualquer mudança no veredito ou no produto de um item, na prioridade, no tipo de oportunidade, nas provas
 conferidas ou na quantidade de requisitos e documentos reprova o teste. Mudança intencional: regenerar com

@@ -6,10 +6,12 @@ Cada caso em data/casos/<caso>/gabarito.json tem o formato:
   "pares": [{"item": 3, "produto": "LPL-50-50K-ECO", "esperado": "INCOMPATIVEL", "motivo": "..."}]
 }
 Métricas (seção 13 do roadmap): acurácia por item, precisão de COMPATÍVEL, detecção de
-incompatibilidades, rastreabilidade (evidências verificadas), tempo e custo.
+incompatibilidades, rastreabilidade (evidências verificadas), tempo e custo; precisão e recall por classe,
+matriz de confusão e consistência entre execuções (eval/metricas.py).
 
 Uso: python eval/run_benchmark.py [--casos goianira_pe038_2026 aruana_pp005_2026] [--catalogo ...]
      python eval/run_benchmark.py --limiares eval/limiares.json   # trava do CI: sai com código 1 se cair
+     python eval/run_benchmark.py --repeticoes 3 --markdown docs/avaliacao.md   # relatório com consistência
 """
 
 from __future__ import annotations
@@ -22,7 +24,9 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ / "src"))
+sys.path.insert(0, str(RAIZ / "eval"))
 
+import metricas as m  # noqa: E402
 from obranexo.agents.pipeline import executar_caso  # noqa: E402
 from obranexo.catalog.loader import carregar_catalogo_json  # noqa: E402
 from obranexo.config import config  # noqa: E402
@@ -68,12 +72,23 @@ def _publicar_resumo_github(metricas: dict, limiares: dict, falhas: list[str]) -
         arq.write("\n".join(linhas) + "\n")
 
 
+def _melhor_por_item(analise, skus: dict[str, str]) -> dict[int, tuple[str, str]]:
+    """O melhor resultado de cada item (o que o dossiê mostra) e o SKU do produto."""
+    ordem = {"COMPATIVEL": 3, "PARCIAL": 2, "INDETERMINADO": 1, "INCOMPATIVEL": 0}
+    melhor: dict[int, tuple[str, str]] = {}
+    for c in sorted(analise.correspondencias, key=lambda c: (ordem[c.resultado.value], c.score), reverse=True):
+        melhor.setdefault(analise.item(c.item_id).numero_item, (c.resultado.value, skus.get(c.produto_id, c.produto_id)))
+    return melhor
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--casos", nargs="*")
     ap.add_argument("--catalogo", default=str(config.catalogo_demo))
     ap.add_argument("--saida", default=str(RAIZ / "docs" / "benchmark_resultado.json"))
     ap.add_argument("--limiares", help="JSON com os mínimos por métrica; abaixo deles o comando sai com código 1 (trava do CI)")
+    ap.add_argument("--repeticoes", type=int, default=1, help="executa cada caso N vezes para medir a consistência (com LLM, N chamadas)")
+    ap.add_argument("--markdown", help="também escreve o relatório em Markdown (ex.: docs/avaliacao.md)")
     args = ap.parse_args()
 
     empresa = carregar_catalogo_json(Path(args.catalogo))
@@ -86,22 +101,26 @@ def main() -> int:
            "pares": 0, "pares_ok": 0, "evidencias": 0, "evidencias_ok": 0, "tempo_s": 0.0, "custo_usd": 0.0, "chamadas_llm": 0}
     relatorio = []
     erros: list[str] = []
+    classificados: list[tuple[str, str]] = []  # (esperado, obtido) por item, para a matriz de confusão
+    execucoes: list[dict[str, str]] = [{} for _ in range(max(1, args.repeticoes))]
+    skus = {p.id: p.sku for p in empresa.produtos}
     for caso in casos:
         gabarito = json.loads((caso / "gabarito.json").read_text(encoding="utf-8"))
-        analise = executar_caso(caso, empresa, salvar=False)
-        if analise.status != "concluida":
-            print(f"{caso.name}: ERRO {analise.erro}")
-            erros.append(f"{caso.name}: {analise.erro}")
+        rodadas = [executar_caso(caso, empresa, salvar=False) for _ in range(max(1, args.repeticoes))]
+        analise = rodadas[0]
+        if any(a.status != "concluida" for a in rodadas):
+            falha = next(a for a in rodadas if a.status != "concluida")
+            print(f"{caso.name}: ERRO {falha.erro}")
+            erros.append(f"{caso.name}: {falha.erro}")
             continue
-        skus = {p.id: p.sku for p in empresa.produtos}
-        melhor: dict[int, tuple[str, str]] = {}
-        ordem = {"COMPATIVEL": 3, "PARCIAL": 2, "INDETERMINADO": 1, "INCOMPATIVEL": 0}
-        for c in sorted(analise.correspondencias, key=lambda c: (ordem[c.resultado.value], c.score), reverse=True):
-            n = analise.item(c.item_id).numero_item
-            melhor.setdefault(n, (c.resultado.value, skus.get(c.produto_id, c.produto_id)))
+        for i, rodada in enumerate(rodadas):
+            for num, (resultado, _) in _melhor_por_item(rodada, skus).items():
+                execucoes[i][f"{caso.name}/{num}"] = resultado
+        melhor = _melhor_por_item(analise, skus)
         linhas = []
         for num, esperado in gabarito.get("itens", {}).items():
             obtido = melhor.get(int(num), ("FORA_DO_PORTFOLIO", "—"))
+            classificados.append((m.normalizar_rotulo(esperado["esperado"]), obtido[0]))
             ok = obtido[0] == esperado["esperado"] and (not esperado.get("produto") or esperado["produto"] == obtido[1])
             tot["itens"] += 1
             tot["itens_ok"] += int(ok)
@@ -174,13 +193,22 @@ def main() -> int:
         "chamadas_llm": tot["chamadas_llm"],
         "modo": resumo["modo"],
         "casos": len(casos),
+        "itens": tot["itens"],
+        "pares": tot["pares"],
         "erros": erros,
     }
+    matriz = m.matriz_confusao(classificados)
+    classes = m.por_classe(matriz)
+    consistencia = m.consistencia(execucoes)
     print("\nRESUMO:", json.dumps(resumo, ensure_ascii=False, indent=1))
     Path(args.saida).write_text(
-        json.dumps({"resumo": resumo, "metricas": metricas, "casos": relatorio}, ensure_ascii=False, indent=1, default=str), encoding="utf-8"
+        json.dumps({"resumo": resumo, "metricas": metricas, "por_classe": classes, "matriz_confusao": matriz, "consistencia": consistencia,
+                    "casos": relatorio}, ensure_ascii=False, indent=1, default=str), encoding="utf-8"
     )
     print(f"Relatório salvo em {args.saida}")
+    if args.markdown:
+        Path(args.markdown).write_text(m.markdown(metricas, matriz, classes, consistencia, [c.name for c in casos]), encoding="utf-8")
+        print(f"Relatório em Markdown salvo em {args.markdown}")
 
     if not args.limiares:
         return 0
