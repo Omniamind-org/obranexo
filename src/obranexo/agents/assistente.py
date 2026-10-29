@@ -19,7 +19,7 @@ from obranexo import contas
 from obranexo.agents.prompts import SYSTEM_ASSISTENTE, VERSAO
 from obranexo.agents.prospector import _compacto, _resumo_catalogo, melhor_por_item, partes_id, resumir_analise
 from obranexo.config import Config, config
-from obranexo.connectors.pncp import MODALIDADES_LICITACAO, PNCPClient, PNCPError, carregar_caso, listar_casos
+from obranexo.connectors.pncp import MODALIDADES_LICITACAO, PNCPClient, PNCPError, carregar_caso
 from obranexo.documents.extract import normalizar_busca
 from obranexo.llm.client import LLMIndisponivel, criar_llm_client
 from obranexo.models import Analise, Contratacao, Empresa, EventoLog, UsoLLM
@@ -281,7 +281,7 @@ class Assistente:
             return f"ERRO: {exc}"
         from obranexo.agents.pipeline import executar_caso
 
-        destino = self.cfg.dir_casos / f"{cnpj}_{ano}_{seq}"
+        destino = store.dir_casos() / f"{cnpj}_{ano}_{seq}"
         self._evento("analisar", f"Baixando o edital e os anexos de {contratacao_id}")
         if not (destino / "contratacao.json").exists():
             self.pncp.coletar_caso(cnpj, ano, seq, destino, max_mb=15)
@@ -441,7 +441,7 @@ def _contagem(a: Analise) -> dict[str, int]:
 
 def _casos_locais() -> dict[str, str]:
     mapa: dict[str, str] = {}
-    for d in listar_casos():
+    for d in store.listar_casos():
         try:
             c, _, _ = carregar_caso(d)
             mapa[c.id] = d.name

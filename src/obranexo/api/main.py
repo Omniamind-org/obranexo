@@ -24,7 +24,7 @@ from obranexo.api.jobs import jobs
 from obranexo.catalog.atributos import ATRIBUTOS
 from obranexo.catalog.loader import carregar_catalogo_json, carregar_catalogo_tabela
 from obranexo.config import MODELOS_PADRAO, PROVEDORES, config
-from obranexo.connectors.pncp import MODALIDADE_PREGAO_ELETRONICO, MODALIDADES, MODALIDADES_LICITACAO, PNCPClient, PNCPError, carregar_caso, listar_casos
+from obranexo.connectors.pncp import MODALIDADE_PREGAO_ELETRONICO, MODALIDADES, MODALIDADES_LICITACAO, PNCPClient, PNCPError, carregar_caso
 from obranexo.models import Analise, Contratacao, Empresa, EventoLog, Produto, ResultadoItem, StatusRevisao
 from obranexo.observability import logs
 from obranexo.observability.trilha import agregar, escopo, trilha
@@ -101,7 +101,7 @@ def _resumo_contratacao(c: Contratacao) -> dict[str, Any]:
 
 def _casos_por_contratacao() -> dict[str, str]:
     mapa = {}
-    for d in listar_casos():
+    for d in store.listar_casos():
         try:
             c, _, _ = carregar_caso(d)
             mapa[c.id] = d.name
@@ -164,8 +164,8 @@ def _analise_ou_404(analise_id: str) -> Analise:
 
 
 def _caso_dir(nome: str) -> Path:
-    destino = (config.dir_casos / nome).resolve()
-    if config.dir_casos.resolve() not in destino.parents or not (destino / "contratacao.json").exists():
+    destino = store.caso(nome)
+    if destino is None:  # inexistente ou coletado por outra empresa: a resposta é a mesma
         raise HTTPException(404, f"caso '{nome}' não encontrado")
     return destino
 
@@ -191,7 +191,7 @@ def status() -> dict[str, Any]:
         "pncp_offline": config.offline,
         "llm_cache": config.llm_cache,
         "versao_prompt": VERSAO_PROMPTS,
-        "casos": len(listar_casos()),
+        "casos": len(store.casos_de_demonstracao()),  # público: não conta o que as empresas coletaram
         "cadastro_aberto": config.cadastro_aberto,
     }
 
@@ -374,10 +374,10 @@ def _analises_por_caso() -> dict[str, list[dict[str, Any]]]:
 
 @api.get("/api/casos", tags=["demandas"])
 def casos() -> list[dict[str, Any]]:
-    """Pacotes de contratações congelados em data/casos (demo reproduzível)."""
+    """Casos de demonstração (comuns a todas as empresas) e as licitações que a empresa coletou do PNCP."""
     analises = _analises_por_caso()
     saida = []
-    for d in listar_casos():
+    for d in store.listar_casos():
         c, itens, docs = carregar_caso(d)
         saida.append(
             {
@@ -489,12 +489,12 @@ class PedidoColeta(BaseModel):
 
 @api.post("/api/pncp/coletar", tags=["demandas"])
 def coletar_pncp(pedido: PedidoColeta) -> dict[str, Any]:
-    """Baixa itens e anexos de uma contratação e congela em data/casos/<cnpj>_<ano>_<seq>."""
+    """Baixa itens e anexos de uma contratação e congela em data/empresas/<empresa>/casos/<cnpj>_<ano>_<seq>."""
     if config.offline:
         raise HTTPException(503, "modo offline ativo (OBRANEXO_OFFLINE=1)")
     nome = f"{pedido.cnpj}_{pedido.ano}_{pedido.sequencial}"
     try:
-        c, itens, docs = PNCPClient().coletar_caso(pedido.cnpj, pedido.ano, pedido.sequencial, config.dir_casos / nome, max_mb=pedido.max_mb)
+        c, itens, docs = PNCPClient().coletar_caso(pedido.cnpj, pedido.ano, pedido.sequencial, store.dir_casos() / nome, max_mb=pedido.max_mb)
     except PNCPError as exc:
         raise HTTPException(502, f"PNCP indisponível: {exc}") from exc
     return {"caso": nome, "contratacao": c.id, "itens": len(itens), "documentos": len(docs), "baixados": sum(1 for d in docs if d.caminho_local)}
@@ -750,7 +750,7 @@ def _documento_local(a: Analise, documento_id: str) -> tuple[Any, Path | None]:
     if not doc.caminho_local:
         return doc, None
     caminho = Path(doc.caminho_local).resolve()
-    if config.dir_casos.resolve() not in caminho.parents or not caminho.exists():
+    if not any(base.resolve() in caminho.parents for base in store.pastas_de_casos()) or not caminho.exists():
         return doc, None
     return doc, caminho
 

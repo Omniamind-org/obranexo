@@ -7,11 +7,16 @@ empresa não enxerga os arquivos da outra; sem empresa ativa (linha de comando, 
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from obranexo import contas
 from obranexo.config import config
+from obranexo.connectors import pncp
 from obranexo.models import Analise, Empresa, Prospeccao
+
+# Licitações baixadas do PNCP têm nome CNPJ_ANO_SEQ; os casos de demonstração (versionados) têm nome legível
+COLETADO = re.compile(r"^\d+_\d+_\d+$")
 
 
 def _base() -> Path:
@@ -46,6 +51,39 @@ def listar() -> list[Analise]:
         except Exception:
             continue
     return analises
+
+
+# ---------------------------------------------------------------------------- casos (licitações congeladas)
+
+
+def dir_casos() -> Path:
+    """Onde gravar uma licitação coletada: na pasta da empresa ativa, para nenhuma outra saber o que ela baixou."""
+    empresa_id = contas.empresa_ativa()
+    return contas.dir_empresa(empresa_id) / "casos" if empresa_id else config.dir_casos
+
+
+def casos_de_demonstracao() -> list[Path]:
+    return [p for p in pncp.listar_casos(config.dir_casos) if not COLETADO.match(p.name)]
+
+
+def listar_casos() -> list[Path]:
+    """Os casos de demonstração (comuns a todas) mais os coletados pela empresa ativa. Fora da API, data/casos inteiro.
+
+    Licitações coletadas em data/casos antes da separação por empresa não aparecem para nenhuma empresa:
+    não há como saber de quem eram. Coletar de novo é rápido (o PNCP fica em cache)."""
+    if not contas.empresa_ativa():
+        return pncp.listar_casos(config.dir_casos)
+    return sorted(casos_de_demonstracao() + pncp.listar_casos(dir_casos()), key=lambda p: p.name)
+
+
+def caso(nome: str) -> Path | None:
+    """Pasta de um caso visível para a empresa ativa, ou None (nome inexistente, de outra empresa ou fora das pastas)."""
+    return next((p for p in listar_casos() if p.name == nome), None)
+
+
+def pastas_de_casos() -> list[Path]:
+    """Pastas onde podem estar os anexos dos casos da empresa ativa (para servir um documento com segurança)."""
+    return [config.dir_casos, dir_casos()] if contas.empresa_ativa() else [config.dir_casos]
 
 
 # ---------------------------------------------------------------------------- prospecções
