@@ -32,3 +32,11 @@ def entrar():
 def _dados_isolados(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "dir_dados", tmp_path)
     monkeypatch.setattr(config, "dir_analises", tmp_path / "analises")
+
+
+@pytest.fixture(autouse=True)
+def _provedor_restaurado(monkeypatch):
+    """POST /api/config/llm troca o provedor e os modelos no `config` global; sem isso, um teste que escolhe o modo
+    sem IA deixava os modelos da Anthropic para os testes seguintes (e o Gemini recebia claude-haiku-5-5)."""
+    for campo in ("llm_provider", "model_agente", "model_extracao", "modelos_reserva", "lote_max_itens", "lote_max_chars"):
+        monkeypatch.setattr(config, campo, getattr(config, campo))
