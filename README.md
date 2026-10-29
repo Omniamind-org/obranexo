@@ -20,7 +20,7 @@
 <p align="center">
   <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-0b2a3c?style=flat-square&logo=python&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-API%20%2B%20SSE-00ab9f?style=flat-square">
-  <img alt="Testes" src="https://img.shields.io/badge/testes-213%20passando-0ca30c?style=flat-square">
+  <img alt="Testes" src="https://img.shields.io/badge/testes-216%20passando-0ca30c?style=flat-square">
   <a href="https://github.com/Omniamind-org/obranexo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Omniamind-org/obranexo/ci.yml?branch=main&style=flat-square&label=CI"></a>
   <img alt="Rastreabilidade" src="https://img.shields.io/badge/cita%C3%A7%C3%B5es%20conferidas-100%25-0ca30c?style=flat-square">
   <img alt="Versão" src="https://img.shields.io/badge/vers%C3%A3o-0.1%20%C2%B7%20MVP-7d8b96?style=flat-square">
@@ -373,7 +373,7 @@ Só dados reais. Tudo abaixo é reproduzível a partir deste repositório; as li
 
 | O quê | Resultado | Como conferir |
 |---|---|---|
-| Testes automatizados | **213 passando** (unitários + API, incluindo login e isolamento por empresa, observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/Omniamind-org/obranexo/actions/workflows/ci.yml) |
+| Testes automatizados | **216 passando** (unitários + API, incluindo login e isolamento por empresa, observabilidade, grafo, custos, paginação do PNCP, kit da proposta e o retrato da demo), lint limpo (ruff); rodam em todo PR no CI, em Linux | `pytest -m "not integracao"` · [Actions](https://github.com/Omniamind-org/obranexo/actions/workflows/ci.yml) |
 | Custo e latência medidos (24/10, Gemini) | Itaberaí, 21 itens, sem cache: 17 chamadas, 0 erros, 165 mil tokens (4,8 mil de raciocínio), **US$ 0,145 ≈ R$ 0,73** pela tabela paga, 78 s, latência média 4,9 s e p95 9,9 s por chamada, 73/73 evidências; o Investigador respondeu por 68% do custo | trilha em `data/obranexo.db` · `GET /api/analises/{id}/chamadas` · `GET /api/custos` · tela **Qualidade → Uso de modelos** |
 | Benchmark contra gabaritos revisados | 2 contratações, 9 itens e 8 pares item × produto: **100% de acerto por item, 100% nos pares, 100% de rastreabilidade** | `python eval/run_benchmark.py` · [`docs/benchmark_resultado.json`](docs/benchmark_resultado.json) |
 | Tempo | 5 s para os 2 casos em modo determinístico; 55 s com Gemini (2 chamadas) | idem |
@@ -432,7 +432,7 @@ flowchart LR
   end
   subgraph DAT[" Dados "]
     direction TB
-    PG[(🐘 PostgreSQL + pgvector ⬜ F1–F2<br/>hoje: JSON em disco ✅ · SQLite da trilha de IA ✅)]:::mem
+    PG[(🐘 PostgreSQL ou SQLite ✅ contas, trilha, chat, jobs<br/>análises e catálogo em JSON ✅ · pgvector ⬜ F2)]:::mem
     S3[(🗄️ Acervo no S3 ⬜ F1 · ciclo de vida F3<br/>hoje: pacotes congelados ✅)]:::mem
   end
   subgraph ING[" Ingestão "]
@@ -555,7 +555,7 @@ obranexo usuario criar voce@empresa.com.br --empresa "Sua Empresa" --admin   # p
 obranexo usuario listar                                                        # também: senha, desativar, ativar
 ```
 
-**Com Docker** (não precisa de Python na máquina): a imagem traz a interface, a API e os casos de demonstração; contas, análises, catálogos e a trilha de IA ficam no volume `dados` e sobrevivem a reinícios. As chaves vêm do `.env`, que não entra na imagem.
+**Com Docker** (não precisa de Python na máquina): sobe o app e um PostgreSQL 16. A imagem traz a interface, a API e os casos de demonstração; contas, sessões, convites, conversas, trilha de IA e jobs ficam no PostgreSQL (volume `banco`), e análises, catálogos e licitações coletadas no volume `dados`. As migrações rodam sozinhas quando o app sobe. As chaves vêm do `.env`, que não entra na imagem; a senha do banco, de `OBRANEXO_DB_SENHA`.
 
 ```bash
 docker compose up -d --build                                       # http://localhost:8000
@@ -571,7 +571,7 @@ obranexo analisar goianira_pe038_2026     # análise completa pela linha de coma
 obranexo abertas --uf GO                  # licitações com propostas abertas, ao vivo no PNCP (--modalidades 6,4)
 obranexo coletar 01291707000167 2026 75 meu_caso   # baixa e congela uma contratação
 
-pytest -m "not integracao"                # 213 testes, sem chamar o LLM (inclui o retrato da demo)
+pytest -m "not integracao"                # 216 testes, sem chamar o LLM (inclui o retrato da demo)
 pytest -m integracao -v                   # chama o provedor configurado (usa cota)
 python eval/run_benchmark.py              # benchmark contra os gabaritos
 python eval/run_benchmark.py --limiares eval/limiares.json   # a mesma trava de qualidade do CI
@@ -600,7 +600,7 @@ Encontradas em auditoria do código em 24/10/2026; todas têm item no plano de d
 | Custo de IA é estimativa a preço de tabela, com uma única análise medida (Itaberaí, R$ 0,73) | no nível gratuito do Gemini e do Groq a cobrança real é zero; a meta de R$ 1 por análise só se valida com volume e chave paga | acompanhar em `GET /api/custos` e na tela Qualidade; medir no piloto · F1–F2 |
 | 32 atributos, quase todos de iluminação | número de condutores, comprimento de braço, classe de encordoamento ficam de fora | taxonomia por categoria · F2 |
 | Sem OCR, sem PCA, sem tabelas de PDF | editais digitalizados e demanda planejada não são lidos | F2 |
-| Persistência em JSON; o SQLite guarda a trilha de chamadas de IA, as mensagens do chat e os jobs; os jobs rodam em threads do próprio servidor | análises, prospecções e catálogo continuam em JSON; depois de um reinício a análise em andamento recomeça do início e a prospecção fica como interrompida; não escala horizontalmente | Postgres (análises, trilha e chat no mesmo banco), fila e workers · F1–F2 |
+| Análises, prospecções e catálogo em JSON; contas, trilha de IA, chat e jobs no banco (PostgreSQL com `OBRANEXO_DATABASE_URL`, senão SQLite); os jobs rodam em threads do próprio servidor | depois de um reinício a análise em andamento recomeça do início e a prospecção fica como interrompida; com os JSON e os casos em disco local, não escala para mais de um servidor | análises e catálogo no banco, casos no S3, fila e workers · F1–F2 |
 
 ## Referência
 
@@ -726,9 +726,10 @@ docs/
   benchmark_resultado.json
 eval/run_benchmark.py    benchmark contra gabaritos (com --limiares, trava de qualidade)
 eval/limiares.json       mínimos por métrica usados pela trava
-tests/                   221 testes (login e isolamento por empresa, regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
+tests/                   224 testes (login e isolamento por empresa, regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
 .github/workflows/ci.yml lint, testes, benchmark como trava e build da imagem Docker em todo PR (Linux, modo determinístico e offline)
-Dockerfile · docker-compose.yml  imagem da aplicação e volume `dados` para o estado (contas, análises, catálogos, trilha)
+Dockerfile · docker-compose.yml  imagem da aplicação, PostgreSQL e os volumes `dados` e `banco`
+src/obranexo/db.py · migracoes/  esquema do banco (SQLAlchemy) e migrações Alembic; `alembic upgrade head` (o app aplica sozinho)
 .github/workflows/pages.yml publica bmc/site/ no GitHub Pages, só quando bmc/site/ muda
 pitch/                   planejamento, fala e slides do pitch
 bmc/                     modelo de negócio: BMC, pesquisa, medição no PNCP, canvas A3 e PM Canvas

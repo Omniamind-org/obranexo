@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
-from obranexo import contas, notificacoes
+from obranexo import contas, db, notificacoes
 from obranexo.config import config
 
 SENHA = "senha-de-teste"
@@ -81,8 +82,8 @@ def test_convite_expirado_ou_cancelado_nao_vale(app, entrar):
         assert novo.post("/api/auth/convites/ver", json={"token": token}).status_code == 404
 
         token = _token(ana.post("/api/equipe/convites", json={"email": "dani@alfa.com.br"}).json()["link"])
-        with contas._conectar() as con:
-            con.execute("UPDATE links_conta SET expira_em = '2000-01-01T00:00:00' WHERE email = 'dani@alfa.com.br'")
+        with db.escrever() as con:
+            con.execute(text("UPDATE links_conta SET expira_em = '2000-01-01T00:00:00' WHERE email = 'dani@alfa.com.br'"))
         assert novo.post("/api/auth/convites/aceitar", json={"token": token, "senha": "senha-da-dani"}).status_code == 400
 
 

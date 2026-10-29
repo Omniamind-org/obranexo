@@ -1,6 +1,6 @@
 """Execução de tarefas longas (análises, prospecções) em segundo plano, com eventos acompanháveis via SSE.
 
-Cada job e cada evento ficam também no SQLite data/obranexo.db: depois de um reinício do servidor (deploy, contêiner
+Cada job e cada evento ficam também no banco (db.py): depois de um reinício do servidor (deploy, contêiner
 reiniciado), /api/jobs/{id} continua respondendo e o que estava em andamento é retomado (análises, que só releem
 o caso congelado) ou marcado como interrompido (prospecção e chat, que gastariam cota de IA sem ninguém pedir).
 """
@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import contextvars
 import json
-import sqlite3
 import threading
 import uuid
 from collections.abc import Callable
@@ -19,8 +18,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from obranexo import contas
-from obranexo.config import config
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+
+from obranexo import contas, db
 from obranexo.models import Empresa, EventoLog
 
 _EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="tarefa")
@@ -29,40 +30,7 @@ _EXECUTOR_CHAT = ThreadPoolExecutor(max_workers=4, thread_name_prefix="chat")
 
 INTERROMPIDO = "interrompido pelo reinício do servidor; inicie de novo"
 
-_DDL = """
-CREATE TABLE IF NOT EXISTS jobs (
-  id TEXT PRIMARY KEY,
-  tipo TEXT NOT NULL,
-  alvo TEXT NOT NULL,
-  empresa_id TEXT,
-  status TEXT NOT NULL,
-  resultado_id TEXT,
-  erro TEXT,
-  dados TEXT,
-  parametros TEXT,
-  iniciado_em TEXT NOT NULL,
-  finalizado_em TEXT
-);
-CREATE TABLE IF NOT EXISTS job_eventos (
-  job_id TEXT NOT NULL REFERENCES jobs(id),
-  ordem INTEGER NOT NULL,
-  evento TEXT NOT NULL,
-  PRIMARY KEY (job_id, ordem)
-);
-"""
-
 _lock_db = threading.Lock()
-_preparados: set[str] = set()
-
-
-def _conectar() -> sqlite3.Connection:
-    caminho = config.caminho_db
-    caminho.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(caminho, timeout=5)
-    if str(caminho) not in _preparados:
-        con.executescript(_DDL)
-        _preparados.add(str(caminho))
-    return con
 
 
 @dataclass
@@ -86,22 +54,21 @@ class Job:
         with _lock_db:
             self.eventos.append(evento)
             try:
-                with _conectar() as con:
-                    con.execute("INSERT OR REPLACE INTO job_eventos (job_id, ordem, evento) VALUES (?, ?, ?)",
-                                (self.id, len(self.eventos) - 1, json.dumps(evento, ensure_ascii=False)))
-            except sqlite3.Error:
+                with db.escrever() as con:
+                    db.inserir_ou_substituir(con, db.job_eventos, {"job_id": self.id, "ordem": len(self.eventos) - 1,
+                                                                   "evento": json.dumps(evento, ensure_ascii=False)})
+            except SQLAlchemyError:
                 pass  # o evento continua em memória; gravar é o que permite retomar, não o que faz a tarefa andar
 
     def gravar(self) -> None:
-        with _lock_db, _conectar() as con:
-            con.execute(
-                "INSERT OR REPLACE INTO jobs (id, tipo, alvo, empresa_id, status, resultado_id, erro, dados, parametros, iniciado_em, finalizado_em)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (self.id, self.tipo, self.alvo, self.empresa_id, self.status, self.resultado_id, self.erro,
-                 json.dumps(self.dados, ensure_ascii=False, default=str) if self.dados is not None else None,
-                 json.dumps(self.parametros, ensure_ascii=False), self.iniciado_em.isoformat(),
-                 self.finalizado_em.isoformat() if self.finalizado_em else None),
-            )
+        with _lock_db, db.escrever() as con:
+            db.inserir_ou_substituir(con, db.jobs, {
+                "id": self.id, "tipo": self.tipo, "alvo": self.alvo, "empresa_id": self.empresa_id, "status": self.status,
+                "resultado_id": self.resultado_id, "erro": self.erro,
+                "dados": json.dumps(self.dados, ensure_ascii=False, default=str) if self.dados is not None else None,
+                "parametros": json.dumps(self.parametros, ensure_ascii=False), "iniciado_em": self.iniciado_em.isoformat(),
+                "finalizado_em": self.finalizado_em.isoformat() if self.finalizado_em else None,
+            })
 
     def resumo(self) -> dict[str, Any]:
         return {
@@ -129,14 +96,14 @@ def _job_do_banco(linha: tuple, eventos: list[dict[str, Any]]) -> Job:
 
 
 def _ler(job_id: str | None = None, status: str | None = None) -> list[Job]:
-    condicao, valores = ("id = ?", (job_id,)) if job_id else ("status = ?", (status,))
-    with _conectar() as con:
-        linhas = con.execute(f"SELECT id, tipo, alvo, empresa_id, status, resultado_id, erro, dados, parametros, iniciado_em, finalizado_em"
-                             f" FROM jobs WHERE {condicao} ORDER BY iniciado_em", valores).fetchall()
+    condicao, valores = ("id = :valor", {"valor": job_id}) if job_id else ("status = :valor", {"valor": status})
+    with db.ler() as con:
+        linhas = con.execute(text(f"SELECT id, tipo, alvo, empresa_id, status, resultado_id, erro, dados, parametros, iniciado_em, finalizado_em"
+                                  f" FROM jobs WHERE {condicao} ORDER BY iniciado_em"), valores).fetchall()
         saida = []
         for linha in linhas:
-            eventos = [json.loads(e) for (e,) in con.execute("SELECT evento FROM job_eventos WHERE job_id = ? ORDER BY ordem", (linha[0],))]
-            saida.append(_job_do_banco(linha, eventos))
+            eventos = [json.loads(e) for (e,) in con.execute(text("SELECT evento FROM job_eventos WHERE job_id = :id ORDER BY ordem"), {"id": linha[0]})]
+            saida.append(_job_do_banco(tuple(linha), eventos))
     return saida
 
 
@@ -207,7 +174,7 @@ class GerenciadorJobs:
             job.finalizado_em = datetime.now()
             try:
                 job.gravar()
-            except sqlite3.Error:
+            except SQLAlchemyError:
                 pass
 
 

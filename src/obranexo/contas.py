@@ -1,4 +1,4 @@
-"""Contas: empresas, usuários e sessões de login, no SQLite data/obranexo.db.
+"""Contas: empresas, usuários e sessões de login, no banco (db.py: SQLite data/obranexo.db ou PostgreSQL).
 
 A empresa é a unidade de isolamento: cada uma tem o próprio catálogo, análises, prospecções e conversas, em
 data/empresas/<empresa_id>/. A empresa da requisição fica num contextvar (`empresa_ativa`), definido pela API
@@ -15,7 +15,6 @@ import contextvars
 import hashlib
 import hmac
 import secrets
-import sqlite3
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -23,45 +22,11 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from obranexo.config import config
+from sqlalchemy import Connection, text
+from sqlalchemy.exc import IntegrityError
 
-_DDL = """
-CREATE TABLE IF NOT EXISTS empresas (
-  id TEXT PRIMARY KEY,
-  nome TEXT NOT NULL,
-  cnpj TEXT,
-  criada_em TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS usuarios (
-  id TEXT PRIMARY KEY,
-  email TEXT NOT NULL UNIQUE,
-  nome TEXT NOT NULL DEFAULT '',
-  senha_hash TEXT NOT NULL,
-  empresa_id TEXT NOT NULL REFERENCES empresas(id),
-  admin INTEGER NOT NULL DEFAULT 0,
-  ativo INTEGER NOT NULL DEFAULT 1,
-  criado_em TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS sessoes (
-  token_hash TEXT PRIMARY KEY,
-  usuario_id TEXT NOT NULL REFERENCES usuarios(id),
-  criada_em TEXT NOT NULL,
-  expira_em TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS links_conta (
-  id TEXT PRIMARY KEY,
-  token_hash TEXT NOT NULL UNIQUE,
-  tipo TEXT NOT NULL,
-  email TEXT NOT NULL,
-  empresa_id TEXT REFERENCES empresas(id),
-  empresa_nova TEXT,
-  admin INTEGER NOT NULL DEFAULT 0,
-  criado_por TEXT REFERENCES usuarios(id),
-  criado_em TEXT NOT NULL,
-  expira_em TEXT NOT NULL,
-  usado_em TEXT
-);
-"""
+from obranexo import db
+from obranexo.config import config
 
 SENHA_MIN = 8
 # Links de uso único mandados por e-mail ou copiados da tela Equipe: convite para criar conta e redefinição de senha
@@ -71,7 +36,6 @@ VALIDADE_REDEFINICAO = timedelta(hours=1)
 _SCRYPT_N, _SCRYPT_R, _SCRYPT_P = 2**14, 8, 1
 
 _lock = threading.Lock()
-_preparados: set[str] = set()
 
 _empresa_ativa: contextvars.ContextVar[str | None] = contextvars.ContextVar("obranexo_empresa", default=None)
 
@@ -126,17 +90,6 @@ _HASH_FICTICIO = hash_senha(secrets.token_urlsafe(16))
 # ---------------------------------------------------------------------------- banco
 
 
-def _conectar() -> sqlite3.Connection:
-    caminho = config.caminho_db
-    caminho.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(caminho, timeout=5)
-    con.execute("PRAGMA foreign_keys = ON")
-    if str(caminho) not in _preparados:
-        con.executescript(_DDL)
-        _preparados.add(str(caminho))
-    return con
-
-
 def _agora() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
@@ -182,20 +135,21 @@ def criar_empresa(nome: str, cnpj: str | None = None) -> str:
     if not nome.strip():
         raise ValueError("informe o nome da empresa")
     empresa_id = f"emp_{secrets.token_hex(6)}"
-    with _lock, _conectar() as con:
-        con.execute("INSERT INTO empresas (id, nome, cnpj, criada_em) VALUES (?, ?, ?, ?)", (empresa_id, nome.strip(), cnpj, _agora()))
+    with _lock, db.escrever() as con:
+        con.execute(text("INSERT INTO empresas (id, nome, cnpj, criada_em) VALUES (:id, :nome, :cnpj, :agora)"),
+                    {"id": empresa_id, "nome": nome.strip(), "cnpj": cnpj, "agora": _agora()})
     return empresa_id
 
 
 def buscar_empresa(empresa_id: str) -> dict | None:
-    with _conectar() as con:
-        linha = con.execute("SELECT id, nome, cnpj FROM empresas WHERE id = ?", (empresa_id,)).fetchone()
+    with db.ler() as con:
+        linha = con.execute(text("SELECT id, nome, cnpj FROM empresas WHERE id = :id"), {"id": empresa_id}).fetchone()
     return {"id": linha[0], "nome": linha[1], "cnpj": linha[2]} if linha else None
 
 
 def listar_empresas() -> list[dict]:
-    with _conectar() as con:
-        linhas = con.execute("SELECT id, nome, cnpj FROM empresas ORDER BY nome").fetchall()
+    with db.ler() as con:
+        linhas = con.execute(text("SELECT id, nome, cnpj FROM empresas ORDER BY nome")).fetchall()
     return [{"id": i, "nome": n, "cnpj": c} for i, n, c in linhas]
 
 
@@ -207,26 +161,28 @@ def criar_usuario(email: str, senha: str, empresa_id: str, nome: str = "", admin
         raise ValueError(f"empresa '{empresa_id}' não existe")
     uid = f"usr_{secrets.token_hex(6)}"
     try:
-        with _lock, _conectar() as con:
+        with _lock, db.escrever() as con:
             con.execute(
-                "INSERT INTO usuarios (id, email, nome, senha_hash, empresa_id, admin, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (uid, email, nome.strip(), hash_senha(senha), empresa_id, int(admin), _agora()),
+                text("INSERT INTO usuarios (id, email, nome, senha_hash, empresa_id, admin, criado_em)"
+                     " VALUES (:id, :email, :nome, :senha_hash, :empresa_id, :admin, :agora)"),
+                {"id": uid, "email": email, "nome": nome.strip(), "senha_hash": hash_senha(senha), "empresa_id": empresa_id,
+                 "admin": int(admin), "agora": _agora()},
             )
-    except sqlite3.IntegrityError as exc:
+    except IntegrityError as exc:
         raise ValueError(f"já existe uma conta com o e-mail {email}") from exc
     return buscar_usuario(email)  # type: ignore[return-value]
 
 
 def buscar_usuario(email: str) -> Usuario | None:
-    with _conectar() as con:
-        return _usuario(con.execute(_SELECT_USUARIO + " WHERE u.email = ?", (normalizar_email(email),)).fetchone())
+    with db.ler() as con:
+        return _usuario(con.execute(text(_SELECT_USUARIO + " WHERE u.email = :email"), {"email": normalizar_email(email)}).fetchone())
 
 
 def listar_usuarios() -> list[dict]:
-    with _conectar() as con:
-        linhas = con.execute(
+    with db.ler() as con:
+        linhas = con.execute(text(
             "SELECT u.email, u.nome, e.id, e.nome, u.admin, u.ativo, u.criado_em FROM usuarios u JOIN empresas e ON e.id = u.empresa_id ORDER BY e.nome, u.email"
-        ).fetchall()
+        )).fetchall()
     return [{"email": a, "nome": b, "empresa_id": c, "empresa": d, "admin": bool(e), "ativo": bool(f), "criado_em": g} for a, b, c, d, e, f, g in linhas]
 
 
@@ -237,24 +193,24 @@ def definir_senha(email: str, senha: str) -> None:
     u = buscar_usuario(email)
     if u is None:
         raise ValueError(f"não há conta com o e-mail {email}")
-    with _lock, _conectar() as con:
-        con.execute("UPDATE usuarios SET senha_hash = ? WHERE id = ?", (hash_senha(senha), u.id))
-        con.execute("DELETE FROM sessoes WHERE usuario_id = ?", (u.id,))
+    with _lock, db.escrever() as con:
+        con.execute(text("UPDATE usuarios SET senha_hash = :senha_hash WHERE id = :id"), {"senha_hash": hash_senha(senha), "id": u.id})
+        con.execute(text("DELETE FROM sessoes WHERE usuario_id = :id"), {"id": u.id})
 
 
 def definir_ativo(email: str, ativo: bool) -> None:
     u = buscar_usuario(email)
     if u is None:
         raise ValueError(f"não há conta com o e-mail {email}")
-    with _lock, _conectar() as con:
-        con.execute("UPDATE usuarios SET ativo = ? WHERE id = ?", (int(ativo), u.id))
+    with _lock, db.escrever() as con:
+        con.execute(text("UPDATE usuarios SET ativo = :ativo WHERE id = :id"), {"ativo": int(ativo), "id": u.id})
         if not ativo:
-            con.execute("DELETE FROM sessoes WHERE usuario_id = ?", (u.id,))
+            con.execute(text("DELETE FROM sessoes WHERE usuario_id = :id"), {"id": u.id})
 
 
 def autenticar(email: str, senha: str) -> Usuario | None:
-    with _conectar() as con:
-        linha = con.execute("SELECT senha_hash, ativo FROM usuarios WHERE email = ?", (normalizar_email(email),)).fetchone()
+    with db.ler() as con:
+        linha = con.execute(text("SELECT senha_hash, ativo FROM usuarios WHERE email = :email"), {"email": normalizar_email(email)}).fetchone()
     if linha is None:
         conferir_senha(senha, _HASH_FICTICIO)
         return None
@@ -275,11 +231,12 @@ def abrir_sessao(usuario: Usuario) -> str:
     token = secrets.token_urlsafe(32)
     agora = datetime.now()
     expira = agora + timedelta(hours=config.sessao_horas)
-    with _lock, _conectar() as con:
-        con.execute("DELETE FROM sessoes WHERE expira_em < ?", (agora.isoformat(timespec="seconds"),))
+    with _lock, db.escrever() as con:
+        con.execute(text("DELETE FROM sessoes WHERE expira_em < :agora"), {"agora": agora.isoformat(timespec="seconds")})
         con.execute(
-            "INSERT INTO sessoes (token_hash, usuario_id, criada_em, expira_em) VALUES (?, ?, ?, ?)",
-            (_hash_token(token), usuario.id, agora.isoformat(timespec="seconds"), expira.isoformat(timespec="seconds")),
+            text("INSERT INTO sessoes (token_hash, usuario_id, criada_em, expira_em) VALUES (:token_hash, :usuario_id, :agora, :expira)"),
+            {"token_hash": _hash_token(token), "usuario_id": usuario.id, "agora": agora.isoformat(timespec="seconds"),
+             "expira": expira.isoformat(timespec="seconds")},
         )
     return token
 
@@ -287,10 +244,10 @@ def abrir_sessao(usuario: Usuario) -> str:
 def usuario_da_sessao(token: str | None) -> Usuario | None:
     if not token:
         return None
-    with _conectar() as con:
+    with db.ler() as con:
         linha = con.execute(
-            _SELECT_USUARIO + " JOIN sessoes s ON s.usuario_id = u.id WHERE s.token_hash = ? AND s.expira_em > ? AND u.ativo = 1",
-            (_hash_token(token), _agora()),
+            text(_SELECT_USUARIO + " JOIN sessoes s ON s.usuario_id = u.id WHERE s.token_hash = :token_hash AND s.expira_em > :agora AND u.ativo = 1"),
+            {"token_hash": _hash_token(token), "agora": _agora()},
         ).fetchone()
     return _usuario(linha)
 
@@ -298,8 +255,8 @@ def usuario_da_sessao(token: str | None) -> Usuario | None:
 def encerrar_sessao(token: str | None) -> None:
     if not token:
         return
-    with _lock, _conectar() as con:
-        con.execute("DELETE FROM sessoes WHERE token_hash = ?", (_hash_token(token),))
+    with _lock, db.escrever() as con:
+        con.execute(text("DELETE FROM sessoes WHERE token_hash = :token_hash"), {"token_hash": _hash_token(token)})
 
 
 # ---------------------------------------------------------------------------- convites e redefinição de senha
@@ -307,9 +264,9 @@ def encerrar_sessao(token: str | None) -> None:
 
 
 def listar_usuarios_da_empresa(empresa_id: str) -> list[dict]:
-    with _conectar() as con:
+    with db.ler() as con:
         linhas = con.execute(
-            "SELECT email, nome, admin, ativo, criado_em FROM usuarios WHERE empresa_id = ? ORDER BY email", (empresa_id,)
+            text("SELECT email, nome, admin, ativo, criado_em FROM usuarios WHERE empresa_id = :empresa_id ORDER BY email"), {"empresa_id": empresa_id}
         ).fetchall()
     return [{"email": a, "nome": b, "admin": bool(c), "ativo": bool(d), "criado_em": e} for a, b, c, d, e in linhas]
 
@@ -318,24 +275,26 @@ def _criar_link(tipo: str, email: str, validade: timedelta, criado_por: str | No
                 empresa_nova: str | None = None, admin: bool = False) -> str:
     token = secrets.token_urlsafe(32)
     agora = datetime.now()
-    with _lock, _conectar() as con:
+    with _lock, db.escrever() as con:
         # Um link novo do mesmo tipo para o mesmo e-mail substitui o anterior ainda não usado
-        con.execute("UPDATE links_conta SET usado_em = ? WHERE tipo = ? AND email = ? AND usado_em IS NULL", (_agora(), tipo, email))
+        con.execute(text("UPDATE links_conta SET usado_em = :agora WHERE tipo = :tipo AND email = :email AND usado_em IS NULL"),
+                    {"agora": _agora(), "tipo": tipo, "email": email})
         con.execute(
-            "INSERT INTO links_conta (id, token_hash, tipo, email, empresa_id, empresa_nova, admin, criado_por, criado_em, expira_em)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (f"lnk_{secrets.token_hex(6)}", _hash_token(token), tipo, email, empresa_id, empresa_nova, int(admin), criado_por,
-             agora.isoformat(timespec="seconds"), (agora + validade).isoformat(timespec="seconds")),
+            text("INSERT INTO links_conta (id, token_hash, tipo, email, empresa_id, empresa_nova, admin, criado_por, criado_em, expira_em)"
+                 " VALUES (:id, :token_hash, :tipo, :email, :empresa_id, :empresa_nova, :admin, :criado_por, :agora, :expira)"),
+            {"id": f"lnk_{secrets.token_hex(6)}", "token_hash": _hash_token(token), "tipo": tipo, "email": email, "empresa_id": empresa_id,
+             "empresa_nova": empresa_nova, "admin": int(admin), "criado_por": criado_por, "agora": agora.isoformat(timespec="seconds"),
+             "expira": (agora + validade).isoformat(timespec="seconds")},
         )
     return token
 
 
 def _link_valido(token: str, tipo: str) -> dict | None:
-    with _conectar() as con:
+    with db.ler() as con:
         linha = con.execute(
-            "SELECT l.id, l.email, l.empresa_id, e.nome, l.empresa_nova, l.admin FROM links_conta l LEFT JOIN empresas e ON e.id = l.empresa_id"
-            " WHERE l.token_hash = ? AND l.tipo = ? AND l.usado_em IS NULL AND l.expira_em > ?",
-            (_hash_token(token), tipo, _agora()),
+            text("SELECT l.id, l.email, l.empresa_id, e.nome, l.empresa_nova, l.admin FROM links_conta l LEFT JOIN empresas e ON e.id = l.empresa_id"
+                 " WHERE l.token_hash = :token_hash AND l.tipo = :tipo AND l.usado_em IS NULL AND l.expira_em > :agora"),
+            {"token_hash": _hash_token(token), "tipo": tipo, "agora": _agora()},
         ).fetchone()
     if linha is None:
         return None
@@ -343,9 +302,10 @@ def _link_valido(token: str, tipo: str) -> dict | None:
     return {"id": lid, "email": email, "empresa_id": empresa_id, "empresa": empresa_nome or empresa_nova, "admin": bool(admin)}
 
 
-def _marcar_usado(link_id: str, con: sqlite3.Connection) -> bool:
+def _marcar_usado(link_id: str, con: Connection) -> bool:
     """Marca o link como usado; False se outro pedido já o usou (dois cliques ao mesmo tempo)."""
-    return con.execute("UPDATE links_conta SET usado_em = ? WHERE id = ? AND usado_em IS NULL", (_agora(), link_id)).rowcount == 1
+    return con.execute(text("UPDATE links_conta SET usado_em = :agora WHERE id = :id AND usado_em IS NULL"),
+                       {"agora": _agora(), "id": link_id}).rowcount == 1
 
 
 def criar_convite(email: str, por: Usuario, empresa_nova: str | None = None, admin: bool = False) -> str:
@@ -376,40 +336,40 @@ def aceitar_convite(token: str, senha: str, nome: str = "") -> Usuario:
         raise ValueError(f"a senha precisa de pelo menos {SENHA_MIN} caracteres")
     if buscar_usuario(link["email"]):
         raise ValueError(f"já existe uma conta com o e-mail {link['email']}: entre com ela")
-    with _lock, _conectar() as con:
+    with _lock, db.escrever() as con:
         if not _marcar_usado(link["id"], con):
             raise ValueError("convite inválido ou expirado: peça um novo")
     try:
         empresa_id = link["empresa_id"] or criar_empresa(link["empresa"])
         return criar_usuario(link["email"], senha, empresa_id, nome, admin=link["admin"])
     except ValueError:
-        with _lock, _conectar() as con:  # o convite não foi aproveitado: continua valendo
-            con.execute("UPDATE links_conta SET usado_em = NULL WHERE id = ?", (link["id"],))
+        with _lock, db.escrever() as con:  # o convite não foi aproveitado: continua valendo
+            con.execute(text("UPDATE links_conta SET usado_em = NULL WHERE id = :id"), {"id": link["id"]})
         raise
 
 
 def convites_pendentes(empresa_id: str) -> list[dict]:
-    with _conectar() as con:
+    with db.ler() as con:
         linhas = con.execute(
-            "SELECT id, email, criado_em, expira_em FROM links_conta WHERE tipo = 'convite' AND empresa_id = ? AND usado_em IS NULL AND expira_em > ?"
-            " ORDER BY criado_em DESC", (empresa_id, _agora()),
+            text("SELECT id, email, criado_em, expira_em FROM links_conta WHERE tipo = 'convite' AND empresa_id = :empresa_id"
+                 " AND usado_em IS NULL AND expira_em > :agora ORDER BY criado_em DESC"), {"empresa_id": empresa_id, "agora": _agora()},
         ).fetchall()
     return [{"id": a, "email": b, "criado_em": c, "expira_em": d} for a, b, c, d in linhas]
 
 
 def cancelar_convite(link_id: str, empresa_id: str) -> bool:
-    with _lock, _conectar() as con:
+    with _lock, db.escrever() as con:
         return con.execute(
-            "UPDATE links_conta SET usado_em = ? WHERE id = ? AND tipo = 'convite' AND empresa_id = ? AND usado_em IS NULL",
-            (_agora(), link_id, empresa_id),
+            text("UPDATE links_conta SET usado_em = :agora WHERE id = :id AND tipo = 'convite' AND empresa_id = :empresa_id AND usado_em IS NULL"),
+            {"agora": _agora(), "id": link_id, "empresa_id": empresa_id},
         ).rowcount == 1
 
 
 def criar_redefinicao(email: str, por: Usuario | None = None) -> str | None:
     """Link para escolher uma senha nova. None quando não há conta ativa com o e-mail: quem pede pela tela de login
     recebe a mesma resposta nos dois casos, para não descobrir quais e-mails têm conta."""
-    with _conectar() as con:
-        linha = con.execute("SELECT ativo FROM usuarios WHERE email = ?", (normalizar_email(email),)).fetchone()
+    with db.ler() as con:
+        linha = con.execute(text("SELECT ativo FROM usuarios WHERE email = :email"), {"email": normalizar_email(email)}).fetchone()
     if linha is None or not linha[0]:
         return None
     return _criar_link("redefinicao", normalizar_email(email), VALIDADE_REDEFINICAO, por.id if por else None)
@@ -422,7 +382,7 @@ def redefinir_senha(token: str, senha: str) -> Usuario:
         raise ValueError("link inválido ou expirado: peça outro")
     if len(senha) < SENHA_MIN:
         raise ValueError(f"a senha precisa de pelo menos {SENHA_MIN} caracteres")
-    with _lock, _conectar() as con:
+    with _lock, db.escrever() as con:
         if not _marcar_usado(link["id"], con):
             raise ValueError("link inválido ou expirado: peça outro")
     definir_senha(link["email"], senha)
