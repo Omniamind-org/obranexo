@@ -16,14 +16,14 @@ from obranexo import contas
 from obranexo.models import Empresa, EventoLog
 
 _EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="tarefa")
-# Mensagens do assistente não esperam na fila das análises longas
+# Mensagens do assistente e buscas no PNCP não esperam na fila das análises longas
 _EXECUTOR_CHAT = ThreadPoolExecutor(max_workers=4, thread_name_prefix="chat")
 
 
 @dataclass
 class Job:
     id: str
-    tipo: str  # analise | prospeccao | chat
+    tipo: str  # analise | prospeccao | chat | busca
     alvo: str
     status: str = "executando"  # executando | concluida | erro
     eventos: list[dict[str, Any]] = field(default_factory=list)
@@ -74,7 +74,7 @@ class GerenciadorJobs:
             self._jobs[job.id] = job
         # A thread herda o contexto da requisição: a empresa ativa (onde a análise é gravada) e o escopo da trilha
         contexto = contextvars.copy_context()
-        (_EXECUTOR_CHAT if tipo == "chat" else _EXECUTOR).submit(contexto.run, self._executar, job, tarefa)
+        (_EXECUTOR_CHAT if tipo in ("chat", "busca") else _EXECUTOR).submit(contexto.run, self._executar, job, tarefa)
         return job
 
     def iniciar(self, caso: str, diretorio: Path, empresa: Empresa) -> Job:

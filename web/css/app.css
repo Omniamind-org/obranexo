@@ -427,6 +427,8 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
 
 .agora { display: flex; gap: 12px; align-items: center; margin-top: 22px; font-size: 15px; }
 .agora .spinner { color: var(--teal); }
+.barra-progresso { margin-top: 10px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.barra-progresso > div { height: 100%; width: 0; background: var(--teal); transition: width .3s; }
 
 .feed { list-style: none; margin: 0; padding: 0; font-size: 13.5px; max-height: 420px; overflow-y: auto; }
 .feed li { display: grid; grid-template-columns: 70px 140px 1fr; gap: 14px; padding: 8px 0; border-bottom: 1px solid var(--line); }

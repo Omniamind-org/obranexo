@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -24,8 +24,8 @@ from obranexo.api.jobs import jobs
 from obranexo.catalog.atributos import ATRIBUTOS
 from obranexo.catalog.loader import carregar_catalogo_json, carregar_catalogo_tabela
 from obranexo.config import MODELOS_PADRAO, PROVEDORES, config
-from obranexo.connectors.pncp import MODALIDADE_PREGAO_ELETRONICO, MODALIDADES, PNCPClient, PNCPError, carregar_caso, listar_casos
-from obranexo.models import Analise, Contratacao, Empresa, Produto, ResultadoItem, StatusRevisao
+from obranexo.connectors.pncp import MODALIDADE_PREGAO_ELETRONICO, MODALIDADES, MODALIDADES_LICITACAO, PNCPClient, PNCPError, carregar_caso, listar_casos
+from obranexo.models import Analise, Contratacao, Empresa, EventoLog, Produto, ResultadoItem, StatusRevisao
 from obranexo.observability import logs
 from obranexo.observability.trilha import agregar, escopo, trilha
 from obranexo.storage import store
@@ -410,55 +410,74 @@ def caso(nome: str) -> dict[str, Any]:
 MAX_PAGINAS_BUSCA = 20
 
 
-@api.get("/api/pncp/buscar", tags=["demandas"])
-def buscar_pncp(
-    uf: str = "GO",
-    palavras: str = "lumin,led,refletor,ilumina,material elétrico,material eletrico",
-    abertas: bool = True,
-    dias: int = Query(30, ge=1, le=365),
-    modalidades: str = Query(str(MODALIDADE_PREGAO_ELETRONICO), description="códigos do PNCP separados por vírgula (6 pregão eletrônico, 7 presencial, 4/5 concorrência, 8 dispensa)"),
-    max_paginas: int | None = Query(None, ge=1, le=MAX_PAGINAS_BUSCA, description="sem valor, lê todas as páginas (até o teto)"),
-) -> dict[str, Any]:
-    """Busca contratações das modalidades pedidas no PNCP e filtra pelo objeto."""
-    if config.offline:
-        raise HTTPException(503, "modo offline ativo (OBRANEXO_OFFLINE=1)")
+def _modalidades(texto: str) -> list[int]:
     try:
-        codigos = list(dict.fromkeys(int(m) for m in modalidades.split(",") if m.strip()))
+        codigos = list(dict.fromkeys(int(m) for m in texto.split(",") if m.strip()))
     except ValueError as exc:
         raise HTTPException(422, "modalidades: use os códigos numéricos do PNCP separados por vírgula") from exc
     if not codigos or any(m not in MODALIDADES for m in codigos):
         raise HTTPException(422, f"modalidades válidas: {', '.join(f'{k} ({v})' for k, v in MODALIDADES.items())}")
-    teto = max_paginas or MAX_PAGINAS_BUSCA
+    return codigos
+
+
+class PedidoBusca(BaseModel):
+    uf: str = "GO"
+    palavras: str = "lumin,led,refletor,ilumina,material elétrico,material eletrico"
+    abertas: bool = True
+    dias: int = Field(30, ge=1, le=365)
+    modalidades: str = Field(str(MODALIDADE_PREGAO_ELETRONICO), description="códigos do PNCP separados por vírgula (6 pregão eletrônico, 7 presencial, 4/5 concorrência, 8 dispensa)")
+    max_paginas: int | None = Field(None, ge=1, le=MAX_PAGINAS_BUSCA, description="sem valor, lê todas as páginas (até o teto)")
+
+
+def _executar_busca(pedido: PedidoBusca, codigos: list[int], progresso=None) -> dict[str, Any]:
     cli = PNCPClient()
-    lista_pal = [p.strip() for p in palavras.split(",") if p.strip()]
-    achados: dict[str, Contratacao] = {}
-    consultadas = total_geral = 0
-    truncada = False
-    try:
-        for modalidade in codigos:
-            pagina, total = 1, 1
-            while pagina <= total and pagina <= teto:
-                if abertas:
-                    lote, total = cli.buscar_propostas_abertas(uf=uf or None, modalidade=modalidade, pagina=pagina, horizonte_dias=max(dias, 30))
-                else:
-                    fim = datetime.now()
-                    lote, total = cli.buscar_publicacoes((fim - timedelta(days=dias)).strftime("%Y%m%d"), fim.strftime("%Y%m%d"), uf=uf or None,
-                                                         modalidade=modalidade, pagina=pagina)
-                for c in cli.filtrar_por_palavras(lote, lista_pal) if lista_pal else lote:
-                    achados.setdefault(c.id, c)
-                pagina += 1
-            consultadas += pagina - 1
-            total_geral += total
-            truncada = truncada or total > teto
-    except PNCPError as exc:
-        raise HTTPException(502, f"PNCP indisponível: {exc}") from exc
+    lista_pal = [p.strip() for p in pedido.palavras.split(",") if p.strip()]
+    # Propostas abertas: o horizonte mínimo de 30 dias evita a busca vazia de quem escolhe "15 dias"
+    dias = max(pedido.dias, 30) if pedido.abertas else pedido.dias
+    res = cli.buscar_todas(pedido.uf or None, codigos, abertas=pedido.abertas, dias=dias,
+                           max_paginas=pedido.max_paginas or MAX_PAGINAS_BUSCA, progresso=progresso)
+    achados = cli.filtrar_por_palavras(res.contratacoes, lista_pal) if lista_pal else res.contratacoes
     congelados = _casos_por_contratacao()
     return {
-        "paginas_consultadas": consultadas,
-        "total_paginas": total_geral,
-        "truncada": truncada,
-        "resultados": [{**_resumo_contratacao(c), "caso": congelados.get(c.id)} for c in achados.values()],
+        "paginas_consultadas": res.paginas_lidas,
+        "total_paginas": res.total_paginas,
+        "truncada": res.truncada,
+        "resultados": [{**_resumo_contratacao(c), "caso": congelados.get(c.id)} for c in achados],
     }
+
+
+@api.get("/api/pncp/buscar", tags=["demandas"])
+def buscar_pncp(pedido: Annotated[PedidoBusca, Query()]) -> dict[str, Any]:
+    """Busca contratações das modalidades pedidas no PNCP e filtra pelo objeto (espera a busca terminar)."""
+    if config.offline:
+        raise HTTPException(503, "modo offline ativo (OBRANEXO_OFFLINE=1)")
+    codigos = _modalidades(pedido.modalidades)
+    try:
+        return _executar_busca(pedido, codigos)
+    except PNCPError as exc:
+        raise HTTPException(502, f"PNCP indisponível: {exc}") from exc
+
+
+@api.post("/api/pncp/buscas", status_code=202, tags=["demandas"])
+def iniciar_busca_pncp(pedido: PedidoBusca) -> dict[str, Any]:
+    """A mesma busca em segundo plano: /api/jobs/{id}/eventos mostra cada página lida e o `fim` traz os resultados em `dados`."""
+    if config.offline:
+        raise HTTPException(503, "modo offline ativo (OBRANEXO_OFFLINE=1)")
+    codigos = _modalidades(pedido.modalidades)
+
+    def tarefa(job):
+        def progresso(modalidade: int, posicao: int, n: int, pagina: int, total: int) -> None:
+            etapa = f" (modalidade {posicao} de {n})" if n > 1 else ""
+            job.registrar(EventoLog(no="buscar", mensagem=f"{MODALIDADES[modalidade]}: página {pagina} de {total}{etapa}",
+                                    dados={"modalidade": modalidade, "posicao": posicao, "modalidades": n, "pagina": pagina, "paginas": total}))
+
+        try:
+            job.dados = _executar_busca(pedido, codigos, progresso)
+        except PNCPError as exc:
+            return None, "erro", f"PNCP indisponível: {exc}"
+        return None, "concluida", None
+
+    return jobs.iniciar_tarefa("busca", pedido.uf or "BR", tarefa).resumo()
 
 
 class PedidoColeta(BaseModel):
@@ -501,6 +520,7 @@ class PedidoProspeccao(BaseModel):
     ufs: list[str] = Field(default_factory=list, description="UFs a prospectar; vazio = UFs atendidas pelo fornecedor")
     horizonte_dias: int = Field(30, ge=3, le=120, description="propostas encerrando nos próximos N dias")
     max_analises: int = Field(2, ge=0, le=5, description="quantas licitações o agente pode analisar a fundo")
+    modalidades: list[int] = Field(default_factory=lambda: list(MODALIDADES_LICITACAO), description="códigos do PNCP; padrão: pregões, concorrências e dispensas")
 
 
 @api.post("/api/prospeccoes", status_code=202, tags=["prospecção"])
@@ -512,11 +532,13 @@ def iniciar_prospeccao(pedido: PedidoProspeccao) -> dict[str, Any]:
         raise HTTPException(503, "modo offline ativo (OBRANEXO_OFFLINE=1): a prospecção consulta o PNCP ao vivo")
     empresa = empresa_atual()
     ufs = [u.upper()[:2] for u in (pedido.ufs or empresa.ufs_atendidas[:1] or ["GO"])]
+    _modalidades(",".join(map(str, pedido.modalidades)))
 
     def tarefa(job):
         from obranexo.agents.prospector import executar_prospeccao
 
-        p = executar_prospeccao(empresa, ufs, pedido.horizonte_dias, pedido.max_analises, on_evento=job.registrar)
+        p = executar_prospeccao(empresa, ufs, pedido.horizonte_dias, pedido.max_analises, on_evento=job.registrar,
+                                modalidades=pedido.modalidades)
         return p.id, p.status, p.erro
 
     return jobs.iniciar_tarefa("prospeccao", ",".join(ufs), tarefa).resumo()

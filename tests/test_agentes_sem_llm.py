@@ -11,6 +11,7 @@ from obranexo.agents.extrator import _lotes
 from obranexo.agents.investigador import _executar_ferramenta
 from obranexo.agents.prospector import Prospector, partes_id
 from obranexo.config import Config
+from obranexo.connectors.pncp import PNCPClient
 from obranexo.documents.extract import IndiceDocumentos
 from obranexo.llm.client import ChamadaFerramenta, ClienteNulo, Conversa, RespostaLLM
 from obranexo.models import Analise, Contratacao, Documento, Empresa, ItemDemanda
@@ -104,10 +105,11 @@ class _LLMRoteirizado(ClienteNulo):
         return self._conv
 
 
-class _PNCPFalso:
-    aviso = None
+class _PNCPFalso(PNCPClient):
+    """Só a rede é falsa: a paginação por modalidade (buscar_todas) é a real."""
 
     def __init__(self, contratacoes):
+        super().__init__(offline=True, pausa_s=0)
         self.contratacoes = contratacoes
 
     def buscar_propostas_abertas(self, uf=None, pagina=1, horizonte_dias=60, **_):

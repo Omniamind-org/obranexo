@@ -19,7 +19,7 @@ from obranexo import contas
 from obranexo.agents.prompts import SYSTEM_ASSISTENTE, VERSAO
 from obranexo.agents.prospector import _compacto, _resumo_catalogo, melhor_por_item, partes_id, resumir_analise
 from obranexo.config import Config, config
-from obranexo.connectors.pncp import PNCPClient, PNCPError, carregar_caso, listar_casos
+from obranexo.connectors.pncp import MODALIDADES_LICITACAO, PNCPClient, PNCPError, carregar_caso, listar_casos
 from obranexo.documents.extract import normalizar_busca
 from obranexo.llm.client import LLMIndisponivel, criar_llm_client
 from obranexo.models import Analise, Contratacao, Empresa, EventoLog, UsoLLM
@@ -29,12 +29,12 @@ from obranexo.rules.extrair import eh_acessorio, inferir_categoria
 from obranexo.storage import chat, store
 
 MAX_RODADAS = 8  # chamadas de ferramenta por mensagem do usuário
-MAX_PAGINAS_POR_UF = 12
+MAX_PAGINAS_POR_MODALIDADE = 12
 
 FERRAMENTAS: list[dict[str, Any]] = [
     {
         "name": "buscar_licitacoes_abertas",
-        "description": "Pregões eletrônicos com propostas ABERTAS no PNCP numa UF, cujo objeto contenha algum dos termos. "
+        "description": "Licitações (pregões, concorrências e dispensas) com propostas ABERTAS no PNCP numa UF, cujo objeto contenha algum dos termos. "
         "Devolve o total e até 20 resultados (id, órgão, município, objeto, valor estimado, encerramento), maiores primeiro.",
         "input_schema": {
             "type": "object",
@@ -150,20 +150,13 @@ class Assistente:
     def _abertas_uf(self, uf: str, dias: int) -> list[Contratacao]:
         chave = (uf, dias)
         if chave not in self._abertas:
-            lista: list[Contratacao] = []
-            pagina, total = 1, 1
-            while pagina <= total and pagina <= MAX_PAGINAS_POR_UF:
-                try:
-                    lote, total = self.pncp.buscar_propostas_abertas(uf=uf, pagina=pagina, horizonte_dias=dias)
-                except PNCPError:
-                    if not lista:
-                        raise
-                    break
-                lista += lote
-                if total > 1:
-                    self._evento("buscar", f"Lendo as licitações abertas em {uf} no PNCP ({min(pagina, total, MAX_PAGINAS_POR_UF)} de {min(total, MAX_PAGINAS_POR_UF)})")
-                pagina += 1
-            self._abertas[chave] = lista
+            def progresso(_modalidade: int, posicao: int, n: int, pagina: int, total: int) -> None:
+                if total > 1 or n > 1:
+                    self._evento("buscar", f"Lendo as licitações abertas em {uf} no PNCP (modalidade {posicao} de {n}, página {pagina} de {total})")
+
+            res = self.pncp.buscar_todas(uf, MODALIDADES_LICITACAO, dias=dias, max_paginas=MAX_PAGINAS_POR_MODALIDADE,
+                                         progresso=progresso, tolerante=True)
+            self._abertas[chave] = res.contratacoes
         return self._abertas[chave]
 
     def buscar(self, uf: str, termos: list[str], dias: int | None) -> str:

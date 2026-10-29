@@ -18,7 +18,7 @@ from typing import Any
 
 from obranexo.agents.prompts import SYSTEM_PROSPECTOR, VERSAO
 from obranexo.config import Config, config
-from obranexo.connectors.pncp import PNCPClient, PNCPError, carregar_caso
+from obranexo.connectors.pncp import MODALIDADES_LICITACAO, PNCPClient, PNCPError, carregar_caso
 from obranexo.documents.extract import normalizar_busca
 from obranexo.llm.client import criar_llm_client
 from obranexo.models import Analise, CandidatoProspeccao, Contratacao, Empresa, EventoLog, ItemRanking, Prospeccao
@@ -26,12 +26,12 @@ from obranexo.observability.trilha import escopo
 from obranexo.storage import store
 
 MAX_PASSOS = 16
-MAX_PAGINAS_POR_UF = 12  # 50 por página: cobre as ~400-600 licitações abertas de um estado
+MAX_PAGINAS_POR_MODALIDADE = 12  # 50 por página: cobre as ~400-600 licitações abertas de um estado em cada modalidade
 
 FERRAMENTAS: list[dict[str, Any]] = [
     {
         "name": "buscar_licitacoes_abertas",
-        "description": "Busca no PNCP pregões eletrônicos com propostas ABERTAS numa UF, cujo objeto contenha algum dos termos. "
+        "description": "Busca no PNCP licitações (pregões, concorrências e dispensas) com propostas ABERTAS numa UF, cujo objeto contenha algum dos termos. "
         "Devolve até 30 resultados (id, órgão, município, objeto, valor estimado, data de encerramento).",
         "strict": True,
         "input_schema": {
@@ -153,6 +153,7 @@ def _compacto(c: Contratacao) -> dict[str, Any]:
         "id": c.id,
         "orgao": c.orgao_nome,
         "municipio": f"{c.municipio}/{c.uf}",
+        "modalidade": c.modalidade,
         "objeto": c.objeto[:220],
         "valor_estimado": c.valor_estimado,
         "encerra": c.data_encerramento_proposta.strftime("%d/%m/%Y") if c.data_encerramento_proposta else None,
@@ -161,18 +162,19 @@ def _compacto(c: Contratacao) -> dict[str, Any]:
 
 class Prospector:
     def __init__(self, empresa: Empresa, ufs: list[str], horizonte_dias: int, max_analises: int,
-                 cfg: Config | None = None, on_evento=None):
+                 cfg: Config | None = None, on_evento=None, modalidades: tuple[int, ...] | list[int] = MODALIDADES_LICITACAO):
         self.cfg = cfg or config
         self.empresa = empresa
         self.ufs = [u.upper() for u in ufs] or ["GO"]
         self.horizonte_dias = horizonte_dias
         self.max_analises = max_analises
+        self.modalidades = list(modalidades)
         self.on_evento = on_evento
         self.p = Prospeccao(
             id=f"{datetime.now():%Y%m%d-%H%M%S}-{uuid.uuid4().hex[:6]}",
             empresa_id=empresa.id,
             empresa_nome=empresa.nome,
-            parametros={"ufs": self.ufs, "horizonte_dias": horizonte_dias, "max_analises": max_analises},
+            parametros={"ufs": self.ufs, "horizonte_dias": horizonte_dias, "max_analises": max_analises, "modalidades": self.modalidades},
         )
         self.llm = criar_llm_client(self.cfg, self.p.uso_llm)
         self.pncp = PNCPClient()
@@ -194,22 +196,18 @@ class Prospector:
 
     def _abertas_uf(self, uf: str) -> list[Contratacao]:
         if uf not in self._abertas:
-            lista: list[Contratacao] = []
-            pagina, total = 1, 1
-            while pagina <= total and pagina <= MAX_PAGINAS_POR_UF:
-                try:
-                    lote, total = self.pncp.buscar_propostas_abertas(uf=uf, pagina=pagina, horizonte_dias=self.horizonte_dias)
-                except PNCPError:
-                    if not lista:
-                        raise  # sem nenhuma página não há o que buscar
-                    self.evento("buscar", f"PNCP falhou na página {pagina}; seguindo com as {len(lista)} licitações já obtidas")
-                    break
-                lista += lote
-                pagina += 1
+            # Uma página que falha não para a prospecção; sem nenhuma página não há o que buscar (o erro sobe)
+            res = self.pncp.buscar_todas(uf, self.modalidades, dias=self.horizonte_dias, max_paginas=MAX_PAGINAS_POR_MODALIDADE, tolerante=True)
+            for falha in res.falhas:
+                self.evento("buscar", f"PNCP falhou em {falha}; seguindo com as licitações já obtidas")
+            lista = res.contratacoes
             self._abertas[uf] = lista
             for c in lista:
                 self._por_id[c.id] = c
-            self.evento("buscar", f"PNCP: {len(lista)} pregões com propostas abertas em {uf} (próximos {self.horizonte_dias} dias)")
+            por_modalidade = Counter(c.modalidade or "?" for c in lista)
+            detalhe = ", ".join(f"{n} {m}" for m, n in por_modalidade.most_common())
+            self.evento("buscar", f"PNCP: {len(lista)} licitações com propostas abertas em {uf} (próximos {self.horizonte_dias} dias)"
+                        + (f": {detalhe}" if detalhe else ""))
             if self.pncp.aviso:
                 self.evento("buscar", self.pncp.aviso)
                 self.pncp.aviso = None
@@ -398,5 +396,6 @@ class Prospector:
 
 
 def executar_prospeccao(empresa: Empresa, ufs: list[str], horizonte_dias: int = 30, max_analises: int = 2,
-                        cfg: Config | None = None, on_evento=None) -> Prospeccao:
-    return Prospector(empresa, ufs, horizonte_dias, max_analises, cfg=cfg, on_evento=on_evento).executar()
+                        cfg: Config | None = None, on_evento=None,
+                        modalidades: tuple[int, ...] | list[int] = MODALIDADES_LICITACAO) -> Prospeccao:
+    return Prospector(empresa, ufs, horizonte_dias, max_analises, cfg=cfg, on_evento=on_evento, modalidades=modalidades).executar()

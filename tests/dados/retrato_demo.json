@@ -209,7 +209,7 @@
    "205": "FORA",
    "206": "INDETERMINADO CB-1.5"
   },
-  "prioridade": 37.9,
+  "prioridade": 47.9,
   "tipo": "PUBLICADA",
   "evidencias": "10/10",
   "requisitos": 110,
@@ -222,7 +222,7 @@
    "2": "PARCIAL LPL-100-50K-PRO",
    "3": "COMPATIVEL LPL-150-50K-PRO"
   },
-  "prioridade": 45.3,
+  "prioridade": 38.6,
   "tipo": "PUBLICADA",
   "evidencias": "53/53",
   "requisitos": 57,
@@ -275,7 +275,7 @@
    "42": "FORA",
    "43": "INDETERMINADO PNL-40-6060"
   },
-  "prioridade": 45.2,
+  "prioridade": 52.2,
   "tipo": "PUBLICADA",
   "evidencias": "37/37",
   "requisitos": 53,
@@ -319,7 +319,7 @@
    "33": "FORA",
    "34": "FORA"
   },
-  "prioridade": 28.9,
+  "prioridade": 38.5,
   "tipo": "PUBLICADA",
   "evidencias": "163/163",
   "requisitos": 254,
@@ -361,7 +361,7 @@
    "31": "FORA",
    "32": "INCOMPATIVEL LPL-200-40K"
   },
-  "prioridade": 30.7,
+  "prioridade": 39.8,
   "tipo": "PUBLICADA",
   "evidencias": "55/55",
   "requisitos": 68,
@@ -392,7 +392,7 @@
    "20": "INDETERMINADO LPL-100-50K-PRO",
    "21": "FORA"
   },
-  "prioridade": 58.2,
+  "prioridade": 63.1,
   "tipo": "PUBLICADA",
   "evidencias": "55/55",
   "requisitos": 95,
@@ -405,7 +405,7 @@
    "2": "INCOMPATIVEL RFL-30",
    "3": "INCOMPATIVEL RFL-30"
   },
-  "prioridade": 25.0,
+  "prioridade": 35.0,
   "tipo": "PUBLICADA",
   "evidencias": "44/44",
   "requisitos": 50,
@@ -421,7 +421,7 @@
    "5": "PARCIAL RF-MULTI",
    "6": "PARCIAL RF-MULTI"
   },
-  "prioridade": 65.0,
+  "prioridade": 55.0,
   "tipo": "PUBLICADA",
   "evidencias": "107/107",
   "requisitos": 120,

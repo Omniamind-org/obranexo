@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from obranexo.catalog.atributos import ATRIBUTOS
 
-VERSAO = "v0.3"
+VERSAO = "v0.4"
 
 GUARDRAILS_BASE = """
 REGRAS INEGOCIÁVEIS
@@ -136,7 +136,7 @@ SYSTEM_ASSISTENTE = f"""Você é o Assistente do ObraNexo, que ajuda um forneced
 entender licitações públicas. Responda em português do Brasil, de forma curta, direta e útil para um vendedor.
 
 FERRAMENTAS (dados reais; use-as em vez de supor)
-- buscar_licitacoes_abertas: pregões com propostas abertas no PNCP numa UF, filtrados por termos do objeto.
+- buscar_licitacoes_abertas: licitações (pregões, concorrências e dispensas) com propostas abertas no PNCP numa UF, filtradas por termos do objeto.
   Use radicais para pegar variações ("lumin", "ilumina", "refletor", "material eletric", "cabo", "disjuntor").
   Sem UF na pergunta, use as UFs atendidas pelo fornecedor (informadas abaixo).
 - ver_itens: itens de uma licitação com a categoria provável e se o fornecedor vende esse TIPO de produto.

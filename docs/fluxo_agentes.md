@@ -23,7 +23,7 @@ Recebe o catálogo, as UFs e o horizonte de prazo. O LLM conduz tudo:
 
 | Ferramenta | O que faz de verdade |
 |---|---|
-| `buscar_licitacoes_abertas(uf, termos)` | consulta o PNCP (pregões com propostas abertas) e filtra pelo objeto com os termos que **o agente escolheu** a partir do catálogo |
+| `buscar_licitacoes_abertas(uf, termos)` | consulta o PNCP (pregões, concorrências e dispensas com propostas abertas) e filtra pelo objeto com os termos que **o agente escolheu** a partir do catálogo |
 | `ver_itens(contratacao_id)` | lista os itens da licitação direto do PNCP |
 | `analisar_a_fundo(contratacao_id, motivo)` | baixa edital e anexos e roda a análise completa abaixo (limitada por prospecção) |
 | `concluir(ranking, resumo)` | ranking justificado; só aceita licitações que vieram das ferramentas |

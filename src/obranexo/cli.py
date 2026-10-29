@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timedelta
 from pathlib import Path
 
 from obranexo.config import config
@@ -78,38 +77,27 @@ def _imprimir(lista) -> None:
         print(f"{c.id:30} {(c.municipio or '')[:18]:18} enc:{enc:10} R$ {c.valor_estimado or 0:>14,.2f}  {c.objeto[:80]}")
 
 
-def cmd_buscar(args) -> int:
+def _buscar(args, abertas: bool) -> int:
     from obranexo.connectors.pncp import PNCPClient
 
     cli = PNCPClient()
-    fim = datetime.now()
-    ini = fim - timedelta(days=int(args.dias))
+    modalidades = [int(m) for m in str(args.modalidades).split(",") if m.strip()]
     palavras = [p.strip() for p in args.palavras.split(",") if p.strip()]
-    pagina, total = 1, 1
-    achados = []
-    while pagina <= total and pagina <= int(args.max_paginas):
-        lista, total = cli.buscar_publicacoes(ini.strftime("%Y%m%d"), fim.strftime("%Y%m%d"), uf=args.uf, pagina=pagina)
-        achados += cli.filtrar_por_palavras(lista, palavras) if palavras else lista
-        pagina += 1
+    res = cli.buscar_todas(args.uf, modalidades, abertas=abertas, dias=int(args.dias), max_paginas=int(args.max_paginas))
+    achados = cli.filtrar_por_palavras(res.contratacoes, palavras) if palavras else res.contratacoes
     _imprimir(achados)
-    print(f"\n{len(achados)} contratação(ões) · {min(pagina - 1, total)}/{total} página(s) consultadas")
+    sufixo = " com propostas abertas" if abertas else ""
+    print(f"\n{len(achados)} contratação(ões){sufixo} · {res.paginas_lidas}/{res.total_paginas} página(s) consultadas"
+          + (" (limite de páginas atingido)" if res.truncada else ""))
     return 0
+
+
+def cmd_buscar(args) -> int:
+    return _buscar(args, abertas=False)
 
 
 def cmd_abertas(args) -> int:
-    from obranexo.connectors.pncp import PNCPClient
-
-    cli = PNCPClient()
-    palavras = [p.strip() for p in args.palavras.split(",") if p.strip()]
-    pagina, total = 1, 1
-    achados = []
-    while pagina <= total and pagina <= int(args.max_paginas):
-        lista, total = cli.buscar_propostas_abertas(uf=args.uf, pagina=pagina, horizonte_dias=int(args.dias))
-        achados += cli.filtrar_por_palavras(lista, palavras) if palavras else lista
-        pagina += 1
-    _imprimir(achados)
-    print(f"\n{len(achados)} contratação(ões) com propostas abertas")
-    return 0
+    return _buscar(args, abertas=True)
 
 
 def _ler_senha(senha: str | None) -> str:
@@ -165,6 +153,7 @@ def cmd_servidor(args) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from obranexo.connectors.pncp import MODALIDADES_LICITACAO
     from obranexo.observability import logs
 
     logs.configurar()
@@ -193,7 +182,9 @@ def main(argv: list[str] | None = None) -> int:
         p = sub.add_parser(nome)
         p.add_argument("--uf", default="GO")
         p.add_argument("--palavras", default="lumin,led,refletor,ilumina,material elétrico,material eletrico")
-        p.add_argument("--max-paginas", default=10)
+        p.add_argument("--max-paginas", default=10, help="por modalidade")
+        p.add_argument("--modalidades", default=",".join(map(str, MODALIDADES_LICITACAO)),
+                       help="códigos do PNCP separados por vírgula (6 pregão eletrônico, 7 presencial, 4/5 concorrência, 8 dispensa)")
         # buscar: publicadas nos últimos N dias · abertas: que encerram nos próximos N dias
         p.add_argument("--dias", default=30 if nome == "buscar" else 60)
         p.set_defaults(fn=fn)

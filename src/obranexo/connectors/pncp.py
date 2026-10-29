@@ -18,6 +18,8 @@ import hashlib
 import json
 import re
 import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -48,6 +50,9 @@ MODALIDADES = {
     13: "Leilão - Presencial",
 }
 
+# Onde material elétrico é comprado: pregão eletrônico e presencial, concorrência eletrônica e presencial (obras), dispensa
+MODALIDADES_LICITACAO = (6, 7, 4, 5, 8)
+
 
 class PNCPError(RuntimeError):
     pass
@@ -55,6 +60,19 @@ class PNCPError(RuntimeError):
 
 class _Transiente(PNCPError):
     pass
+
+
+@dataclass
+class ResultadoBusca:
+    contratacoes: list[Contratacao] = field(default_factory=list)
+    paginas_lidas: int = 0
+    total_paginas: int = 0
+    truncada: bool = False  # alguma modalidade tinha mais páginas que o teto
+    falhas: list[str] = field(default_factory=list)  # páginas que o portal não devolveu (só no modo tolerante)
+
+
+# progresso(modalidade, posição da modalidade (1..n), n de modalidades, página lida, total de páginas da modalidade)
+Progresso = Callable[[int, int, int, int, int], None]
 
 
 def _parse_dt(valor: str | None) -> datetime | None:
@@ -226,6 +244,49 @@ class PNCPClient:
             return [], 1
         lista = [contratacao_de_api(d) for d in dados.get("data", [])]
         return lista, int(dados.get("totalPaginas") or 1)
+
+    def buscar_todas(
+        self,
+        uf: str | None,
+        modalidades: tuple[int, ...] | list[int] = MODALIDADES_LICITACAO,
+        abertas: bool = True,
+        dias: int = 30,
+        max_paginas: int = 12,
+        progresso: Progresso | None = None,
+        tolerante: bool = False,
+    ) -> ResultadoBusca:
+        """Todas as páginas de cada modalidade (até `max_paginas` por modalidade), sem repetir contratação.
+
+        abertas: propostas encerrando nos próximos `dias` dias; senão, publicadas nos últimos `dias` dias.
+        tolerante: se o portal falhar numa página depois que algo já foi lido, segue com o que tem e registra
+        a falha (a prospecção não para por uma página); sem nada lido, o erro sobe."""
+        res = ResultadoBusca()
+        vistos: dict[str, Contratacao] = {}
+        fim = datetime.now()
+        for posicao, modalidade in enumerate(modalidades, start=1):
+            pagina, total = 1, 1
+            while pagina <= total and pagina <= max_paginas:
+                try:
+                    if abertas:
+                        lote, total = self.buscar_propostas_abertas(uf=uf, modalidade=modalidade, pagina=pagina, horizonte_dias=dias)
+                    else:
+                        lote, total = self.buscar_publicacoes((fim - timedelta(days=dias)).strftime("%Y%m%d"), fim.strftime("%Y%m%d"),
+                                                              uf=uf, modalidade=modalidade, pagina=pagina)
+                except PNCPError as exc:
+                    if not tolerante or not (res.paginas_lidas or pagina > 1):
+                        raise
+                    res.falhas.append(f"{MODALIDADES.get(modalidade, modalidade)}, página {pagina}: {str(exc)[:80]}")
+                    break
+                for c in lote:
+                    vistos.setdefault(c.id, c)
+                if progresso:
+                    progresso(modalidade, posicao, len(modalidades), pagina, min(total, max_paginas))
+                pagina += 1
+            res.paginas_lidas += pagina - 1
+            res.total_paginas += total
+            res.truncada = res.truncada or total > max_paginas
+        res.contratacoes = list(vistos.values())
+        return res
 
     def filtrar_por_palavras(self, contratacoes: list[Contratacao], palavras: list[str]) -> list[Contratacao]:
         chaves = [p.lower() for p in palavras]
