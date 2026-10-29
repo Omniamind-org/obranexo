@@ -721,8 +721,10 @@ eval/run_benchmark.py    benchmark contra gabaritos (com --limiares, trava de qu
 eval/limiares.json       mínimos por métrica usados pela trava
 tests/                   201 testes (login e isolamento por empresa, regras, agentes sem LLM, API, observabilidade, grafo, custos, paginação do PNCP, kit da proposta, retrato da demo, regressão do teste cego, integração com LLM)
 .github/workflows/ci.yml lint, testes e benchmark como trava em todo PR (Linux, modo determinístico e offline)
+.github/workflows/pages.yml publica bmc/site/ no GitHub Pages, só quando bmc/site/ muda
 pitch/                   planejamento, fala e slides do pitch
 bmc/                     modelo de negócio: BMC, pesquisa, medição no PNCP, canvas A3 e PM Canvas
+  site/                  Business Model Canvas interativo publicado no GitHub Pages (index.html e ícones)
 ```
 
 **Estrutura-alvo** (F1–F3, incremental sobre a atual): checkpoints duráveis e interrupções sobre `agents/grafo.py` · `tools/` (registro MCP) · `gateway/` (roteamento de modelos) · `ingest/` (coleta agendada, índice de itens) · `db/` (SQLModel + Alembic; a trilha migra do SQLite para o mesmo banco) · `observability/` ganha OpenTelemetry · `infra/` (Docker, Terraform).
