@@ -3,7 +3,7 @@
 Responde "o que aconteceu nesta análise?" depois do fato: qual agente chamou, qual modelo respondeu
 (pedido × usado, para ver quando o reserva entrou), tokens de entrada, saída e raciocínio lidos da
 própria resposta da API, custo pela tabela oficial, latência, se veio do cache e qual foi o erro.
-Fica em SQLite (data/obranexo.db) — um banco SQL num arquivo, sem servidor — e é consultada pela API
+Fica no banco da aplicação (db.py: SQLite em data/obranexo.db ou PostgreSQL) e é consultada pela API
 (/api/analises/{id}/chamadas e /api/metricas/llm).
 
 Quem chamou é informado por escopo: cada agente abre `with escopo(agente="investigador")` ao começar e
@@ -14,7 +14,6 @@ nos lotes em paralelo do Analista Técnico (cada thread recebe uma cópia do con
 from __future__ import annotations
 
 import contextvars
-import sqlite3
 import statistics
 import threading
 import uuid
@@ -25,7 +24,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from obranexo.config import config
+from sqlalchemy import Row, text
+
+from obranexo import db
 from obranexo.observability import logs
 
 RESUMO_MAX_CHARS = 600
@@ -109,90 +110,40 @@ def resumir(texto: Any) -> str | None:
     return (t[:RESUMO_MAX_CHARS] + "…") if len(t) > RESUMO_MAX_CHARS else (t or None)
 
 
-_DDL = """
-CREATE TABLE IF NOT EXISTS chamadas_llm (
-  id TEXT PRIMARY KEY,
-  quando TEXT NOT NULL,
-  origem_tipo TEXT,
-  origem_id TEXT,
-  agente TEXT NOT NULL,
-  versao_prompt TEXT,
-  operacao TEXT NOT NULL,
-  provedor TEXT NOT NULL,
-  modelo_pedido TEXT NOT NULL,
-  modelo_usado TEXT,
-  tokens_entrada INTEGER NOT NULL DEFAULT 0,
-  tokens_saida INTEGER NOT NULL DEFAULT 0,
-  tokens_raciocinio INTEGER NOT NULL DEFAULT 0,
-  tokens_cache_leitura INTEGER NOT NULL DEFAULT 0,
-  tokens_cache_escrita INTEGER NOT NULL DEFAULT 0,
-  custo_usd REAL NOT NULL DEFAULT 0,
-  latencia_ms INTEGER NOT NULL DEFAULT 0,
-  cache_hit INTEGER NOT NULL DEFAULT 0,
-  reserva INTEGER NOT NULL DEFAULT 0,
-  status TEXT NOT NULL,
-  erro TEXT,
-  entrada_resumo TEXT,
-  saida_resumo TEXT
-);
-CREATE INDEX IF NOT EXISTS idx_chamadas_origem ON chamadas_llm (origem_id);
-CREATE INDEX IF NOT EXISTS idx_chamadas_quando ON chamadas_llm (quando);
-"""
-
-_COLUNAS = [c for c in ChamadaLLM.__dataclass_fields__]
-
 
 class Trilha:
-    """Grava e consulta a tabela chamadas_llm. Uma conexão curta por operação: simples e seguro entre threads."""
+    """Grava e consulta a tabela chamadas_llm (db.py). Uma conexão curta por operação: simples e seguro entre threads."""
 
     def __init__(self, caminho: Path | None = None):
-        self._caminho = caminho
+        self._caminho = caminho  # SQLite explícito (testes); sem ele, o banco da aplicação
         self._lock = threading.Lock()
-        self._preparados: set[Path] = set()
-
-    @property
-    def caminho(self) -> Path:
-        return self._caminho or config.caminho_db  # resolvido a cada uso: os testes trocam o diretório de dados
-
-    def _conectar(self) -> sqlite3.Connection:
-        caminho = self.caminho
-        caminho.parent.mkdir(parents=True, exist_ok=True)
-        con = sqlite3.connect(caminho, timeout=5)
-        con.row_factory = sqlite3.Row
-        if caminho not in self._preparados:
-            con.executescript(_DDL)
-            self._preparados.add(caminho)
-        return con
 
     # ------------------------------------------------------------ escrita
 
     def gravar(self, chamada: ChamadaLLM) -> None:
         dados = asdict(chamada)
         dados["custo_usd"] = round(dados["custo_usd"], 6)
-        with self._lock, self._conectar() as con:
-            con.execute(
-                f"INSERT OR REPLACE INTO chamadas_llm ({', '.join(_COLUNAS)}) VALUES ({', '.join(':' + c for c in _COLUNAS)})",
-                {k: (int(v) if isinstance(v, bool) else v) for k, v in dados.items()},
-            )
+        with self._lock, db.escrever(self._caminho) as con:
+            db.inserir_ou_substituir(con, db.chamadas_llm, {k: (int(v) if isinstance(v, bool) else v) for k, v in dados.items()})
         logs.registrar("chamada_llm", **{k: v for k, v in dados.items() if k not in {"entrada_resumo", "saida_resumo"}})
 
     # ------------------------------------------------------------ leitura
 
     def listar(self, origem_id: str) -> list[dict[str, Any]]:
-        with self._conectar() as con:
-            linhas = con.execute("SELECT * FROM chamadas_llm WHERE origem_id = ? ORDER BY quando", (origem_id,)).fetchall()
+        with db.ler(self._caminho) as con:
+            linhas = con.execute(text("SELECT * FROM chamadas_llm WHERE origem_id = :origem_id ORDER BY quando"), {"origem_id": origem_id}).fetchall()
         return [_dict(linha) for linha in linhas]
 
     def resumo(self, origem_id: str | None = None) -> dict[str, Any]:
         """Agregados para a tela de métricas: totais, latência (média e p95), taxas e quebras por agente e por modelo."""
-        filtro, params = ("WHERE origem_id = ?", (origem_id,)) if origem_id else ("", ())
-        with self._conectar() as con:
-            linhas = [_dict(linha) for linha in con.execute(f"SELECT * FROM chamadas_llm {filtro} ORDER BY quando", params).fetchall()]
+        filtro, params = ("WHERE origem_id = :origem_id", {"origem_id": origem_id}) if origem_id else ("", {})
+        with db.ler(self._caminho) as con:
+            linhas = [_dict(linha) for linha in con.execute(text(f"SELECT * FROM chamadas_llm {filtro} ORDER BY quando"), params).fetchall()]
         return agregar(linhas)
 
 
-def _dict(linha: sqlite3.Row) -> dict[str, Any]:
-    d = dict(linha)
+def _dict(linha: Row) -> dict[str, Any]:
+    d = dict(linha._mapping)
     d["cache_hit"] = bool(d["cache_hit"])
     d["reserva"] = bool(d["reserva"])
     return d

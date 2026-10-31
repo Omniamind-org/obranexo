@@ -1,7 +1,7 @@
 // Roteador (hash) e casca da aplicação.
 
 import { iniciarChat } from './chat.js';
-import { aoPerderSessao, carregarSessao, desenharConta, mostrarEntrada } from './sessao.js';
+import { aoPerderSessao, carregarSessao, desenharConta, linkDeConta, mostrarEntrada } from './sessao.js';
 import { atualizarStatus } from './status.js';
 import { iniciarTema } from './tema.js';
 import { ativarDicas, carregando, erroBox, html, render } from './ui.js';
@@ -14,6 +14,7 @@ import * as resultado from './views/resultado.js';
 import * as metricas from './views/metricas.js';
 import * as sobre from './views/sobre.js';
 import * as prospeccao from './views/prospeccao.js';
+import * as equipe from './views/equipe.js';
 
 const ROTAS = [
   { re: /^\/?(?:inicio)?$/, nav: 'inicio', view: inicio },
@@ -26,6 +27,7 @@ const ROTAS = [
   { re: /^\/analises\/([^/]+)$/, nav: 'analises', view: resultado },
   { re: /^\/metricas$/, nav: 'metricas', view: metricas },
   { re: /^\/sobre$/, nav: 'sobre', view: sobre },
+  { re: /^\/equipe$/, nav: 'equipe', view: equipe },
 ];
 
 const view = document.getElementById('view');
@@ -72,8 +74,9 @@ async function navegar() {
 iniciarTema();
 ativarDicas();
 aoPerderSessao(view);
-// Sem sessão, só a tela de entrada; depois do login a página recarrega e a aplicação sobe daqui
-if (!(await carregarSessao())) {
+// Sem sessão, só a tela de entrada; depois do login a página recarrega e a aplicação sobe daqui.
+// Um link de convite ou de nova senha abre a tela de entrada mesmo com alguém logado neste navegador.
+if (!(await carregarSessao()) || linkDeConta()) {
   await mostrarEntrada(view);
 } else {
   desenharConta();

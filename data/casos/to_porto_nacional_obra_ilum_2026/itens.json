@@ -1,0 +1,35 @@
+[
+ {
+  "id": "27064964000150-1-000079/2026#item-1",
+  "contratacao_id": "27064964000150-1-000079/2026",
+  "numero_item": 1,
+  "descricao": "Iluminação Pública: Avenida Francisco Dantas; Marginal Sul - Trechos 01 e 02; Centro Administrativo; Setor Guaxupé; Saída de Monte do Carmo; Saída de Silvanópolis; Distrito de Nova Pinheirópolis, conforme planilha orçamentária. - Iluminação Pública: Avenida Francisco Dantas; Marginal Sul - Trechos 01 e 02; Centro Administrativo; Setor Guaxupé; Saída de Monte do Carmo; Saída de Silvanópolis; Distrito de Nova Pinheirópolis, conforme planilha orçamentária.",
+  "quantidade": 1.0,
+  "unidade": "Serviço",
+  "valor_unit_estimado": 3548878.87,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "27064964000150-1-000079/2026#item-2",
+  "contratacao_id": "27064964000150-1-000079/2026",
+  "numero_item": 2,
+  "descricao": "Iluminação Pública: Anel Viário; Rua Perimetral; Irmã Edila, conforme planilha orçamentária. - Iluminação Pública: Anel Viário; Rua Perimetral; Irmã Edila, conforme planilha orçamentária.",
+  "quantidade": 1.0,
+  "unidade": "Serviço",
+  "valor_unit_estimado": 3733991.34,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ },
+ {
+  "id": "27064964000150-1-000079/2026#item-3",
+  "contratacao_id": "27064964000150-1-000079/2026",
+  "numero_item": 3,
+  "descricao": "Iluminação Pública: TO-080 - Luzimangues, Trechos 01 a 05; Avenida I - Novo Horizonte; TO 255 - Escola Brasil, conforme planilha orçamentária. - Iluminação Pública: TO-080 - Luzimangues, Trechos 01 a 05; Avenida I - Novo Horizonte; TO 255 - Escola Brasil, conforme planilha orçamentária.",
+  "quantidade": 1.0,
+  "unidade": "Serviço",
+  "valor_unit_estimado": 3784910.6,
+  "categoria_inferida": null,
+  "situacao": "Em andamento"
+ }
+]

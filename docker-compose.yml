@@ -5,7 +5,8 @@
 # Chaves e configurações vêm do .env (veja .env.example); sem .env, roda em modo determinístico (sem IA).
 # O volume "dados" guarda contas, análises, catálogos e a trilha de IA entre reinícios. Na criação ele recebe
 # os casos de demonstração da imagem; uma imagem nova não sobrescreve um volume que já existe.
-# O Postgres entra junto com a migração do banco (plano F1, PostgreSQL + Alembic).
+# Contas, sessões, convites, conversas, trilha de IA e jobs ficam no PostgreSQL (serviço db, volume "banco");
+# as migrações rodam sozinhas quando o app sobe. Troque a senha do banco fora do ambiente local.
 
 services:
   app:
@@ -16,9 +17,30 @@ services:
     env_file:
       - path: .env
         required: false
+    environment:
+      OBRANEXO_DATABASE_URL: postgresql+psycopg://obranexo:${OBRANEXO_DB_SENHA:-obranexo}@db:5432/obranexo
     volumes:
       - dados:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: obranexo
+      POSTGRES_PASSWORD: ${OBRANEXO_DB_SENHA:-obranexo}
+      POSTGRES_DB: obranexo
+    volumes:
+      - banco:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U obranexo -d obranexo"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
     restart: unless-stopped
 
 volumes:
   dados:
+  banco:

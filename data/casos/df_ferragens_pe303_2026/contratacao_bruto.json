@@ -1,0 +1,63 @@
+{
+ "valorTotalEstimado": 184199.46,
+ "valorTotalHomologado": null,
+ "orcamentoSigilosoCodigo": 1,
+ "orcamentoSigilosoDescricao": "Compra sem sigilo",
+ "numeroControlePNCP": "00488478000102-1-000303/2026",
+ "linkSistemaOrigem": "https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/compras/acompanhamento-compra?compra=05000105002342026",
+ "linkProcessoEletronico": "https://sei.stj.jus.br/",
+ "anoCompra": 2026,
+ "sequencialCompra": 303,
+ "numeroCompra": "234",
+ "processo": "000586/2026",
+ "orgaoEntidade": {
+  "cnpj": "00488478000102",
+  "razaoSocial": "SUPERIOR TRIBUNAL DE JUSTICA",
+  "poderId": "J",
+  "esferaId": "F"
+ },
+ "unidadeOrgao": {
+  "ufNome": "Distrito Federal",
+  "ufSigla": "DF",
+  "municipioNome": "Brasília",
+  "codigoUnidade": "050001",
+  "nomeUnidade": "STJ _ SUPERIOR TRIBUNAL DE JUSTICA/DF",
+  "codigoIbge": "5300108"
+ },
+ "orgaoSubRogado": null,
+ "unidadeSubRogada": null,
+ "modalidadeId": 6,
+ "modalidadeNome": "Pregão - Eletrônico",
+ "justificativaPresencial": null,
+ "modoDisputaId": 3,
+ "modoDisputaNome": "Aberto-Fechado",
+ "tipoInstrumentoConvocatorioCodigo": 1,
+ "tipoInstrumentoConvocatorioNome": "Edital",
+ "amparoLegal": {
+  "nome": "Lei 14.133/2021, Art. 28, I",
+  "descricao": "pregão: modalidade de licitação obrigatória para aquisição de bens e serviços comuns",
+  "codigo": 1
+ },
+ "objetoCompra": "Aquisição de material elétrico - ferragens.",
+ "informacaoComplementar": "Em caso de discordância existente entre as especificações deste objeto descritas no sítio do Portal de Compras do Governo Federal e as especificações técnicas constantes do edital, prevalecerão as últimas.",
+ "srp": false,
+ "fontesOrcamentarias": [
+  {
+   "codigo": 4,
+   "nome": "Federal",
+   "descricao": "Recurso orçamentário federal disponível e devidamente vinculado à despesa que será realizada.",
+   "dataInclusao": "2026-10-16T04:00:10"
+  }
+ ],
+ "emendaParlamentar": null,
+ "dataPublicacaoPncp": "2026-10-16T04:00:09",
+ "dataAberturaProposta": "2026-10-16T08:00:00",
+ "dataEncerramentoProposta": "2026-10-29T14:00:00",
+ "situacaoCompraId": 1,
+ "situacaoCompraNome": "Divulgada no PNCP",
+ "existeResultado": false,
+ "dataInclusao": "2026-10-16T04:00:09",
+ "dataAtualizacao": "2026-10-16T04:00:09",
+ "dataAtualizacaoGlobal": "2026-10-16T04:01:25",
+ "usuarioNome": "Compras.gov.br"
+}

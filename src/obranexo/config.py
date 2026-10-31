@@ -108,6 +108,16 @@ class Config:
     sessao_horas: int = field(default_factory=lambda: _env_int("OBRANEXO_SESSAO_HORAS", 168))
     cookie_seguro: bool = field(default_factory=lambda: _env_bool("OBRANEXO_COOKIE_SEGURO", False))
     cadastro_aberto: bool = field(default_factory=lambda: _env_bool("OBRANEXO_CADASTRO_ABERTO", False))
+    # PostgreSQL (ex.: postgresql+psycopg://usuario:senha@host:5432/obranexo); sem ela, SQLite em data/obranexo.db
+    database_url: str | None = field(default_factory=lambda: os.getenv("OBRANEXO_DATABASE_URL") or os.getenv("DATABASE_URL") or None, repr=False)
+    # Endereço que vai nos links de convite e de nova senha (sem barra no fim)
+    url_publica: str = field(default_factory=lambda: os.getenv("OBRANEXO_URL_PUBLICA", "http://127.0.0.1:8000").rstrip("/"))
+    # E-mail (opcional): sem SMTP, os links são copiados da tela Equipe e entregues por outro canal
+    smtp_host: str | None = field(default_factory=lambda: os.getenv("OBRANEXO_SMTP_HOST") or None)
+    smtp_porta: int = field(default_factory=lambda: _env_int("OBRANEXO_SMTP_PORTA", 587))
+    smtp_usuario: str | None = field(default_factory=lambda: os.getenv("OBRANEXO_SMTP_USUARIO") or None)
+    smtp_senha: str | None = field(default_factory=lambda: os.getenv("OBRANEXO_SMTP_SENHA") or None, repr=False)
+    smtp_remetente: str | None = field(default_factory=lambda: os.getenv("OBRANEXO_SMTP_REMETENTE") or None)
 
     # Preço de tabela (US$ por 1M tokens: entrada, saída, leitura de cache) para estimar o custo de cada chamada — métrica
     # interna de margem, não a fatura (nível gratuito custa 0; lote e cache dão desconto). Tabela e fontes em PRECOS_USD.

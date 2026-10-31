@@ -128,3 +128,68 @@ def cadastro(pedido: PedidoCadastro, response: Response) -> dict[str, Any]:
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     return _abrir(response, usuario)
+
+
+# ---------------------------------------------------------------------------- convite e nova senha (sem login)
+# O token vem sempre no corpo: na URL ele iria para o log de acesso do servidor.
+
+
+class PedidoToken(BaseModel):
+    token: str = Field(min_length=20, max_length=200)
+
+
+class PedidoAceite(PedidoToken):
+    senha: str = Field(min_length=contas.SENHA_MIN, max_length=200)
+    nome: str = Field("", max_length=200)
+
+
+class PedidoRecuperar(BaseModel):
+    email: str = Field(max_length=254)
+
+
+class PedidoRedefinir(PedidoToken):
+    senha: str = Field(min_length=contas.SENHA_MIN, max_length=200)
+
+
+@rotas.post("/convites/ver")
+def ver_convite(pedido: PedidoToken) -> dict[str, Any]:
+    """E-mail e empresa do convite, para a tela de aceite."""
+    convite = contas.ver_convite(pedido.token)
+    if convite is None:
+        raise HTTPException(404, "convite inválido ou expirado: peça um novo")
+    return convite
+
+
+@rotas.post("/convites/aceitar")
+def aceitar_convite(pedido: PedidoAceite, response: Response) -> dict[str, Any]:
+    """Cria a conta do convidado com a senha escolhida e já entra."""
+    try:
+        usuario = contas.aceitar_convite(pedido.token, pedido.senha, pedido.nome)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return _abrir(response, usuario)
+
+
+@rotas.post("/recuperar", status_code=202)
+def recuperar_senha(pedido: PedidoRecuperar, request: Request) -> dict[str, Any]:
+    """Manda o link de nova senha, se houver conta com o e-mail. A resposta é a mesma com ou sem conta."""
+    from obranexo import notificacoes
+
+    chaves = (f"recuperar:{contas.normalizar_email(pedido.email)}", f"recuperar-ip:{request.client.host if request.client else '?'}")
+    if _bloqueado(*chaves):
+        raise HTTPException(429, "muitos pedidos; aguarde alguns minutos")
+    _registrar_erro(*chaves)  # conta pedidos, não erros: no máximo 5 por e-mail e por IP a cada 15 min
+    token = contas.criar_redefinicao(pedido.email)
+    if token:
+        notificacoes.enviar_redefinicao(contas.normalizar_email(pedido.email), token)
+    return {"ok": True, "email_configurado": notificacoes.configurado()}
+
+
+@rotas.post("/redefinir")
+def redefinir_senha(pedido: PedidoRedefinir, response: Response) -> dict[str, Any]:
+    """Troca a senha pelo link recebido, encerra as outras sessões e já entra."""
+    try:
+        usuario = contas.redefinir_senha(pedido.token, pedido.senha)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return _abrir(response, usuario)

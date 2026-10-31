@@ -40,3 +40,13 @@ def _provedor_restaurado(monkeypatch):
     sem IA deixava os modelos da Anthropic para os testes seguintes (e o Gemini recebia claude-haiku-5-5)."""
     for campo in ("llm_provider", "model_agente", "model_extracao", "modelos_reserva", "lote_max_itens", "lote_max_chars"):
         monkeypatch.setattr(config, campo, getattr(config, campo))
+
+
+@pytest.fixture(autouse=True)
+def _banco_limpo():
+    """No SQLite cada teste já tem um banco novo (o diretório de dados é temporário); num PostgreSQL
+    (OBRANEXO_DATABASE_URL, como no job do CI) o banco é um só, então cada teste começa com as tabelas vazias."""
+    if config.database_url:
+        from obranexo import db
+
+        db.limpar()

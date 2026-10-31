@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from contextlib import asynccontextmanager
 from datetime import date, datetime
 from pathlib import Path
 from typing import Annotated, Any
@@ -20,7 +21,7 @@ from pydantic import BaseModel, Field
 from obranexo import __version__, contas
 from obranexo.agents.prompts import VERSAO as VERSAO_PROMPTS
 from obranexo.api import auth
-from obranexo.api.jobs import jobs
+from obranexo.api.jobs import Job, Tarefa, jobs, tarefa_de_analise
 from obranexo.catalog.atributos import ATRIBUTOS
 from obranexo.catalog.loader import carregar_catalogo_json, carregar_catalogo_tabela
 from obranexo.config import MODELOS_PADRAO, PROVEDORES, config
@@ -32,6 +33,22 @@ from obranexo.storage import store
 
 logs.configurar()
 
+
+def _preparar_retomada(job: Job) -> Tarefa | None:
+    """Depois de um reinício, só a análise recomeça sozinha: relê o caso congelado e não chama o PNCP.
+    Prospecção, chat e busca ficam como interrompidos (recomeçar gastaria cota de IA sem ninguém pedir)."""
+    if job.tipo != "analise":
+        return None
+    diretorio = store.caso(job.parametros.get("caso") or job.alvo)
+    return tarefa_de_analise(diretorio, empresa_atual()) if diretorio else None
+
+
+@asynccontextmanager
+async def _ciclo_de_vida(_app: FastAPI):
+    jobs.retomar(_preparar_retomada)
+    yield
+
+
 app = FastAPI(
     title="ObraNexo API",
     version=__version__,
@@ -39,6 +56,7 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url=None,
     openapi_url="/api/openapi.json",
+    lifespan=_ciclo_de_vida,
 )
 
 # Tudo em /api exige login, menos o que está em `app` diretamente (status, conteúdo da página "Como funciona")
@@ -236,6 +254,71 @@ def testar_provedor() -> dict[str, Any]:
         return {"ok": False, "provedor": config.llm_provider, "erro": str(exc)[:400]}
     return {"ok": True, "provedor": config.llm_provider, "modelos": list(llm.uso.por_modelo), "resposta": resposta[:80],
             "latencia_s": round((datetime.now() - inicio).total_seconds(), 2)}
+
+
+# ---------------------------------------------------------------------------
+# Equipe: convites e links de nova senha
+# ---------------------------------------------------------------------------
+
+Logado = Annotated[contas.Usuario, Depends(auth.exige_login)]
+
+
+@api.get("/api/equipe", tags=["equipe"])
+def equipe(usuario: Logado) -> dict[str, Any]:
+    """Quem tem conta na empresa e os convites ainda não aceitos."""
+    from obranexo import notificacoes
+
+    return {
+        "usuarios": contas.listar_usuarios_da_empresa(usuario.empresa_id),
+        "convites": contas.convites_pendentes(usuario.empresa_id),
+        "email_configurado": notificacoes.configurado(),
+        "admin": usuario.admin,
+    }
+
+
+class PedidoConvite(BaseModel):
+    email: str = Field(max_length=254)
+    empresa_nova: str | None = Field(None, max_length=200, description="só administrador: convida uma empresa nova")
+    admin: bool = Field(False, description="só administrador: a conta nova também administra a plataforma")
+
+
+@api.post("/api/equipe/convites", status_code=201, tags=["equipe"])
+def convidar(pedido: PedidoConvite, usuario: Logado) -> dict[str, Any]:
+    """Gera o convite e manda por e-mail quando há SMTP; o link vem na resposta para ser copiado de qualquer forma."""
+    from obranexo import notificacoes
+
+    try:
+        token = contas.criar_convite(pedido.email, usuario, empresa_nova=pedido.empresa_nova, admin=pedido.admin)
+    except PermissionError as exc:
+        raise HTTPException(403, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    email = contas.normalizar_email(pedido.email)
+    return {"link": notificacoes.link(f"convite/{token}"),
+            "enviado": notificacoes.enviar_convite(email, pedido.empresa_nova or usuario.empresa_nome, token)}
+
+
+@api.delete("/api/equipe/convites/{convite_id}", tags=["equipe"])
+def cancelar_convite(convite_id: str, usuario: Logado) -> dict[str, Any]:
+    if not contas.cancelar_convite(convite_id, usuario.empresa_id):
+        raise HTTPException(404, "convite não encontrado")
+    return {"ok": True}
+
+
+class PedidoRedefinicao(BaseModel):
+    email: str = Field(max_length=254)
+
+
+@api.post("/api/equipe/redefinicoes", status_code=201, tags=["equipe"], dependencies=admin)
+def gerar_redefinicao(pedido: PedidoRedefinicao, usuario: Logado) -> dict[str, Any]:
+    """Administrador: link de nova senha para alguém que não recebe e-mail (sem SMTP configurado, por exemplo)."""
+    from obranexo import notificacoes
+
+    token = contas.criar_redefinicao(pedido.email, por=usuario)
+    if token is None:
+        raise HTTPException(404, "não há conta ativa com esse e-mail")
+    return {"link": notificacoes.link(f"redefinir/{token}"),
+            "enviado": notificacoes.enviar_redefinicao(contas.normalizar_email(pedido.email), token)}
 
 
 # ---------------------------------------------------------------------------
